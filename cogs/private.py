@@ -17,6 +17,7 @@ class PrivateCog(
     description="Private administrative and developer utilities.",
 ):
     def __init__(self, bot: commands.Bot) -> None:
+        super().__init__()
         self.bot = bot
 
     @commands.Cog.listener()

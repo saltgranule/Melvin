@@ -50,6 +50,7 @@ class DebugCog(
     description="Commands for debugging purposes.",
 ):
     def __init__(self, bot: commands.Bot) -> None:
+        super().__init__()
         self.bot = bot
 
     @app_commands.command(name="think", description="Send raw ResponseUI class.")

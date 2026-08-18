@@ -10,15 +10,15 @@ from discord.ext import commands
 from ui import ErrorUI, InfoUI, PositiveUI, ResponseUI
 
 time_quotes = [
-    "**Men talk of killing time, while time quietly kills them.**\n-# -- Dion Boucicault",
-    "**Time brings all things to pass.**\n-# -- Aeschylus",
-    "**Time is a storm in which we are all lost.**\n-# -- William Carlos Williams",
-    "**The trouble is, you think you have time.**\n-# -- Jack Kornfield",
-    "**The only reason for time is so that everything does not happen at once.**\n-# -- Albert Einstein",
-    "**Who controls the past, controls the future: who controls the present controls the past.**\n-# -- George Orwell",
-    "**They always say time changes things, but you actually have to change them yourself.**\n-# -- Andy Warhol",
-    "**There is never enough time to do all the nothing you want.**\n-# -- Bill Watterson",
-    "**It is not that we have little time, but more that we waste a good deal of it.**\n-# -- Seneca",
+    "**Men talk of killing time, while time quietly kills them.**\n-# *-- Dion Boucicault*",
+    "**Time brings all things to pass.**\n-# *-- Aeschylus*",
+    "**Time is a storm in which we are all lost.**\n-# *-- William Carlos Williams*",
+    "**The trouble is, you think you have time.**\n-# *-- Jack Kornfield*",
+    "**The only reason for time is so that everything does not happen at once.**\n-# *-- Albert Einstein*",
+    "**Who controls the past, controls the future: who controls the present controls the past.**\n-# *-- George Orwell*",
+    "**They always say time changes things, but you actually have to change them yourself.**\n-# *-- Andy Warhol*",
+    "**There is never enough time to do all the nothing you want.**\n-# *-- Bill Watterson*",
+    "**It is not that we have little time, but more that we waste a good deal of it.**\n-# *-- Seneca*",
 ]
 
 
@@ -42,6 +42,7 @@ class TimezoneCog(
     description="Set or view timezones for users.",
 ):
     def __init__(self, bot: commands.Bot) -> None:
+        super().__init__()
         self.bot = bot
         self.db_path = "data/timezones.db"
 
@@ -108,11 +109,14 @@ class TimezoneCog(
         ]
 
     @app_commands.command(
-        name="for", description="View a user's timezone, defaulting to your timezone.",
+        name="for",
+        description="View a user's timezone, defaulting to your timezone.",
     )
     @app_commands.describe(user="The user whose timezone you want to view.")
     async def for_user(
-        self, interaction: discord.Interaction, user: discord.User | None = None,
+        self,
+        interaction: discord.Interaction,
+        user: discord.User | None = None,
     ) -> None:
         target_user = user or interaction.user
         target_tz_str = await self._get_user_timezone(target_user.id)
@@ -134,8 +138,8 @@ class TimezoneCog(
             name = "You" if target_user == interaction.user else target_user.mention
             suffix = (
                 " do not have a timezone set."
-                if target_user == interaction.user
-                else " does not have a timezone set."
+                if target_user == interaction.user else
+                " does not have a timezone set."
             )
             view = ErrorUI(f"{name}{suffix}")
             await interaction.response.send_message(

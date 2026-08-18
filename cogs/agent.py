@@ -26,6 +26,7 @@ class AgentCog(
     description="Self explanatory, ask a free AI model some stupid shit.",
 ):
     def __init__(self, bot: commands.Bot) -> None:
+        super().__init__()
         self.bot = bot
         self.api_key = os.getenv("GAPI")
         self.client = genai.Client(api_key=self.api_key)

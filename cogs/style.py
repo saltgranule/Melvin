@@ -22,6 +22,7 @@ class StyleCog(
     description="Name style configuration commmands.",
 ):
     def __init__(self, bot: Melvin) -> None:
+        super().__init__()
         self.bot = bot
 
     # cogwide error handling

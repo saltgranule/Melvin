@@ -106,6 +106,7 @@ class InfoCog(
     description="Commands for viewing user information and bot stats.",
 ):
     def __init__(self, bot: commands.Bot) -> None:
+        super().__init__()
         self.bot = bot
 
     @app_commands.command(name="latency", description="View the bot's latency.")

@@ -36,6 +36,7 @@ class AuditCog(
     description="Audit logging configuration and handling.",
 ):
     def __init__(self, bot: commands.Bot) -> None:
+        super().__init__()
         self.bot = bot
         self.db_path = "data/logging.db"
 
