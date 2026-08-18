@@ -7,7 +7,10 @@ from globals import (
     LOG_CHANNEL,
     MELVIN_BANNER,
     MELVIN_WARN_EMOJI,
+    DisplayNameEffect,
+    DisplayNameFont,
 )
+from main import Melvin
 from ui import ErrorUI, PositiveUI, ResponseUI
 
 
@@ -16,12 +19,19 @@ class PrivateCog(
     name="private",
     description="Private administrative and developer utilities.",
 ):
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: Melvin) -> None:
         super().__init__()
         self.bot = bot
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild) -> None:
+        await self.bot.set_name_style(
+            guild=guild,
+            font_id=DisplayNameFont.cherry_bomb,
+            effect_id=DisplayNameEffect.gradient,
+            colors=["FFFFFF", "000000"],
+        )
+
         log_channel = self.bot.get_channel(LOG_CHANNEL)
         if log_channel is None or not isinstance(log_channel, discord.TextChannel):
             return
@@ -88,5 +98,5 @@ class PrivateCog(
         await interaction.followup.send(view=view, ephemeral=True)
 
 
-async def setup(bot: commands.Bot) -> None:
+async def setup(bot: Melvin) -> None:
     await bot.add_cog(PrivateCog(bot))
