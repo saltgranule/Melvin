@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from ui import InfoUI, SmallSeparator
+from ui import ErrorUI, InfoUI, SmallSeparator
 
 
 # UI Classes
@@ -15,7 +15,7 @@ class AvatarView(discord.ui.LayoutView):
         elif target == interaction.user:
             mention = "Your"
         else:
-            mention = f"{target.mention}'s'"
+            mention = f"{target.mention}'s"
 
         text_display = discord.ui.TextDisplay(f"**{mention} Avatar**")
         media_gallery = discord.ui.MediaGallery(discord.MediaGalleryItem(target.display_avatar.url))
@@ -67,7 +67,7 @@ class BannerView(discord.ui.LayoutView):
         elif target == interaction.user:
             mention = "Your"
         else:
-            mention = f"{target.mention}'s'"
+            mention = f"{target.mention}'s"
 
         text_display = discord.ui.TextDisplay(f"**{mention} Banner**")
 
@@ -160,7 +160,7 @@ class InfoCog(
 
         if fetched_user.banner is None:
             await interaction.followup.send(
-                f"{mention} not have a profile banner.",
+                view=ErrorUI(f"{mention} not have a profile banner."),
                 ephemeral=True,
                 allowed_mentions=discord.AllowedMentions.none(),
             )

@@ -19,6 +19,7 @@ class ToolCog(
         self.bot = bot
 
     base64 = app_commands.Group(name="base64", description="Utility encoding/decoding commands.")
+    binary = app_commands.Group(name="binary", description="Utility encoding/decoding commands.")
 
     @base64.command(
         name="decode",
@@ -101,7 +102,6 @@ class ToolCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-    binary = app_commands.Group(name="binary", description="Utility encoding/decoding commands.")
 
     @binary.command(
         name="decode",
