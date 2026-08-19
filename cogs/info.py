@@ -7,14 +7,12 @@ from ui import InfoUI, SmallSeparator
 
 # UI Classes
 class AvatarView(discord.ui.LayoutView):
-    def __init__(self, target: discord.User | discord.Member) -> None:
+    def __init__(self, bot: commands.Bot, target: discord.User | discord.Member) -> None:
         super().__init__()
-        text_display = discord.ui.TextDisplay(
-            content=f"**{target.display_name}'s current avatar**",
-        )
-        media_gallery = discord.ui.MediaGallery(
-            discord.MediaGalleryItem(media=target.display_avatar.url),
-        )
+        mention = "My" if bot == target else target.mention
+
+        text_display = discord.ui.TextDisplay(f"**{mention}'s Avatar**")
+        media_gallery = discord.ui.MediaGallery(discord.MediaGalleryItem(target.display_avatar.url))
 
         if target.avatar is not None:
             formats = (
@@ -52,25 +50,23 @@ class AvatarView(discord.ui.LayoutView):
 class BannerView(discord.ui.LayoutView):
     def __init__(
         self,
+        bot: commands.Bot,
         target: discord.User | discord.Member,
         fetched_user: discord.User,
     ) -> None:
         super().__init__()
-        text_display = discord.ui.TextDisplay(
-            content=f"**{target.display_name}'s current banner**",
-        )
+        mention = "My" if bot == target else target.mention
+        text_display = discord.ui.TextDisplay(f"**{mention}'s Banner**")
 
         banner_url = fetched_user.banner.url if fetched_user.banner else ""
 
-        media_gallery = discord.ui.MediaGallery(
-            discord.MediaGalleryItem(media=banner_url),
-        )
+        media_gallery = discord.ui.MediaGallery(discord.MediaGalleryItem(banner_url))
 
         if fetched_user.banner:
             formats = (
                 ("png", "jpg", "webp", "gif")
-                if fetched_user.banner.is_animated()
-                else ("png", "jpg", "webp")
+                if fetched_user.banner.is_animated() else
+                ("png", "jpg", "webp")
             )
             buttons = [
                 discord.ui.Button(
@@ -125,8 +121,10 @@ class InfoCog(
     ) -> None:
         await interaction.response.defer()
         target = user or interaction.user
-        view = AvatarView(target)
-        await interaction.followup.send(view=view)
+        view = AvatarView(self.bot, target)
+        await interaction.followup.send(
+            view=view, allowed_mentions=discord.AllowedMentions.none(),
+        )
 
     @app_commands.command(name="banner", description="View a user's banner.")
     @app_commands.describe(user="The user whose banner you want to view.")
@@ -136,16 +134,28 @@ class InfoCog(
         user: discord.User | None = None,
     ) -> None:
         await interaction.response.defer()
+
         target = user or interaction.user
         fetched_user = await self.bot.fetch_user(target.id)
+
+        if target == interaction.client.user:
+            mention = "I do"
+        elif target == interaction.user:
+            mention = "You do"
+        else:
+            mention = f"{target.mention} does"
+
         if fetched_user.banner is None:
             await interaction.followup.send(
-                f"**{target.display_name}** does not have a profile banner.",
+                f"{mention} not have a profile banner.",
                 ephemeral=True,
+                allowed_mentions=discord.AllowedMentions.none(),
             )
             return
-        view = BannerView(target, fetched_user)
-        await interaction.followup.send(view=view)
+        view = BannerView(self.bot, target, fetched_user)
+        await interaction.followup.send(
+            view=view, allowed_mentions=discord.AllowedMentions.none(),
+        )
 
 
 async def setup(bot: commands.Bot) -> None:
