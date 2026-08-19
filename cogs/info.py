@@ -7,11 +7,17 @@ from ui import InfoUI, SmallSeparator
 
 # UI Classes
 class AvatarView(discord.ui.LayoutView):
-    def __init__(self, bot: commands.Bot, target: discord.User | discord.Member) -> None:
+    def __init__(self, interaction: discord.Interaction, target: discord.User | discord.Member) -> None:
         super().__init__()
-        mention = "My" if bot == target else target.mention
 
-        text_display = discord.ui.TextDisplay(f"**{mention}'s Avatar**")
+        if target == interaction.client.user:
+            mention = "My"
+        elif target == interaction.user:
+            mention = "Your"
+        else:
+            mention = f"{target.mention}'s'"
+
+        text_display = discord.ui.TextDisplay(f"**{mention} Avatar**")
         media_gallery = discord.ui.MediaGallery(discord.MediaGalleryItem(target.display_avatar.url))
 
         if target.avatar is not None:
@@ -50,13 +56,20 @@ class AvatarView(discord.ui.LayoutView):
 class BannerView(discord.ui.LayoutView):
     def __init__(
         self,
-        bot: commands.Bot,
+        interaction: discord.Interaction,
         target: discord.User | discord.Member,
         fetched_user: discord.User,
     ) -> None:
         super().__init__()
-        mention = "My" if bot == target else target.mention
-        text_display = discord.ui.TextDisplay(f"**{mention}'s Banner**")
+
+        if target == interaction.client.user:
+            mention = "My"
+        elif target == interaction.user:
+            mention = "Your"
+        else:
+            mention = f"{target.mention}'s'"
+
+        text_display = discord.ui.TextDisplay(f"**{mention} Banner**")
 
         banner_url = fetched_user.banner.url if fetched_user.banner else ""
 
@@ -121,7 +134,7 @@ class InfoCog(
     ) -> None:
         await interaction.response.defer()
         target = user or interaction.user
-        view = AvatarView(self.bot, target)
+        view = AvatarView(interaction, target)
         await interaction.followup.send(
             view=view, allowed_mentions=discord.AllowedMentions.none(),
         )
@@ -152,7 +165,7 @@ class InfoCog(
                 allowed_mentions=discord.AllowedMentions.none(),
             )
             return
-        view = BannerView(self.bot, target, fetched_user)
+        view = BannerView(interaction, target, fetched_user)
         await interaction.followup.send(
             view=view, allowed_mentions=discord.AllowedMentions.none(),
         )
