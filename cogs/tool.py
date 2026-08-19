@@ -101,6 +101,55 @@ class ToolCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
+    binary = app_commands.Group(name="binary", description="Utility encoding/decoding commands.")
+
+    @binary.command(
+        name="decode",
+        description="Decode a binary string (e.g. 01001000 01101001) to text.",
+    )
+    @app_commands.describe(text="The binary string to decode, space-separated bytes.")
+    async def binarydecode(self, interaction: discord.Interaction, text: str) -> None:
+        await interaction.response.defer()
+
+        chunks = text.split()
+        if not all(set(chunk) <= {"0", "1"} and len(chunk) == 8 for chunk in chunks):
+            await interaction.edit_original_response(
+                view=ErrorUI("Not a valid binary string: expected space-separated 8-bit groups of **0**s and **1**s."),
+            )
+            return
+
+        try:
+            decodedbyte = bytes(int(chunk, 2) for chunk in chunks)
+            decodedstr = decodedbyte.decode("utf-8")
+        except UnicodeDecodeError as e:
+            await interaction.edit_original_response(
+                view=ErrorUI(
+                    f"Decoded successfully, but the result is not valid text: **{e}**.",
+                ),
+            )
+            return
+
+        view = ResponseUI(f"**{decodedstr}** was the decoded result.")
+        await interaction.edit_original_response(view=view)
+
+    @binary.command(
+        name="encode",
+        description="Encode a string as binary.",
+    )
+    @app_commands.describe(text="The string to encode.")
+    async def binaryencode(self, interaction: discord.Interaction, text: str) -> None:
+        await interaction.response.defer(ephemeral=False)
+
+        try:
+            encodedstr = " ".join(f"{byte:08b}" for byte in text.encode("utf-8"))
+        except Exception as e:
+            await interaction.edit_original_response(
+                view=ErrorUI(f"Something went wrong while encoding this: **{e}**."),
+            )
+            return
+
+        view = ResponseUI(f"**{encodedstr}** was the encoded result.")
+        await interaction.edit_original_response(view=view)
 
     @speak.error
     async def speak_error(
