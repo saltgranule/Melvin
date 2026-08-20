@@ -9,7 +9,9 @@ from globals import (
     MELVIN_EMOJI,
     MELVIN_HELP_BANNER,
     MELVIN_MISC_EMOJI,
+    MELVIN_WARN_EMOJI,
     PRIMARY,
+    QUARTERNARY,
     SECONDARY,
     TERTIARY,
 )
@@ -99,7 +101,7 @@ class HelpView(discord.ui.LayoutView):
 
         cogs = self.get_cogs()
         initial_content = help_page(cogs[0]) if cogs else "No commands available."
-        self.text_display = discord.ui.TextDisplay(content=initial_content)
+        self.text_display = discord.ui.TextDisplay(initial_content)
         separator = discord.ui.Separator(
             visible=True,
             spacing=discord.SeparatorSpacing.small,
@@ -308,9 +310,7 @@ class CasesView(discord.ui.LayoutView):
 
 class ThinkingText(discord.ui.TextDisplay):
     def __init__(self) -> None:
-        super().__init__(
-            content=f"{MELVIN_EMOJI} **Thinking...**",
-        )
+        super().__init__(f"{MELVIN_EMOJI} **Thinking...**")
 
 
 class SmallSeparator(discord.ui.Separator):
@@ -327,6 +327,24 @@ class LargeSeparator(discord.ui.Separator):
             visible=True,
             spacing=discord.SeparatorSpacing.large,
         )
+
+
+# GatedUI
+class GatedUI(discord.ui.LayoutView):
+    def __init__(self) -> None:
+        super().__init__()
+        self.text_display = discord.ui.TextDisplay(
+            f"# {MELVIN_WARN_EMOJI} Gated\n"
+            f"This command is gated. Please read our documentation in our [support server]({INVITE_URL}).",
+        )
+
+        container = discord.ui.Container(
+            self.text_display,
+            SmallSeparator(),
+            accent_color=discord.Color.from_str(QUARTERNARY),
+        )
+        self.container = container
+        self.add_item(container)
 
 
 # ResponseUI
@@ -374,9 +392,7 @@ class ErrorUI(discord.ui.LayoutView):
     def __init__(self, message: str) -> None:
         super().__init__()
 
-        text_display = discord.ui.TextDisplay(
-            content=f"# {MELVIN_CROSS_EMOJI} Error\n\n{message}",
-        )
+        text_display = discord.ui.TextDisplay(f"# {MELVIN_CROSS_EMOJI} Error\n\n{message}")
 
         container = discord.ui.Container(
             text_display,

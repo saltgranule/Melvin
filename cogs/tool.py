@@ -5,8 +5,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from globals import INVITE_URL, MELVIN_WARN_EMOJI
-from ui import ErrorUI, ResponseUI
+from ui import ErrorUI, GatedUI, ResponseUI
 
 
 class ToolCog(
@@ -158,7 +157,7 @@ class ToolCog(
         error: app_commands.AppCommandError,
     ) -> None:
         if isinstance(error, app_commands.MissingPermissions):
-            view = ResponseUI(f"**{MELVIN_WARN_EMOJI} This command is gated. Please read our documentation in our [support server]({INVITE_URL}).**")
+            view = GatedUI()
 
             if interaction.response.is_done():
                 await interaction.followup.send(view=view, ephemeral=True)

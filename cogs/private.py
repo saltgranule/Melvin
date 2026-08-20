@@ -3,15 +3,13 @@ from discord import app_commands
 from discord.ext import commands
 
 from globals import (
-    INVITE_URL,
     LOG_CHANNEL,
     MELVIN_BANNER,
-    MELVIN_WARN_EMOJI,
     DisplayNameEffect,
     DisplayNameFont,
 )
 from main import Melvin
-from ui import ErrorUI, PositiveUI, ResponseUI
+from ui import ErrorUI, GatedUI, PositiveUI
 
 
 class PrivateCog(
@@ -83,7 +81,7 @@ class PrivateCog(
         await interaction.response.defer(ephemeral=True)
 
         if not await self.bot.is_owner(interaction.user):
-            view = ResponseUI(f"{MELVIN_WARN_EMOJI} **This command is gated. Please read our documentation in our [support server]({INVITE_URL}).**")
+            view = GatedUI()
             await interaction.followup.send(view=view, ephemeral=True)
             return
 

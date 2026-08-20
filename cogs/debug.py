@@ -12,7 +12,7 @@ class AdUI(discord.ui.LayoutView):
         super().__init__()
         self.bot = bot
         self.text_display = discord.ui.TextDisplay(
-            content=f"# {MELVIN_EMOJI} Melvin\nYAGPDB written in Python under the discord.py framework, built by a small group, still learning Python. Features user and guild install commands, welcoming configuration, CV2 messages over legacy embeds, and more bleeding edge features. Melvin is open source, and open to contributions, so if you want to contribute, feel free. **[GitHub](https://github.com/saltgranule/Melvin)**\n\n**Currently in {len(self.bot.guilds)} guilds.**",
+            f"# {MELVIN_EMOJI} Melvin\nYAGPDB written in Python under the discord.py framework, built by a small group, still learning Python. Features user and guild install commands, welcoming configuration, CV2 messages over legacy embeds, and more bleeding edge features. Melvin is open source, and open to contributions, so if you want to contribute, feel free. **[GitHub](https://github.com/saltgranule/Melvin)**\n\n**Currently in {len(self.bot.guilds)} guilds.**",
         )
         media_gallery = discord.ui.MediaGallery(
             discord.MediaGalleryItem(media=f"{MELVIN_BANNER}"),
