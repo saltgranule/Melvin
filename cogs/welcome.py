@@ -5,6 +5,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from globals import ERROR_MESSAGE
 from ui import ErrorUI, ExceptionUI, GalleryWithItem, PositiveUI, ResponseUI
 
 log = logging.getLogger(__name__)
@@ -85,7 +86,7 @@ class WelcomeCog(
                 )
                 await conn.commit()
         except Exception:
-            log.exception("failed to set welcome channel", interaction.guild.id)
+            log.exception("failed to set welcome channel in guild %s", interaction.guild.id)
             await interaction.followup.send(view=ExceptionUI())
             return
         view = PositiveUI(title="Welcome Channel Set", subtitle=f"**Welcome channel set to {channel.mention}.**")
