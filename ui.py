@@ -93,9 +93,7 @@ class HelpView(discord.ui.LayoutView):
         super().__init__(timeout=None)
         self.bot = bot
 
-        banner_gallery = discord.ui.MediaGallery(
-            discord.MediaGalleryItem(f"{MELVIN_HELP_BANNER}"),
-        )
+        banner_gallery = GalleryWithItem(MELVIN_HELP_BANNER)
         banner_container = discord.ui.Container(banner_gallery)
 
         cogs = self.get_cogs()
@@ -326,6 +324,11 @@ class LargeSeparator(discord.ui.Separator):
             visible=True,
             spacing=discord.SeparatorSpacing.large,
         )
+
+
+class GalleryWithItem(discord.ui.MediaGallery):
+    def __init__(self, media: str | discord.File | discord.UnfurledMediaItem, /) -> None:
+        super().__init__(discord.MediaGalleryItem(media))
 
 
 # GatedUI

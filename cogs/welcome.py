@@ -5,7 +5,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from ui import ErrorUI, ExceptionUI, PositiveUI, ResponseUI
+from ui import ErrorUI, ExceptionUI, GalleryWithItem, PositiveUI, ResponseUI
 
 log = logging.getLogger(__name__)
 
@@ -238,11 +238,7 @@ class WelcomeCog(
         view = ResponseUI(text)
 
         if config["attachment_url"]:
-            view.container.add_item(
-                discord.ui.MediaGallery(
-                    discord.MediaGalleryItem(media=config["attachment_url"]),
-                ),
-            )
+            view.container.add_item(GalleryWithItem(config["attachment_url"]))
 
         buttons = []
         if config["b1_url"]:

@@ -3,7 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from globals import INVITE_URL, MELVIN_BANNER, MELVIN_EMOJI
-from ui import ExceptionUI, ResponseUI, SmallSeparator, ThinkingText
+from ui import ExceptionUI, GalleryWithItem, ResponseUI, SmallSeparator, ThinkingText
 
 
 # AdUI
@@ -14,14 +14,12 @@ class AdUI(discord.ui.LayoutView):
         self.text_display = discord.ui.TextDisplay(
             f"# {MELVIN_EMOJI} Melvin\nYAGPDB written in Python under the discord.py framework, built by a small group, still learning Python. Features user and guild install commands, welcoming configuration, CV2 messages over legacy embeds, and more bleeding edge features. Melvin is open source, and open to contributions, so if you want to contribute, feel free. **[GitHub](https://github.com/saltgranule/Melvin)**\n\n**Currently in {len(self.bot.guilds)} guilds.**",
         )
-        media_gallery = discord.ui.MediaGallery(
-            discord.MediaGalleryItem(media=f"{MELVIN_BANNER}"),
-        )
+        media_gallery = GalleryWithItem(MELVIN_BANNER)
         banner_container = discord.ui.Container(media_gallery)
         adbutton = discord.ui.Button(
             label="Support Server",
             style=discord.ButtonStyle.link,
-            url=f"{INVITE_URL}",
+            url=INVITE_URL,
         )
         addbutton = discord.ui.Button(
             label="Add Melvin",
