@@ -11,9 +11,9 @@ from globals import (
     MELVIN_MISC_EMOJI,
     MELVIN_WARN_EMOJI,
     PRIMARY,
-    QUARTERNARY,
     SECONDARY,
     TERTIARY,
+    QUATERNARY,
 )
 
 message = f"**Something went wrong with that. Please [join the support server]({INVITE_URL}) to report this issue.**"
@@ -251,10 +251,22 @@ class CasesView(discord.ui.LayoutView):
         self.container = discord.ui.Container()
         self.add_item(self.container)
 
-    async def build_components(self, guild_id: int) -> None:
+    async def build_components(
+        self,
+        guild_id: int,
+        viewer: discord.User | discord.Member,
+        bot_user: discord.ClientUser,
+    ) -> None:
         self.container.clear_items()
 
-        header_text = f"### {MELVIN_EMOJI} Cases for {self.target_user.mention}"
+        if self.target_user.id == bot_user.id:
+            possessive = "My"
+        elif self.target_user.id == viewer.id:
+            possessive = "Your"
+        else:
+            possessive = f"{self.target_user.mention}'s"
+
+        header_text = f"### {MELVIN_EMOJI} {possessive} Cases"
         self.container.add_item(discord.ui.TextDisplay(header_text))
         self.container.add_item(
             discord.ui.Separator(visible=True, spacing=discord.SeparatorSpacing.small),
@@ -282,10 +294,17 @@ class CasesView(discord.ui.LayoutView):
                 rows = await cursor.fetchall()
 
         if not rows:
-            if self.current_action == "all":
-                msg = f"**No cases found for {self.target_user.mention}.**"
+            if self.target_user.id == bot_user.id:
+                who = "me"
+            elif self.target_user.id == viewer.id:
+                who = "you"
             else:
-                msg = f"**No cases found for {self.target_user.mention} under filter {self.current_action}.**"
+                who = self.target_user.mention
+
+            if self.current_action == "all":
+                msg = f"**No cases found for {who}.**"
+            else:
+                msg = f"**No cases found for {who} under filter {self.current_action}.**"
             self.container.add_item(discord.ui.TextDisplay(msg))
         else:
             for case_id, action_type, reason, mod_id in rows:
@@ -304,7 +323,9 @@ class CasesView(discord.ui.LayoutView):
         )
 
     async def refresh(self, interaction: discord.Interaction) -> None:
-        await self.build_components(interaction.guild.id)
+        await self.build_components(
+            interaction.guild_id, interaction.user, interaction.client.user,
+        )
         await interaction.edit_original_response(view=self)
 
 
@@ -341,7 +362,7 @@ class GatedUI(discord.ui.LayoutView):
         container = discord.ui.Container(
             self.text_display,
             SmallSeparator(),
-            accent_color=discord.Color.from_str(QUARTERNARY),
+            accent_color=discord.Color.from_str(PRIMARY),
         )
         self.container = container
         self.add_item(container)
@@ -368,7 +389,7 @@ class InfoUI(discord.ui.LayoutView):
         container = discord.ui.Container(
             discord.ui.TextDisplay(f"# {MELVIN_MISC_EMOJI} {title}\n{subtitle}"),
             SmallSeparator(),
-            accent_color=discord.Color.from_str(PRIMARY),
+            accent_color=discord.Color.from_str(QUATERNARY),
         )
         self.container = container
         self.add_item(container)

@@ -110,20 +110,20 @@ class ModCog(
         target: discord.User | discord.Member,
     ) -> None:
         await interaction.response.defer()
-
         if not interaction.guild:
             return
-
         # guard clause
         if target.bot:
             await interaction.followup.send(
                 view=ErrorUI("**You tried to view the cases of an app.**"),
             )
             return
-
         view = CasesView(target_user=target, db_path=self.db_path)
-        await view.build_components(interaction.guild.id)
-
+        await view.build_components(
+            interaction.guild.id,
+            interaction.user,
+            interaction.client.user,
+        )
         await interaction.followup.send(
             view=view,
             allowed_mentions=discord.AllowedMentions(users=False, roles=False),
