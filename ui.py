@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 
 from globals import (
+    ERROR_MESSAGE,
     INVITE_URL,
     MELVIN_CHECK_EMOJI,
     MELVIN_CROSS_EMOJI,
@@ -15,8 +16,6 @@ from globals import (
     SECONDARY,
     TERTIARY,
 )
-
-message = f"**Something went wrong with that. Please [join the support server]({INVITE_URL}) to report this issue.**"
 
 
 # HelpView functions to grasp command group details
@@ -402,6 +401,12 @@ class ErrorUI(discord.ui.LayoutView):
 
         self.container = container
         self.add_item(container)
+
+
+# ExceptionUI
+class ExceptionUI(ErrorUI):
+    def __init__(self) -> None:
+        super().__init__(ERROR_MESSAGE)
 
 
 # ActionUI

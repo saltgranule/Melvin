@@ -3,7 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from globals import INVITE_URL, MELVIN_BANNER, MELVIN_EMOJI
-from ui import ErrorUI, ResponseUI, SmallSeparator, ThinkingText
+from ui import ExceptionUI, ResponseUI, SmallSeparator, ThinkingText
 
 
 # AdUI
@@ -60,9 +60,7 @@ class DebugCog(
 
     @app_commands.command(name="error", description="Send raw ErrorUI class.")
     async def error(self, interaction: discord.Interaction) -> None:
-        view = ErrorUI(
-            message=f"**Something went wrong with that. Please [join the support server]({INVITE_URL}) to report this issue.**",
-        )
+        view = ExceptionUI()
         await interaction.response.send_message(view=view)
 
     @app_commands.command(name="ad", description="Send advertisement.")

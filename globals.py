@@ -10,8 +10,9 @@ MELVIN_CROSS_EMOJI = "<:Cross:1538140651613462538>"
 MELVIN_WARN_EMOJI = "<:Warn:1538140683389636618>"
 MELVIN_MISC_EMOJI = "<:Alert:1538140718772658277>"
 MELVIN_CHECK_EMOJI = "<:Checkmark:1538140630625292348>"
-ERROR_CHANNEL = 1536683441616064532
 INVITE_URL = "https://discord.gg/PfyKM7dyx4"
+ERROR_CHANNEL = 1536683441616064532
+ERROR_MESSAGE = f"**Something went wrong with that. Please [join the support server]({INVITE_URL}) to report this issue.**"
 MELVIN_BANNER = "https://cdn.discordapp.com/attachments/1537874702146469988/1538311690775433266/New_Project.png?ex=6a8237e7&is=6a80e667&hm=79599bdfd26d5a1f6ab499996055a6ae6e3c7a9e8fab582db518b4dd66773072&"
 MELVIN_HELP_BANNER = "https://cdn.discordapp.com/attachments/1537874702146469988/1538311472436748288/cmdbanneryellow.png?ex=6a8237b3&is=6a80e633&hm=7b1f806fd48cd994d0e267f66f42b242961383a0f6f4ce69a2b36f40849f0cfd&"
 MELVIN_GITHUB_URL = "https://github.com/saltgranule/Melvin"
