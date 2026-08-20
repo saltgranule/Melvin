@@ -5,7 +5,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from globals import (
-    INVITE_URL,
+    ERROR_MESSAGE,
     DisplayNameEffect,
     DisplayNameFont,
 )
@@ -36,7 +36,7 @@ class StyleCog(
         elif isinstance(error, app_commands.NoPrivateMessage):
             msg = "**This command can only be used in a server.**"
         else:
-            msg = f"Something went wrong: **{error}. Please [join the support server]({INVITE_URL}) to report this issue.**"
+            msg = ERROR_MESSAGE
 
         error_ui = ErrorUI(msg)
         if interaction.response.is_done():

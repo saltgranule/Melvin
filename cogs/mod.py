@@ -216,16 +216,6 @@ class ModCog(
                 (interaction.guild_id, member.id, interaction.user.id, reason),
             )
             case_id = cursor.lastrowid
-
-            async with conn.execute(
-                """
-                    SELECT COUNT(*) FROM mod_cases
-                    WHERE guild_id = ? AND user_id = ? AND action_type = 'warn'
-                    """,
-                (interaction.guild_id, member.id),
-            ) as count_cursor:
-                row = await count_cursor.fetchone()
-
             await conn.commit()
 
         # try dm

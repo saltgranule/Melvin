@@ -3,7 +3,7 @@ import logging
 import os
 import time
 import warnings
-from datetime import datetime
+from datetime import UTC, datetime
 
 import discord
 from ddgs import DDGS
@@ -67,7 +67,7 @@ class AgentCog(
             await interaction.response.send_message(view=error_ui, ephemeral=True)
 
     async def query_gemini(self, prompt: str, *, use_search: bool = False) -> str:
-        current_date_str = datetime.now().strftime("%B %d, %Y")
+        current_date_str = datetime.now(UTC).strftime("%B %d, %Y")
 
         system_instruction = (
             f"Today's date is {current_date_str}. "

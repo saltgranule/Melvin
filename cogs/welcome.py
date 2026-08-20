@@ -5,8 +5,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from globals import INVITE_URL
-from ui import ErrorUI, PositiveUI, ResponseUI
+from globals import ERROR_MESSAGE
+from ui import ErrorUI, ExceptionUI, GalleryWithItem, PositiveUI, ResponseUI
 
 log = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class WelcomeCog(
         elif isinstance(error, app_commands.NoPrivateMessage):
             msg = "**This command can only be used in a server.**"
         else:
-            msg = f"Something went wrong: **{error}. Please [join the support server]({INVITE_URL}) to report this issue.**"
+            msg = ERROR_MESSAGE
 
         error_ui = ErrorUI(msg)
         if interaction.response.is_done():
@@ -86,12 +86,8 @@ class WelcomeCog(
                 )
                 await conn.commit()
         except Exception:
-            log.exception("failed to set welcome channel", interaction.guild.id)
-            await interaction.followup.send(
-                view=ErrorUI(
-                    f"**Something went wrong saving that. Please [join the support server]({INVITE_URL}) to report this issue.**",
-                ),
-            )
+            log.exception("failed to set welcome channel in guild %s", interaction.guild.id)
+            await interaction.followup.send(view=ExceptionUI())
             return
         view = PositiveUI(title="Welcome Channel Set", subtitle=f"**Welcome channel set to {channel.mention}.**")
         await interaction.followup.send(view=view)
@@ -161,12 +157,9 @@ class WelcomeCog(
             ):
                 row = await cursor.fetchone()
             existing_channel_id = row[0] if row else None
-        except Exception as e:
-            await interaction.edit_original_response(
-                view=ErrorUI(
-                    f"**Database error: {e}. Please [join the support server]({INVITE_URL}) to report this issue.**",
-                ),
-            )
+        except Exception:
+            log.exception("Database error")
+            await interaction.edit_original_response(view=ExceptionUI())
             return
 
         # Config requires a channel, but the database may legitimately have no row yet.
@@ -198,12 +191,9 @@ class WelcomeCog(
                     ),
                 )
                 await conn.commit()
-        except Exception as e:
-            await interaction.followup.send(
-                view=ErrorUI(
-                    f"**Database error: {e}. Please [join the support server]({INVITE_URL}) to report this issue.**",
-                ),
-            )
+        except Exception:
+            log.exception("Database error")
+            await interaction.followup.send(view=ExceptionUI())
             return
 
         view = PositiveUI(title="Updated", subtitle="**Welcome message updated.**")
@@ -249,11 +239,7 @@ class WelcomeCog(
         view = ResponseUI(text)
 
         if config["attachment_url"]:
-            view.container.add_item(
-                discord.ui.MediaGallery(
-                    discord.MediaGalleryItem(media=config["attachment_url"]),
-                ),
-            )
+            view.container.add_item(GalleryWithItem(config["attachment_url"]))
 
         buttons = []
         if config["b1_url"]:

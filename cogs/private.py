@@ -9,7 +9,7 @@ from globals import (
     DisplayNameFont,
 )
 from main import Melvin
-from ui import ErrorUI, GatedUI, PositiveUI
+from ui import ErrorUI, GalleryWithItem, GatedUI, PositiveUI
 
 
 class PrivateCog(
@@ -40,7 +40,7 @@ class PrivateCog(
                     f"**Melvin was just added to {guild.name}.**\n"
                     f"Now in **{len(self.bot.guilds)}** guild(s).",
                 ),
-                discord.ui.MediaGallery(discord.MediaGalleryItem(media=f"{MELVIN_BANNER}")),
+                GalleryWithItem(MELVIN_BANNER),
             ),
         )
 
@@ -64,7 +64,7 @@ class PrivateCog(
                     f"**Melvin was just removed from {guild.name}.**\n"
                     f"Now in **{len(self.bot.guilds)}** guild(s).",
                 ),
-                discord.ui.MediaGallery(discord.MediaGalleryItem(media=f"{MELVIN_BANNER}")),
+                GalleryWithItem(MELVIN_BANNER),
             ),
         )
 

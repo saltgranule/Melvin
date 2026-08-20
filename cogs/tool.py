@@ -5,7 +5,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from ui import ErrorUI, GatedUI, ResponseUI
+from ui import ErrorUI, GalleryWithItem, GatedUI, ResponseUI
 
 
 class ToolCog(
@@ -84,13 +84,7 @@ class ToolCog(
 
         if attachment is not None:
             file = await attachment.to_file()
-            view.container.add_item(
-                discord.ui.MediaGallery(
-                    discord.MediaGalleryItem(
-                        media=f"attachment://{file.filename}",
-                    ),
-                ),
-            )
+            view.container.add_item(GalleryWithItem(f"attachment://{file.filename}"))
             await interaction.followup.send(
                 view=view,
                 file=file,

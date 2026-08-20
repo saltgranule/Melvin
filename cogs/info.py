@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from ui import ErrorUI, InfoUI, SmallSeparator
+from ui import ErrorUI, GalleryWithItem, InfoUI, SmallSeparator
 
 
 # UI Classes
@@ -18,7 +18,7 @@ class AvatarView(discord.ui.LayoutView):
             mention = f"{target.mention}'s"
 
         text_display = discord.ui.TextDisplay(f"**{mention} Avatar**")
-        media_gallery = discord.ui.MediaGallery(discord.MediaGalleryItem(target.display_avatar.url))
+        media_gallery = GalleryWithItem(target.display_avatar.url)
 
         if target.avatar is not None:
             formats = (
@@ -73,7 +73,7 @@ class BannerView(discord.ui.LayoutView):
 
         banner_url = fetched_user.banner.url if fetched_user.banner else ""
 
-        media_gallery = discord.ui.MediaGallery(discord.MediaGalleryItem(banner_url))
+        media_gallery = GalleryWithItem(banner_url)
 
         if fetched_user.banner:
             formats = (
