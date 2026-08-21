@@ -233,14 +233,9 @@ class WelcomeCog(
             "b2_label": b2_label,
         }
 
-    @commands.Cog.listener()
-    async def on_member_join(self, member: discord.Member) -> None:
-        config = await self.get_welcome_config(member.guild.id)
-        if config is None or config["channel"] is None:
-            return
-
-        text = config["message"] or f"Welcome, {member.mention}!"
-        text = text.replace("{member}", member.mention)
+    def _build_welcome_ui(self, config: dict[str, str], target_member: discord.Member | discord.User) -> ResponseUI:
+        text = config["message"] or f"Welcome, {target_member.mention}!"
+        text = text.replace("{member}", target_member.mention)
 
         view = ResponseUI(text)
 
@@ -267,6 +262,37 @@ class WelcomeCog(
 
         if buttons:
             view.container.add_item(discord.ui.ActionRow(*buttons))
+
+        return view
+
+    @app_commands.command(
+        name="preview",
+        description="Preview what the configured welcome notification looks like.",
+    )
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def preview(self, interaction: discord.Interaction) -> None:
+        if not interaction.guild:
+            return
+
+        await interaction.response.defer()
+
+        config = await self.get_welcome_config(interaction.guild.id)
+        if config is None or config["channel"] is None:
+            await interaction.edit_original_response(
+                view=ErrorUI("**No welcome configuration found. Use `/welcome channel` and `/welcome config` first.**"),
+            )
+            return
+
+        view = self._build_welcome_ui(config, interaction.user)
+        await interaction.edit_original_response(view=view)
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member: discord.Member) -> None:
+        config = await self.get_welcome_config(member.guild.id)
+        if config is None or config["channel"] is None:
+            return
+
+        view = self._build_welcome_ui(config, member)
 
         try:
             await config["channel"].send(view=view)
