@@ -122,6 +122,12 @@ class WelcomeCog(
         b2_url="Optional second button URL.",
         b2_label="Label for the second button (defaults to 'Link 2').",
     )
+    @app_commands.rename(
+        b1_url="button_1_url",
+        b1_label="button_1_label",
+        b2_url="button_2_url",
+        b2_label="button_2_label",
+    )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def config(
         self,
