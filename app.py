@@ -94,6 +94,11 @@ def docs_page(slug):
     )
 
 
+@app.errorhandler(404)
+def not_found(error):
+    return render_template("404.html", active=None, theme=THEME, links=LINKS), 404
+
+
 if __name__ == "__main__":
     start_bot()
 
