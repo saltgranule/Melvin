@@ -133,6 +133,40 @@ body {
     padding: 6px 10px;
 }
 
+.docs-notice {
+    margin-top: 28px;
+    padding-top: 20px;
+}
+
+.docs-notice p {
+    color: #6b675f;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 12px;
+}
+
+.docs-notice-btn {
+    display: inline-block;
+    background: #252422;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 16px;
+    border-radius: 10px;
+    border-bottom: 3px solid #4a473f;
+    transition: transform 100ms ease, border-bottom-width 100ms ease;
+}
+
+.docs-notice-btn:hover {
+    opacity: 0.9;
+}
+
+.docs-notice-btn:active {
+    border-bottom-width: 1px;
+    transform: translateY(2px);
+}
+
 .docs-content {
     flex: 1;
     min-width: 0;
