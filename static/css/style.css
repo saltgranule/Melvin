@@ -1,0 +1,84 @@
+@import url('https://fonts.cdnfonts.com/css/arcon');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #ffffff;
+    font-family: 'Arcon', sans-serif;
+    color: #252422;
+}
+
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    padding: 0 24px;
+    background: #252422;
+    border-bottom: 1px solid #38362f;
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.navbar-logo {
+    height: 28px;
+    width: auto;
+    display: block;
+}
+
+.navbar-links {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-right: auto;
+    margin-left: 40px;
+}
+
+.navbar-link {
+    color: #a8a49c;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 6px 0;
+    border-bottom: 2px solid transparent;
+    transition: color 150ms ease, border-color 150ms ease;
+}
+
+.navbar-link:hover {
+    color: #e8e6e3;
+}
+
+.navbar-link.is-active {
+    color: #e8e6e3;
+}
+
+.navbar-cta {
+    background: var(--primary);
+    color: #252422;
+    border: none;
+    border-bottom: 3px solid #b9762c;
+    border-radius: 10px;
+    padding: 8px 18px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 100ms ease, border-bottom-width 100ms ease;
+}
+
+.navbar-cta:hover {
+    opacity: 0.9;
+}
+
+.navbar-cta:active {
+    border-bottom-width: 1px;
+    transform: translateY(2px);
+}
