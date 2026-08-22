@@ -23,11 +23,40 @@
         <div class="navbar-links">
             <a href="/" class="navbar-link {{ 'is-active' if active == 'home' else '' }}">Home</a>
             <a href="/docs" class="navbar-link {{ 'is-active' if active == 'docs' else '' }}">Docs</a>
-            <a href="https://github.com/saltgranule/Melvin" class="navbar-link">Github</a>
+            <a href="{{ links.github }}" class="navbar-link">Github</a>
         </div>
-        <button class="navbar-cta" type="button">Add Melvin</button>
+        <a href="{{ links.invite }}" class="navbar-cta">Add Melvin</a>
     </nav>
 
-    {% block content %}{% endblock %}
+    <main class="page-main">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-main">
+            <div class="footer-brand-col">
+                <a href="/" class="footer-brand">
+                    <img src="{{ url_for('static', filename='media/MelvinLogo.png') }}" alt="Melvin" class="footer-logo">
+                </a>
+                <p class="footer-tagline">A discord.py bot for moderation, utilities, and more, currently in open beta.</p>
+            </div>
+
+            <div class="footer-col">
+                <h4 class="footer-heading">Site</h4>
+                <a href="/" class="footer-link">Home</a>
+                <a href="/docs" class="footer-link">Docs</a>
+            </div>
+
+            <div class="footer-col">
+                <h4 class="footer-heading">Community</h4>
+                <a href="{{ links.invite }}" class="footer-link">Support Server</a>
+                <a href="{{ links.github }}" class="footer-link">GitHub</a>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <span>Melvin</span>
+        </div>
+    </footer>
 </body>
 </html>

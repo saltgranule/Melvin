@@ -4,8 +4,14 @@ from pathlib import Path
 
 import markdown
 from flask import Flask, abort, render_template
-
-from globals import PRIMARY, QUATERNARY, SECONDARY, TERTIARY
+from globals import (
+    PRIMARY,
+    SECONDARY,
+    TERTIARY,
+    QUATERNARY,
+    INVITE_URL,
+    MELVIN_GITHUB_URL,
+)
 
 app = Flask(__name__)
 
@@ -14,15 +20,20 @@ bot_process = None
 
 
 def start_bot():
+    """Launch main.py (the Discord bot) as a child process."""
     global bot_process
     bot_process = subprocess.Popen([sys.executable, "main.py"])
-
 
 THEME = {
     "primary": PRIMARY,
     "secondary": SECONDARY,
     "tertiary": TERTIARY,
     "quaternary": QUATERNARY,
+}
+
+LINKS = {
+    "invite": INVITE_URL,
+    "github": MELVIN_GITHUB_URL,
 }
 
 
@@ -51,7 +62,7 @@ def render_doc(slug):
 
 @app.route("/")
 def home():
-    return render_template("index.html", active="home", theme=THEME)
+    return render_template("index.html", active="home", theme=THEME, links=LINKS)
 
 
 @app.route("/docs")
@@ -60,6 +71,7 @@ def docs_index():
         "docs.html",
         active="docs",
         theme=THEME,
+        links=LINKS,
         docs=get_docs_list(),
         content=None,
         active_slug=None,
@@ -75,6 +87,7 @@ def docs_page(slug):
         "docs.html",
         active="docs",
         theme=THEME,
+        links=LINKS,
         docs=get_docs_list(),
         content=content,
         active_slug=slug,
