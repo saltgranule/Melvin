@@ -1,4 +1,5 @@
-<img width="1500" height="500" alt="MYBANNER" src="https://github.com/user-attachments/assets/69ad2d7e-1261-41ac-ad8c-aa7156391ecf" />
+<img width="5943" height="3967" alt="amanda-frank-e4ING8JYKgI-unsplash" src="https://github.com/user-attachments/assets/3bf10ab4-1206-456f-8837-1511bbce186d" />
+
 
 
 
