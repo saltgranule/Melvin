@@ -42,6 +42,7 @@ LINKS = {
 
 GITHUB_REPO = "saltgranule/Melvin"
 GITHUB_API = f"https://api.github.com/repos/{GITHUB_REPO}"
+HIDDEN_CONTRIBUTORS = {"replit-agent"}
 REPO_META_TTL = 600  # seconds
 _repo_meta_cache = {"data": None, "fetched_at": 0}
 
@@ -91,6 +92,7 @@ def get_repo_meta():
             }
             for c in raw_contributors
             if c.get("type") == "User"
+            and c.get("login", "").lower() not in HIDDEN_CONTRIBUTORS
         ]
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError):
         pass
