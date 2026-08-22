@@ -83,8 +83,6 @@ body {
     transform: translateY(2px);
 }
 
-/* Docs */
-
 .docs-layout {
     display: flex;
     align-items: flex-start;
@@ -316,7 +314,6 @@ body {
         flex: 1 1 auto;
         width: 100%;
         border-right: none;
-        border-bottom: 1px solid #e5e3df;
         padding-right: 0;
         padding-bottom: 20px;
     }
