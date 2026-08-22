@@ -21,6 +21,20 @@ body {
     flex-direction: column;
 }
 
+a {
+    color: var(--primary);
+}
+
+::selection {
+    background: var(--primary);
+    color: #252422;
+}
+
+::-moz-selection {
+    background: var(--primary);
+    color: #252422;
+}
+
 .navbar {
     display: flex;
     align-items: center;
@@ -166,8 +180,6 @@ body {
     color: #6b675f;
 }
 
-/* Home */
-
 .hero {
     display: flex;
     align-items: center;
@@ -199,7 +211,6 @@ body {
 }
 
 .hero-subtitle a {
-    color: var(--quaternary);
     text-decoration: none;
 }
 
@@ -454,10 +465,6 @@ body {
 
 .docs-content li {
     margin-bottom: 4px;
-}
-
-.docs-content a {
-    color: var(--quaternary);
 }
 
 .docs-content code {
