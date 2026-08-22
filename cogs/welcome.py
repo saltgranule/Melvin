@@ -11,6 +11,153 @@ from ui import ErrorUI, ExceptionUI, GalleryWithItem, PositiveUI, ResponseUI
 log = logging.getLogger(__name__)
 
 
+class ConfigModal(discord.ui.Modal, title="Welcome Configuration"):
+    def __init__(
+        self,
+        bot: commands.Bot,
+        db_path: str,
+        text: str,
+        current_config: dict | None,
+    ) -> None:
+        super().__init__()
+        self.bot = bot
+        self.db_path = db_path
+        self.text = text
+
+        # Retrieve existing settings for defaults
+        b1_url_def = (current_config.get("b1_url") if current_config else None) or ""
+        b1_label_def = (current_config.get("b1_label") if current_config else None) or ""
+        b2_url_def = (current_config.get("b2_url") if current_config else None) or ""
+        b2_label_def = (current_config.get("b2_label") if current_config else None) or ""
+
+        self._attachment_image = discord.ui.FileUpload()
+        self.attachment_image = discord.ui.Label(
+            text="Welcome Image",
+            description="Optional image to attach to the welcome message.",
+            component=self._attachment_image,
+        )
+
+        self._button1_url = discord.ui.TextInput(default=b1_url_def, required=False)
+        self.button1_url = discord.ui.Label(
+            text="Button 1 URL",
+            description="Optional first button URL.",
+            component=self._button1_url,
+        )
+        self._button1_text = discord.ui.TextInput(
+            default=b1_label_def,
+            placeholder="Defaults to 'Link 1'.",
+            required=False,
+        )
+        self.button1_text = discord.ui.Label(
+            text="Button 1 Label",
+            description="Label for the first button.",
+            component=self._button1_text,
+        )
+
+        self._button2_url = discord.ui.TextInput(default=b2_url_def, required=False)
+        self.button2_url = discord.ui.Label(
+            text="Button 2 URL",
+            description="Optional second button URL.",
+            component=self._button2_url,
+        )
+        self._button2_text = discord.ui.TextInput(
+            default=b2_label_def,
+            placeholder="Defaults to 'Link 2'.",
+            required=False,
+        )
+        self.button2_text = discord.ui.Label(
+            text="Button 2 Label",
+            description="Label for the second button.",
+            component=self._button2_text,
+        )
+
+        for item in [
+            self.attachment_image,
+            self.button1_url,
+            self.button1_text,
+            self.button2_url,
+            self.button2_text,
+        ]:
+            self.add_item(item)
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if not interaction.guild:
+            return
+
+        await interaction.response.defer()
+
+        # Extract values from components
+        b1_url = str(self._button1_url.value).strip() or None
+        b1_label = str(self._button1_text.value).strip() or "Link 1"
+        b2_url = str(self._button2_url.value).strip() or None
+        b2_label = str(self._button2_text.value).strip() or "Link 2"
+
+        # Handle attachment file upload if provided
+        attachment_url = None
+        if self._attachment_image.values:
+            uploaded_file = self._attachment_image.values[0]
+            attachment_url = getattr(uploaded_file, "url", None)
+
+        # URL Validation
+        for url in (b1_url, b2_url):
+            if url and not url.startswith(("http://", "https://")):
+                await interaction.edit_original_response(
+                    view=ErrorUI("All button URLs must be valid HTTP or HTTPS links."),
+                )
+                return
+
+        try:
+            async with (
+                aiosqlite.connect(self.db_path) as conn,
+                conn.execute(
+                    "SELECT channel_id FROM welcome_channels WHERE guild_id = ?",
+                    (str(interaction.guild.id),),
+                ) as cursor,
+            ):
+                row = await cursor.fetchone()
+            existing_channel_id = row[0] if row else None
+        except Exception:
+            log.exception("Database error while fetching channel")
+            await interaction.edit_original_response(view=ExceptionUI())
+            return
+
+        if existing_channel_id is None:
+            await interaction.edit_original_response(
+                view=ErrorUI(
+                    "**Set a welcome channel first using `/welcome channel`.**",
+                ),
+            )
+            return
+
+        try:
+            async with aiosqlite.connect(self.db_path) as conn:
+                await conn.execute(
+                    """
+                    INSERT OR REPLACE INTO welcome_channels
+                    (guild_id, channel_id, message, attachment_url, b1_url, b1_label, b2_url, b2_label)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        str(interaction.guild.id),
+                        existing_channel_id,
+                        self.text,
+                        attachment_url,
+                        b1_url,
+                        b1_label,
+                        b2_url,
+                        b2_label,
+                    ),
+                )
+                await conn.commit()
+        except Exception:
+            log.exception("Database error")
+            await interaction.followup.send(view=ExceptionUI())
+            return
+
+        view = PositiveUI(title="Welcome Config Set", subtitle="Welcome message updated.")
+        await interaction.edit_original_response(view=view)
+
+
 @app_commands.guild_only
 class WelcomeCog(
     commands.GroupCog,
@@ -52,6 +199,7 @@ class WelcomeCog(
         elif isinstance(error, app_commands.NoPrivateMessage):
             msg = "**This command can only be used in a server.**"
         else:
+            log.error(error)
             msg = ERROR_MESSAGE
 
         error_ui = ErrorUI(msg)
@@ -59,38 +207,6 @@ class WelcomeCog(
             await interaction.edit_original_response(view=error_ui)
         else:
             await interaction.response.send_message(view=error_ui, ephemeral=False)
-
-    @app_commands.command(
-        name="channel",
-        description="Set the channel for member join events.",
-    )
-    @app_commands.describe(channel="The channel to send welcome messages to.")
-    @app_commands.checks.has_permissions(manage_guild=True)
-    async def channel(
-        self,
-        interaction: discord.Interaction,
-        channel: discord.TextChannel,
-    ) -> None:
-        if not interaction.guild:
-            return
-        await interaction.response.defer()
-
-        try:
-            async with aiosqlite.connect(self.db_path) as conn:
-                await conn.execute(
-                    """
-                    INSERT OR REPLACE INTO welcome_channels (guild_id, channel_id)
-                    VALUES (?, ?)
-                    """,
-                    (str(interaction.guild.id), str(channel.id)),
-                )
-                await conn.commit()
-        except Exception:
-            log.exception("failed to set welcome channel in guild %s", interaction.guild.id)
-            await interaction.followup.send(view=ExceptionUI())
-            return
-        view = PositiveUI(title="Welcome Channel Set", subtitle=f"**Welcome channel set to {channel.mention}.**")
-        await interaction.followup.send(view=view)
 
     async def get_log_channel(self, guild_id: int) -> discord.abc.GuildChannel | discord.Thread | discord.abc.PrivateChannel | None:
         try:
@@ -109,101 +225,6 @@ class WelcomeCog(
             return None
 
         return self.bot.get_channel(int(row[0]))
-
-    @app_commands.command(
-        name="config",
-        description="Set the welcome message and optional attachments or buttons.",
-    )
-    @app_commands.describe(
-        text="The welcome message to send (use {member} to mention the new member).",
-        attachment_url="Optional image URL to attach to the welcome message.",
-        b1_url="Optional first button URL.",
-        b1_label="Label for the first button (defaults to 'Link').",
-        b2_url="Optional second button URL.",
-        b2_label="Label for the second button (defaults to 'Link 2').",
-    )
-    @app_commands.rename(
-        b1_url="button_1_url",
-        b1_label="button_1_label",
-        b2_url="button_2_url",
-        b2_label="button_2_label",
-    )
-    @app_commands.checks.has_permissions(manage_guild=True)
-    async def config(
-        self,
-        interaction: discord.Interaction,
-        text: str,
-        attachment_url: str | None = None,
-        b1_url: str | None = None,
-        b1_label: str | None = None,
-        b2_url: str | None = None,
-        b2_label: str | None = None,
-    ) -> None:
-        if not interaction.guild:
-            return
-
-        await interaction.response.defer()
-
-        for url in (attachment_url, b1_url, b2_url):
-            if url and not url.startswith(("http://", "https://")):
-                await interaction.edit_original_response(
-                    view=ErrorUI("All URLs must be valid HTTP or HTTPS links."),
-                )
-                return
-
-        try:
-            # Make sure the table exists even if cog_load did not run.
-            await self._ensure_db()
-            async with (
-                aiosqlite.connect(self.db_path) as conn,
-                conn.execute(
-                    "SELECT channel_id FROM welcome_channels WHERE guild_id = ?",
-                    (str(interaction.guild.id),),
-                ) as cursor,
-            ):
-                row = await cursor.fetchone()
-            existing_channel_id = row[0] if row else None
-        except Exception:
-            log.exception("Database error")
-            await interaction.edit_original_response(view=ExceptionUI())
-            return
-
-        # Config requires a channel, but the database may legitimately have no row yet.
-        if existing_channel_id is None:
-            await interaction.edit_original_response(
-                view=ErrorUI(
-                    "**Set a welcome channel first using `/welcome channel`.**",
-                ),
-            )
-            return
-
-        try:
-            async with aiosqlite.connect(self.db_path) as conn:
-                await conn.execute(
-                    """
-                    INSERT OR REPLACE INTO welcome_channels
-                    (guild_id, channel_id, message, attachment_url, b1_url, b1_label, b2_url, b2_label)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        str(interaction.guild.id),
-                        existing_channel_id,
-                        text,
-                        attachment_url,
-                        b1_url,
-                        b1_label or "Link",
-                        b2_url,
-                        b2_label or "Link 2",
-                    ),
-                )
-                await conn.commit()
-        except Exception:
-            log.exception("Database error")
-            await interaction.followup.send(view=ExceptionUI())
-            return
-
-        view = PositiveUI(title="Updated", subtitle="**Welcome message updated.**")
-        await interaction.edit_original_response(view=view)
 
     async def get_welcome_config(self, guild_id: int) -> dict | None:
         try:
@@ -266,6 +287,33 @@ class WelcomeCog(
         return view
 
     @app_commands.command(
+        name="config",
+        description="Set the welcome message and optional attachments or buttons via modal.",
+    )
+    @app_commands.describe(
+        text="The welcome message to send (use {member} to mention the new member).",
+    )
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def config(
+        self,
+        interaction: discord.Interaction,
+        text: str,
+    ) -> None:
+        if not interaction.guild:
+            return
+
+        await self._ensure_db()
+        current_config = await self.get_welcome_config(interaction.guild.id)
+
+        modal = ConfigModal(
+            bot=self.bot,
+            db_path=self.db_path,
+            text=text,
+            current_config=current_config,
+        )
+        await interaction.response.send_modal(modal)
+
+    @app_commands.command(
         name="preview",
         description="Preview what the configured welcome notification looks like.",
     )
@@ -285,6 +333,38 @@ class WelcomeCog(
 
         view = self._build_welcome_ui(config, interaction.user)
         await interaction.edit_original_response(view=view)
+
+    @app_commands.command(
+        name="channel",
+        description="Set the channel for member join events.",
+    )
+    @app_commands.describe(channel="The channel to send welcome messages to.")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def channel(
+        self,
+        interaction: discord.Interaction,
+        channel: discord.TextChannel,
+    ) -> None:
+        if not interaction.guild:
+            return
+        await interaction.response.defer()
+
+        try:
+            async with aiosqlite.connect(self.db_path) as conn:
+                await conn.execute(
+                    """
+                    INSERT OR REPLACE INTO welcome_channels (guild_id, channel_id)
+                    VALUES (?, ?)
+                    """,
+                    (str(interaction.guild.id), str(channel.id)),
+                )
+                await conn.commit()
+        except Exception:
+            log.exception("failed to set welcome channel in guild %s", interaction.guild.id)
+            await interaction.followup.send(view=ExceptionUI())
+            return
+        view = PositiveUI(title="Welcome Channel Set", subtitle=f"**Welcome channel set to {channel.mention}.**")
+        await interaction.followup.send(view=view)
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:

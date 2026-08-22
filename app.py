@@ -2,7 +2,8 @@ import subprocess
 import sys
 
 from flask import Flask, render_template
-from globals import PRIMARY, SECONDARY, TERTIARY, QUATERNARY
+
+from globals import PRIMARY, QUATERNARY, SECONDARY, TERTIARY
 
 app = Flask(__name__)
 
@@ -12,6 +13,7 @@ bot_process = None
 def start_bot():
     global bot_process
     bot_process = subprocess.Popen([sys.executable, "main.py"])
+
 
 THEME = {
     "primary": PRIMARY,

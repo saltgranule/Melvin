@@ -12,9 +12,9 @@ from globals import (
     MELVIN_MISC_EMOJI,
     MELVIN_WARN_EMOJI,
     PRIMARY,
+    QUATERNARY,
     SECONDARY,
     TERTIARY,
-    QUATERNARY,
 )
 
 
