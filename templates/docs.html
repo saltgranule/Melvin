@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="docs-layout">
+    <aside class="docs-sidebar">
+        <div class="docs-search">
+            <svg class="docs-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+                <path d="M20 20L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <input type="text" id="docs-search-input" class="docs-search-input" placeholder="Search docs..." autocomplete="off">
+            <kbd class="docs-search-kbd">/</kbd>
+        </div>
+
+        <ul class="docs-list" id="docs-list">
+            {% for doc in docs %}
+            <li data-title="{{ doc.title | lower }}">
+                <a href="{{ url_for('docs_page', slug=doc.slug) }}"
+                   class="docs-list-item {{ 'is-active' if doc.slug == active_slug else '' }}">
+                    {{ doc.title }}
+                </a>
+            </li>
+            {% else %}
+            <li class="docs-list-empty">No docs yet.</li>
+            {% endfor %}
+        </ul>
+        <p class="docs-search-empty" id="docs-search-empty" hidden>No docs match "<span id="docs-search-empty-term"></span>".</p>
+
+        <div class="docs-notice">
+            <p>You can contribute to the documentation in our repo, which you can find below.</p>
+            <a href="https://github.com/saltgranule/Melvin" class="docs-notice-btn">GitHub</a>
+        </div>
+    </aside>
+
+    <main class="docs-content">
+        {% if content %}
+            {{ content | safe }}
+        {% else %}
+            <p class="docs-placeholder">Select a doc from the list to read it.</p>
+        {% endif %}
+    </main>
+</div>
+
+<script>
+    (function () {
+        var input = document.getElementById("docs-search-input");
+        var items = Array.prototype.slice.call(document.querySelectorAll("#docs-list > li[data-title]"));
+        var emptyState = document.getElementById("docs-search-empty");
+        var emptyTerm = document.getElementById("docs-search-empty-term");
+
+        function filter() {
+            var query = input.value.trim().toLowerCase();
+            var visibleCount = 0;
+
+            items.forEach(function (item) {
+                var match = item.getAttribute("data-title").indexOf(query) !== -1;
+                item.hidden = !match;
+                if (match) visibleCount += 1;
+            });
+
+            if (query && visibleCount === 0) {
+                emptyTerm.textContent = input.value.trim();
+                emptyState.hidden = false;
+            } else {
+                emptyState.hidden = true;
+            }
+        }
+
+        input.addEventListener("input", filter);
+
+        // "/" to focus, like GitHub/Linear/Slack. Ctrl/Cmd+K as the
+        // secondary industry-standard shortcut (Stripe, Algolia, VS Code).
+        document.addEventListener("keydown", function (event) {
+            var isTypingElsewhere = ["INPUT", "TEXTAREA"].indexOf(document.activeElement.tagName) !== -1;
+            var isCmdK = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
+            var isSlash = event.key === "/" && !isTypingElsewhere;
+
+            if (isCmdK || isSlash) {
+                event.preventDefault();
+                input.focus();
+                input.select();
+            } else if (event.key === "Escape" && document.activeElement === input) {
+                input.value = "";
+                filter();
+                input.blur();
+            }
+        });
+    })();
+</script>
+{% endblock %}
