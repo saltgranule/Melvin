@@ -5,3 +5,4 @@ aiodns
 faust-cchardet
 ddgs
 python-dotenv
+markdown

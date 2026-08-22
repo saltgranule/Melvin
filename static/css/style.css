@@ -82,3 +82,134 @@ body {
     border-bottom-width: 1px;
     transform: translateY(2px);
 }
+
+/* Docs */
+
+.docs-layout {
+    display: flex;
+    align-items: flex-start;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    gap: 40px;
+}
+
+.docs-sidebar {
+    flex: 0 0 220px;
+    border-right: 1px solid #e5e3df;
+    padding-right: 24px;
+}
+
+.docs-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.docs-list-item {
+    display: block;
+    color: #6b675f;
+    text-decoration: none;
+    font-size: 14px;
+    padding: 6px 10px;
+    border-radius: 6px;
+}
+
+.docs-list-item:hover {
+    color: #252422;
+    background: #f4f3f0;
+}
+
+.docs-list-item.is-active {
+    color: #252422;
+    background: #f4f3f0;
+    font-weight: 600;
+}
+
+.docs-list-empty {
+    color: #a8a49c;
+    font-size: 14px;
+    padding: 6px 10px;
+}
+
+.docs-content {
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
+    line-height: 1.65;
+}
+
+.docs-placeholder {
+    color: #a8a49c;
+}
+
+.docs-content h1 {
+    font-size: 26px;
+    margin-bottom: 16px;
+}
+
+.docs-content h2 {
+    font-size: 19px;
+    margin: 28px 0 12px;
+}
+
+.docs-content h3 {
+    font-size: 16px;
+    margin: 20px 0 8px;
+}
+
+.docs-content p {
+    margin-bottom: 14px;
+}
+
+.docs-content ul,
+.docs-content ol {
+    margin: 0 0 14px 20px;
+}
+
+.docs-content li {
+    margin-bottom: 4px;
+}
+
+.docs-content a {
+    color: var(--quaternary);
+}
+
+.docs-content code {
+    background: #f4f3f0;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.docs-content pre {
+    background: #f4f3f0;
+    padding: 14px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin-bottom: 14px;
+}
+
+.docs-content pre code {
+    background: none;
+    padding: 0;
+}
+
+.docs-content table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 14px;
+}
+
+.docs-content th,
+.docs-content td {
+    border: 1px solid #e5e3df;
+    padding: 8px 10px;
+    text-align: left;
+    font-size: 14px;
+}
+
+.docs-content th {
+    background: #f4f3f0;
+}
