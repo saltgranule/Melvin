@@ -31,7 +31,12 @@ class AdUI(discord.ui.LayoutView):
             style=discord.ButtonStyle.link,
             url="https://github.com/saltgranule/Melvin",
         )
-        action_row = discord.ui.ActionRow(adbutton, addbutton, gitbutton)
+        webbutton = discord.ui.Button(
+            label="Website",
+            style=discord.ButtonStyle.link,
+            url="https://justmelvin.site",
+        )
+        action_row = discord.ui.ActionRow(adbutton, addbutton, gitbutton, webbutton)
         content_container = discord.ui.Container(
             self.text_display,
             SmallSeparator(),

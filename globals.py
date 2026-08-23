@@ -13,7 +13,7 @@ MELVIN_CHECK_EMOJI = "<:Check:1540114143955386438>"
 INVITE_URL = "https://discord.gg/PfyKM7dyx4"
 ERROR_CHANNEL = 1536683441616064532
 ERROR_MESSAGE = f"**Something went wrong with that. Please [join the support server]({INVITE_URL}) to report this issue.**"
-MELVIN_BANNER = "https://cdn.discordapp.com/attachments/1537874702146469988/1540087619692527616/AdBanner.png?ex=6a88addd&is=6a875c5d&hm=834e8338f1e7959e832864696f569518dc115fd6161d133df659e9bf878da0cc&"
+MELVIN_BANNER = "https://cdn.discordapp.com/attachments/1537874702146469988/1541048056751849512/image.png?ex=6a8c2c58&is=6a8adad8&hm=a13f54c4349d9a4d2672fd6b90b544ca5b00d27964c28891d56a0e49e00cead1&"
 MELVIN_HELP_BANNER = "https://cdn.discordapp.com/attachments/1537874702146469988/1540084821462884475/MNBCMD.png?ex=6a88ab42&is=6a8759c2&hm=9d4c248fff8eda006f93ae87e8965c00f5afdefd017b185e935edf7f3e663f9d&"
 MELVIN_GITHUB_URL = "https://github.com/saltgranule/Melvin"
 
