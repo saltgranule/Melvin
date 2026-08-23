@@ -43,7 +43,7 @@ LINKS = {
 GITHUB_REPO = "saltgranule/Melvin"
 GITHUB_API = f"https://api.github.com/repos/{GITHUB_REPO}"
 HIDDEN_CONTRIBUTORS = {"replit-agent"}
-REPO_META_TTL = 600  # seconds
+REPO_META_TTL = 600
 _repo_meta_cache = {"data": None, "fetched_at": 0}
 
 
@@ -61,7 +61,7 @@ def _github_get(path):
         return json.load(response)
 
 
-def format_star_count(count):
+def format_count(count):
     if count >= 1000:
         return f"{count / 1000:.1f}".rstrip("0").rstrip(".") + "k"
     return str(count)
@@ -98,7 +98,7 @@ def get_repo_meta():
         pass
 
     data = {
-        "star_count": format_star_count(star_count),
+        "star_count": format_count(star_count),
         "contributors": contributors[:6],
         "extra_contributors": max(0, len(contributors) - 6),
     }
@@ -106,6 +106,24 @@ def get_repo_meta():
     _repo_meta_cache["data"] = data
     _repo_meta_cache["fetched_at"] = now
     return data
+
+
+BOT_STATS_FILE = Path(app.root_path) / "data" / "bot_stats.json"
+
+
+def get_bot_stats():
+    try:
+        raw = json.loads(BOT_STATS_FILE.read_text(encoding="utf-8"))
+        guild_count = int(raw.get("guild_count", 0))
+        member_count = int(raw.get("member_count", 0))
+    except (FileNotFoundError, ValueError, OSError):
+        guild_count = 0
+        member_count = 0
+
+    return {
+        "guild_count": format_count(guild_count),
+        "member_count": format_count(member_count),
+    }
 
 
 def get_docs_list():
@@ -139,6 +157,7 @@ def home():
         theme=THEME,
         links=LINKS,
         repo=get_repo_meta(),
+        stats=get_bot_stats(),
     )
 
 
