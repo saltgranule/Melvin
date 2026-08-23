@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="hero">
+<section class="hero section-container">
     <div class="hero-text">
         <h1 class="hero-title">404</h1>
         <p class="hero-subtitle">
@@ -21,5 +21,8 @@
         </div>
     </div>
 
+    <div class="hero-logo-wrap">
+        <img src="{{ url_for('static', filename='media/MelvinLogo.png') }}" alt="Melvin" class="hero-logo">
+    </div>
 </section>
 {% endblock %}
