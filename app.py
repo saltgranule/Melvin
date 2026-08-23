@@ -9,13 +9,14 @@ from pathlib import Path
 
 import markdown
 from flask import Flask, abort, render_template
+
 from globals import (
-    PRIMARY,
-    SECONDARY,
-    TERTIARY,
-    QUATERNARY,
     INVITE_URL,
     MELVIN_GITHUB_URL,
+    PRIMARY,
+    QUATERNARY,
+    SECONDARY,
+    TERTIARY,
 )
 
 app = Flask(__name__)
@@ -27,6 +28,7 @@ bot_process = None
 def start_bot():
     global bot_process
     bot_process = subprocess.Popen([sys.executable, "main.py"])
+
 
 THEME = {
     "primary": PRIMARY,
