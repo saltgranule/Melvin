@@ -9,13 +9,14 @@ from pathlib import Path
 
 import markdown
 from flask import Flask, abort, render_template
+
 from globals import (
-    PRIMARY,
-    SECONDARY,
-    TERTIARY,
-    QUATERNARY,
     INVITE_URL,
     MELVIN_GITHUB_URL,
+    PRIMARY,
+    QUATERNARY,
+    SECONDARY,
+    TERTIARY,
 )
 
 app = Flask(__name__)
@@ -24,9 +25,10 @@ DOCS_DIR = Path(app.root_path) / "docs"
 bot_process = None
 
 
-def start_bot():
+def start_bot() -> None:
     global bot_process
     bot_process = subprocess.Popen([sys.executable, "main.py"])
+
 
 THEME = {
     "primary": PRIMARY,
@@ -47,7 +49,7 @@ REPO_META_TTL = 600
 _repo_meta_cache = {"data": None, "fetched_at": 0}
 
 
-def _github_get(path):
+def _github_get(path: str) -> None:
     headers = {
         "Accept": "application/vnd.github+json",
         "User-Agent": "Melvin-Frontend",
@@ -61,13 +63,13 @@ def _github_get(path):
         return json.load(response)
 
 
-def format_count(count):
+def format_count(count: int) -> str:
     if count >= 1000:
         return f"{count / 1000:.1f}".rstrip("0").rstrip(".") + "k"
     return str(count)
 
 
-def get_repo_meta():
+def get_repo_meta() -> int | dict:
     now = time.time()
     cached = _repo_meta_cache["data"]
     if cached is not None and now - _repo_meta_cache["fetched_at"] < REPO_META_TTL:
@@ -111,7 +113,7 @@ def get_repo_meta():
 BOT_STATS_FILE = Path(app.root_path) / "data" / "bot_stats.json"
 
 
-def get_bot_stats():
+def get_bot_stats() -> dict[str, str]:
     try:
         raw = json.loads(BOT_STATS_FILE.read_text(encoding="utf-8"))
         guild_count = int(raw.get("guild_count", 0))
@@ -126,7 +128,7 @@ def get_bot_stats():
     }
 
 
-def get_docs_list():
+def get_docs_list() -> list[str]:
     if not DOCS_DIR.is_dir():
         return []
 
@@ -141,7 +143,7 @@ def get_docs_list():
     return docs
 
 
-def render_doc(slug):
+def render_doc(slug: str) -> str | None:
     path = DOCS_DIR / f"{slug}.md"
     if not path.is_file():
         return None
@@ -150,7 +152,7 @@ def render_doc(slug):
 
 
 @app.route("/")
-def home():
+def home() -> None:
     return render_template(
         "index.html",
         active="home",
@@ -162,7 +164,7 @@ def home():
 
 
 @app.route("/docs")
-def docs_index():
+def docs_index() -> None:
     return render_template(
         "docs.html",
         active="docs",
@@ -175,7 +177,7 @@ def docs_index():
 
 
 @app.route("/docs/<slug>")
-def docs_page(slug):
+def docs_page(slug: str) -> None:
     content = render_doc(slug)
     if content is None:
         abort(404)
@@ -191,7 +193,7 @@ def docs_page(slug):
 
 
 @app.errorhandler(404)
-def not_found(error):
+def not_found(error) -> tuple:
     return render_template("404.html", active=None, theme=THEME, links=LINKS), 404
 
 

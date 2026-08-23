@@ -3,18 +3,23 @@ import json
 import logging
 import os
 from pathlib import Path
+
 import aiodns
 import discord
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
+
 from globals import DisplayNameEffect, DisplayNameFont
 from ui import HelpView
+
 logging.basicConfig(level=logging.INFO)
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 log = logging.getLogger(__name__)
 STATS_FILE = Path(__file__).parent / "data" / "bot_stats.json"
+
+
 class Melvin(commands.Bot):
     def __init__(self) -> None:
         super().__init__(
@@ -30,6 +35,7 @@ class Melvin(commands.Bot):
                 user=True,
             ),
         )
+
     async def set_name_style(
         self,
         *,
@@ -47,6 +53,7 @@ class Melvin(commands.Bot):
               "display_name_colors": color_integers,
             },
         )
+
     async def reset_name_style(self, *, guild: discord.Guild) -> None:
         await self.set_name_style(
             guild=guild,
@@ -54,6 +61,7 @@ class Melvin(commands.Bot):
             effect_id=DisplayNameEffect.solid,
             colors=["FFFFFF", "FFFFFF"],
         )
+
     async def setup_hook(self) -> None:
         loop = asyncio.get_running_loop()
         loop.set_debug(True)
@@ -64,25 +72,34 @@ class Melvin(commands.Bot):
         except Exception:
             log.exception("Could not configure DNS resolver")
         log.info("Logging started.")
+
     async def on_ready(self) -> None:
         log.info("Logged in as %s.", self.user)
         await self.tree.sync()
         if not update_stats.is_running():
             update_stats.start()
+
+
 bot = Melvin()
+
+
 @tasks.loop(minutes=5)
 async def update_stats() -> None:
     guild_count = len(bot.guilds)
     member_count = sum(guild.member_count or 0 for guild in bot.guilds)
     STATS_FILE.parent.mkdir(parents=True, exist_ok=True)
     STATS_FILE.write_text(
-        json.dumps({"guild_count": guild_count, "member_count": member_count})
+        json.dumps({"guild_count": guild_count, "member_count": member_count}),
     )
+
+
 @bot.tree.command(name="help", description="Take a peek at Melvin's commands.")
 async def help_command(interaction: discord.Interaction) -> None:
     await interaction.response.defer()
     view = HelpView(bot)
     await interaction.followup.send(view=view)
+
+
 async def main() -> None:
     load_dotenv()
     token = os.getenv("token")
@@ -99,6 +116,9 @@ async def main() -> None:
         await bot.load_extension("cogs.private")
         await bot.load_extension("cogs.timezone")
         await bot.load_extension("cogs.style")
+        await bot.load_extension("cogs.stats")
         await bot.start(token)
+
+
 if __name__ == "__main__":
     asyncio.run(main())
