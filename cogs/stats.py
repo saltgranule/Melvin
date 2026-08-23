@@ -1,6 +1,5 @@
 import datetime
 import logging
-
 import aiosqlite
 import discord
 from discord import app_commands
@@ -10,7 +9,7 @@ from ui import InfoUI
 
 log = logging.getLogger(__name__)
 
-midnight = datetime.time(hour=0, minute=0, second=0)
+midnight = datetime.time(hour=0, minute=0, second=0, tzinfo=datetime.timezone.utc)
 
 
 class StatsCog(commands.Cog):
@@ -18,7 +17,6 @@ class StatsCog(commands.Cog):
         super().__init__()
         self.bot = bot
         self.db_path = "data/stats.db"
-        self.stats_loop.start()
 
     async def cog_unload(self) -> None:
         self.stats_loop.cancel()
@@ -40,6 +38,17 @@ class StatsCog(commands.Cog):
     async def before_daily_task(self) -> None:
         await self.bot.wait_until_ready()
 
+        async with aiosqlite.connect(self.db_path) as conn:
+            async with conn.execute("SELECT COUNT(*) FROM daily_snapshots") as cursor:
+                row = await cursor.fetchone()
+                if row and row[0] == 0:
+                    app = self.bot.application or await self.bot.application_info()
+                    await conn.execute(
+                        "INSERT INTO daily_snapshots (guild_count, user_count) VALUES (?, ?)",
+                        (len(self.bot.guilds), app.approximate_user_install_count or 0),
+                    )
+                    await conn.commit()
+
     async def _ensure_db(self) -> None:
         async with aiosqlite.connect(self.db_path) as conn:
             await conn.execute("""
@@ -59,18 +68,9 @@ class StatsCog(commands.Cog):
             """)
             await conn.commit()
 
-            async with conn.execute("SELECT COUNT(*) FROM daily_snapshots") as cursor:
-                row = await cursor.fetchone()
-                if row and row[0] == 0:
-                    app = self.bot.application or await self.bot.application_info()
-                    await conn.execute(
-                        "INSERT INTO daily_snapshots (guild_count, user_count) VALUES (?, ?)",
-                        (len(self.bot.guilds), app.approximate_user_install_count or 0),
-                    )
-                    await conn.commit()
-
     async def cog_load(self) -> None:
         await self._ensure_db()
+        self.stats_loop.start()
 
     @app_commands.command(
         name="stats",
