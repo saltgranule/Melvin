@@ -1,5 +1,6 @@
 import datetime
 import logging
+
 import aiosqlite
 import discord
 from discord import app_commands
@@ -9,7 +10,7 @@ from ui import InfoUI
 
 log = logging.getLogger(__name__)
 
-midnight = datetime.time(hour=0, minute=0, second=0, tzinfo=datetime.timezone.utc)
+midnight = datetime.time(hour=0, minute=0, second=0, tzinfo=datetime.UTC)
 
 
 class StatsCog(commands.Cog):

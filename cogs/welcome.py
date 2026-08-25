@@ -336,25 +336,42 @@ class WelcomeCog(
 
     @app_commands.command(
         name="channel",
-        description="Set the channel for member join events.",
+        description="Set or reset the channel for member join events.",
     )
-    @app_commands.describe(channel="The channel to send welcome messages to.")
+    @app_commands.describe(channel="The channel to send welcome messages to. Leave empty to reset.")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def channel(
         self,
         interaction: discord.Interaction,
-        channel: discord.TextChannel,
+        channel: discord.TextChannel | None = None,
     ) -> None:
         if not interaction.guild:
             return
         await interaction.response.defer()
 
+        if channel is None:
+            try:
+                async with aiosqlite.connect(self.db_path) as conn:
+                    await conn.execute(
+                        "DELETE FROM welcome_channels WHERE guild_id = ?",
+                        (str(interaction.guild.id),),
+                    )
+                    await conn.commit()
+            except Exception:
+                log.exception("failed to reset welcome channel in guild %s", interaction.guild.id)
+                await interaction.followup.send(view=ExceptionUI())
+                return
+            view = PositiveUI(title="Welcome Channel Reset", subtitle="**Welcome channel settings have been reset.**")
+            await interaction.followup.send(view=view)
+            return
+
         try:
             async with aiosqlite.connect(self.db_path) as conn:
                 await conn.execute(
                     """
-                    INSERT OR REPLACE INTO welcome_channels (guild_id, channel_id)
+                    INSERT INTO welcome_channels (guild_id, channel_id)
                     VALUES (?, ?)
+                    ON CONFLICT(guild_id) DO UPDATE SET channel_id = excluded.channel_id
                     """,
                     (str(interaction.guild.id), str(channel.id)),
                 )
