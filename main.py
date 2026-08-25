@@ -54,6 +54,23 @@ class Melvin(commands.Bot):
             },
         )
 
+    async def get_name_style(self, guild: discord.Guild, /) -> dict:
+        response = await self.http.request(
+            route=discord.http.Route(
+                "GET", "/guilds/{guild_id}/members/{user_id}",
+                guild_id=guild.id,
+                user_id=self.user.id,
+            ),
+        )
+
+        styles = response["display_name_styles"]
+
+        return {
+            "font_id": DisplayNameFont(styles["font_id"]),
+            "effect_id": DisplayNameEffect(styles["effect_id"]),
+            "colors": [f"{color:06x}" for color in styles["colors"]],
+        }
+
     async def reset_name_style(self, *, guild: discord.Guild) -> None:
         await self.set_name_style(
             guild=guild,
