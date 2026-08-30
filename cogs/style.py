@@ -16,6 +16,7 @@ COLOR_PATTERN = re.compile(r"^[0-9a-fA-F]{6}(?:-[0-9a-fA-F]{6})?$")
 
 
 @app_commands.guild_only
+@app_commands.allowed_installs(guilds=True, users=False)
 class StyleCog(
     commands.GroupCog,
     name="style",
