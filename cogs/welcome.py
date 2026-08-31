@@ -11,6 +11,17 @@ from ui import ErrorUI, ExceptionUI, GalleryWithItem, PositiveUI, ResponseUI
 log = logging.getLogger(__name__)
 
 
+async def safe_finish(interaction: discord.Interaction, view: discord.ui.View) -> None:
+    try:
+        await interaction.edit_original_response(view=view)
+    except discord.NotFound:
+        log.warning("Original interaction response missing; falling back to followup.send")
+        try:
+            await interaction.followup.send(view=view)
+        except (discord.NotFound, discord.HTTPException):
+            log.exception("Followup send also failed")
+
+
 class ConfigModal(discord.ui.Modal, title="Welcome Configuration"):
     def __init__(
         self,
@@ -101,8 +112,9 @@ class ConfigModal(discord.ui.Modal, title="Welcome Configuration"):
         # URL Validation
         for url in (b1_url, b2_url):
             if url and not url.startswith(("http://", "https://")):
-                await interaction.edit_original_response(
-                    view=ErrorUI("All button URLs must be valid HTTP or HTTPS links."),
+                await safe_finish(
+                    interaction,
+                    ErrorUI("All button URLs must be valid HTTP or HTTPS links."),
                 )
                 return
 
@@ -118,12 +130,13 @@ class ConfigModal(discord.ui.Modal, title="Welcome Configuration"):
             existing_channel_id = row[0] if row else None
         except Exception:
             log.exception("Database error while fetching channel")
-            await interaction.edit_original_response(view=ExceptionUI())
+            await safe_finish(interaction, ExceptionUI())
             return
 
         if existing_channel_id is None:
-            await interaction.edit_original_response(
-                view=ErrorUI(
+            await safe_finish(
+                interaction,
+                ErrorUI(
                     "**Set a welcome channel first using `/welcome channel`.**",
                 ),
             )
@@ -151,11 +164,11 @@ class ConfigModal(discord.ui.Modal, title="Welcome Configuration"):
                 await conn.commit()
         except Exception:
             log.exception("Database error")
-            await interaction.followup.send(view=ExceptionUI())
+            await safe_finish(interaction, ExceptionUI())
             return
 
         view = PositiveUI(title="Welcome Config Set", subtitle="Welcome message updated.")
-        await interaction.edit_original_response(view=view)
+        await safe_finish(interaction, view)
 
 
 @app_commands.guild_only
@@ -204,7 +217,7 @@ class WelcomeCog(
 
         error_ui = ErrorUI(msg)
         if interaction.response.is_done():
-            await interaction.edit_original_response(view=error_ui)
+            await safe_finish(interaction, error_ui)
         else:
             await interaction.response.send_message(view=error_ui, ephemeral=False)
 
@@ -326,13 +339,14 @@ class WelcomeCog(
 
         config = await self.get_welcome_config(interaction.guild.id)
         if config is None or config["channel"] is None:
-            await interaction.edit_original_response(
-                view=ErrorUI("**No welcome configuration found. Use `/welcome channel` and `/welcome config` first.**"),
+            await safe_finish(
+                interaction,
+                ErrorUI("**No welcome configuration found. Use `/welcome channel` and `/welcome config` first.**"),
             )
             return
 
         view = self._build_welcome_ui(config, interaction.user)
-        await interaction.edit_original_response(view=view)
+        await safe_finish(interaction, view)
 
     @app_commands.command(
         name="channel",
