@@ -1,4 +1,6 @@
+import glob
 import logging
+import os
 
 import aiosqlite
 import discord
@@ -11,15 +13,48 @@ from ui import ErrorUI, ExceptionUI, GalleryWithItem, PositiveUI, ResponseUI
 log = logging.getLogger(__name__)
 
 
-async def safe_finish(interaction: discord.Interaction, view: discord.ui.View) -> None:
+imagedir = "data/welcome_images"
+async def safe_finish(interaction: discord.Interaction, view: discord.ui.View, file: discord.File | None = None,) -> None:
     try:
-        await interaction.edit_original_response(view=view)
+        if file is not None:
+            await interaction.edit_original_response(view=view, attachments=[file])
+        else:
+            await interaction.edit_original_response(view=view)
     except discord.NotFound:
         log.warning("Original interaction response missing; falling back to followup.send")
         try:
-            await interaction.followup.send(view=view)
+            if file is not None:
+                await interaction.followup.send(view=view, file=file)
+            else:
+                await interaction.followup.send(view=view)
         except (discord.NotFound, discord.HTTPException):
             log.exception("Followup send also failed")
+
+
+def _delete_stored_image(guild_id: int) -> None:
+    for path in glob.glob(os.path.join(imagedir, f"{guild_id}.*")):
+        try:
+            os.remove(path)
+        except OSError:
+            log.exception("Failed to delete a stale welcome image at %s", path)
+
+async def _save_uploaded_image(guild_id: int, uploaded_file: discord.Attachment) -> str:
+
+    os.makedirs(imagedir, exist_ok=True)
+    _delete_stored_image(guild_id)
+    ext = os.path.splitext(uploaded_file.filename)[1] or ".png"
+    path = os.path.join(imagedir, f"{guild_id}{ext}")
+    data = await uploaded_file.read()
+    with open(path, "wb") as f:
+        f.write(data)
+    return path
+
+
+def _load_attachment_file(attachment_path: str | None) -> discord.File | None:
+    if not attachment_path or not os.path.isfile(attachment_path):
+        return None
+    filename = os.path.basename(attachment_path)
+    return discord.File(attachment_path, filename=filename)
 
 
 class ConfigModal(discord.ui.Modal, title="Welcome Configuration"):
@@ -34,6 +69,7 @@ class ConfigModal(discord.ui.Modal, title="Welcome Configuration"):
         self.bot = bot
         self.db_path = db_path
         self.text = text
+        self.current_config = current_config
 
         # Retrieve existing settings for defaults
         b1_url_def = (current_config.get("b1_url") if current_config else None) or ""
@@ -44,7 +80,7 @@ class ConfigModal(discord.ui.Modal, title="Welcome Configuration"):
         self._attachment_image = discord.ui.FileUpload()
         self.attachment_image = discord.ui.Label(
             text="Welcome Image",
-            description="Optional image to attach to the welcome message.",
+            description="Optional image to attach to the welcome message. Leave empty to keep the current image.",
             component=self._attachment_image,
         )
 
@@ -103,11 +139,18 @@ class ConfigModal(discord.ui.Modal, title="Welcome Configuration"):
         b2_url = str(self._button2_url.value).strip() or None
         b2_label = str(self._button2_text.value).strip() or "Link 2"
 
-        # Handle attachment file upload if provided
-        attachment_url = None
+        attachment_path = self.current_config.get("attachment_path") if self.current_config else None
         if self._attachment_image.values:
             uploaded_file = self._attachment_image.values[0]
-            attachment_url = getattr(uploaded_file, "url", None)
+            try:
+                attachment_path = await _save_uploaded_image(interaction.guild.id, uploaded_file)
+            except (discord.HTTPException, OSError):
+                log.exception("Failed to download/save uploaded welcome image")
+                await safe_finish(
+                    interaction,
+                    ErrorUI("Couldn't save that image, please try again."),
+                )
+                return
 
         # URL Validation
         for url in (b1_url, b2_url):
@@ -147,14 +190,14 @@ class ConfigModal(discord.ui.Modal, title="Welcome Configuration"):
                 await conn.execute(
                     """
                     INSERT OR REPLACE INTO welcome_channels
-                    (guild_id, channel_id, message, attachment_url, b1_url, b1_label, b2_url, b2_label)
+                    (guild_id, channel_id, message, attachment_path, b1_url, b1_label, b2_url, b2_label)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         str(interaction.guild.id),
                         existing_channel_id,
                         self.text,
-                        attachment_url,
+                        attachment_path,
                         b1_url,
                         b1_label,
                         b2_url,
@@ -189,7 +232,7 @@ class WelcomeCog(
                     guild_id TEXT PRIMARY KEY,
                     channel_id TEXT NOT NULL,
                     message TEXT,
-                    attachment_url TEXT,
+                    attachment_path TEXT,
                     b1_url TEXT,
                     b1_label TEXT,
                     b2_url TEXT,
@@ -198,10 +241,22 @@ class WelcomeCog(
             """)
             await conn.commit()
 
+            async with conn.execute("PRAGMA table_info(welcome_channels)") as cursor:
+                columns = {row[1] async for row in cursor}
+
+            if "attachment_url" in columns and "attachment_path" not in columns:
+                await conn.execute(
+                    "ALTER TABLE welcome_channels RENAME COLUMN attachment_url TO attachment_path",
+                )
+                await conn.execute(
+                    "UPDATE welcome_channels SET attachment_path = NULL WHERE attachment_path IS NOT NULL",
+                )
+                await conn.commit()
+                log.info("Migrated welcome_channels.attachment_url -> attachment_path")
+
     async def cog_load(self) -> None:
         await self._ensure_db()
 
-    # cogwide error handling
     async def cog_app_command_error(
         self,
         interaction: discord.Interaction,
@@ -244,7 +299,7 @@ class WelcomeCog(
             async with (
                 aiosqlite.connect(self.db_path) as conn,
                 conn.execute(
-                    "SELECT channel_id, message, attachment_url, b1_url, b1_label, b2_url, b2_label "
+                    "SELECT channel_id, message, attachment_path, b1_url, b1_label, b2_url, b2_label "
                     "FROM welcome_channels WHERE guild_id = ?",
                     (str(guild_id),),
                 ) as cursor,
@@ -256,25 +311,30 @@ class WelcomeCog(
         if row is None:
             return None
 
-        channel_id, message, attachment_url, b1_url, b1_label, b2_url, b2_label = row
+        channel_id, message, attachment_path, b1_url, b1_label, b2_url, b2_label = row
         return {
             "channel": self.bot.get_channel(int(channel_id)) if channel_id else None,
             "message": message,
-            "attachment_url": attachment_url,
+            "attachment_path": attachment_path,
             "b1_url": b1_url,
             "b1_label": b1_label,
             "b2_url": b2_url,
             "b2_label": b2_label,
         }
 
-    def _build_welcome_ui(self, config: dict[str, str], target_member: discord.Member | discord.User) -> ResponseUI:
+    def _build_welcome_ui(
+        self,
+        config: dict[str, str],
+        target_member: discord.Member | discord.User,
+    ) -> tuple[ResponseUI, discord.File | None]:
         text = config["message"] or f"Welcome, {target_member.mention}!"
         text = text.replace("{member}", target_member.mention)
 
         view = ResponseUI(text)
 
-        if config["attachment_url"]:
-            view.container.add_item(GalleryWithItem(config["attachment_url"]))
+        file = _load_attachment_file(config.get("attachment_path"))
+        if file is not None:
+            view.container.add_item(GalleryWithItem(f"attachment://{file.filename}"))
 
         buttons = []
         if config["b1_url"]:
@@ -297,7 +357,7 @@ class WelcomeCog(
         if buttons:
             view.container.add_item(discord.ui.ActionRow(*buttons))
 
-        return view
+        return view, file
 
     @app_commands.command(
         name="config",
@@ -345,8 +405,8 @@ class WelcomeCog(
             )
             return
 
-        view = self._build_welcome_ui(config, interaction.user)
-        await safe_finish(interaction, view)
+        view, file = self._build_welcome_ui(config, interaction.user)
+        await safe_finish(interaction, view, file=file)
 
     @app_commands.command(
         name="channel",
@@ -375,6 +435,7 @@ class WelcomeCog(
                 log.exception("failed to reset welcome channel in guild %s", interaction.guild.id)
                 await interaction.followup.send(view=ExceptionUI())
                 return
+            _delete_stored_image(interaction.guild.id)
             view = PositiveUI(title="Welcome Channel Reset", subtitle="**Welcome channel settings have been reset.**")
             await interaction.followup.send(view=view)
             return
@@ -403,12 +464,29 @@ class WelcomeCog(
         if config is None or config["channel"] is None:
             return
 
-        view = self._build_welcome_ui(config, member)
+        view, file = self._build_welcome_ui(config, member)
 
         try:
-            await config["channel"].send(view=view)
+            if file is not None:
+                await config["channel"].send(view=view, file=file)
+            else:
+                await config["channel"].send(view=view)
         except (discord.Forbidden, discord.HTTPException):
             pass
+
+    @commands.Cog.listener()
+    async def on_guild_remove(self, guild: discord.Guild) -> None:
+        try:
+            async with aiosqlite.connect(self.db_path) as conn:
+                await conn.execute(
+                    "DELETE FROM welcome_channels WHERE guild_id = ?",
+                    (str(guild.id),),
+                )
+                await conn.commit()
+        except Exception:
+            log.exception("failed to clean up welcome config for departed guild %s", guild.id)
+
+        _delete_stored_image(guild.id)
 
 
 async def setup(bot: commands.Bot) -> None:

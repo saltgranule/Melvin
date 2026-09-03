@@ -6,3 +6,4 @@ faust-cchardet
 ddgs
 python-dotenv
 markdown
+flask
