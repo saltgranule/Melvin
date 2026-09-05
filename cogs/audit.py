@@ -131,7 +131,7 @@ class AuditCog(
             await interaction.followup.send(view=view)
             return
 
-        view = InfoUI(title="# Logging", subtitle=f"**Logging channel set to {channel.mention}.**")
+        view = InfoUI(title="Logging", subtitle=f"**Logging channel set to {channel.mention}.**")
         await interaction.followup.send(view=view)
 
     @channel.error
