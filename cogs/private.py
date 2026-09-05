@@ -161,12 +161,15 @@ class PrivateCog(
         )
         await interaction.followup.send(view=view, ephemeral=True)
 
-        try:
-            await asyncio.wait_for(self.bot.close(), timeout=5)
-        except asyncio.TimeoutError:
-            pass
+        async def restart_bot():
+            await asyncio.sleep(1)
+            try:
+                await asyncio.wait_for(self.bot.close(), timeout=5)
+            except asyncio.TimeoutError:
+                pass
+            os._exit(1)
 
-        os._exit(1)
+        asyncio.create_task(restart_bot())
 
 
 async def setup(bot: Melvin) -> None:
