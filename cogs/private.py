@@ -1,4 +1,5 @@
 import asyncio
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -161,7 +162,7 @@ class PrivateCog(
         await interaction.followup.send(view=view, ephemeral=True)
 
         await self.bot.close()
-        sys.exit(1)
+        os._exit(1)
 
 
 async def setup(bot: Melvin) -> None:
