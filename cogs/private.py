@@ -167,7 +167,7 @@ class PrivateCog(
                 await asyncio.wait_for(self.bot.close(), timeout=5)
             except asyncio.TimeoutError:
                 pass
-            os._exit(1)
+            sys.exit(0)
 
         asyncio.create_task(restart_bot())
 
