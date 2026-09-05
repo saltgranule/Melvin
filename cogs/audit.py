@@ -160,7 +160,7 @@ class AuditCog(
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     @app_commands.guild_only()
-    async def reset(self, interaction: discord.interaction) -> None:
+    async def reset(self, interaction: discord.Interaction) -> None:
         if not interaction.guild:
             return
         await interaction.response.defer()
