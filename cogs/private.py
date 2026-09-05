@@ -163,12 +163,11 @@ class PrivateCog(
 
         async def restart_bot():
             await asyncio.sleep(1)
-            loop = asyncio.get_running_loop()
             try:
                 await asyncio.wait_for(self.bot.close(), timeout=5)
             except asyncio.TimeoutError:
                 pass
-            loop.stop()
+            asyncio.get_running_loop().call_soon(os._exit, 0)
 
         asyncio.create_task(restart_bot())
 
