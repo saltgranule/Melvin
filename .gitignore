@@ -2,4 +2,3 @@
 *.db
 .replit
 pyproject.toml
-globals.py
