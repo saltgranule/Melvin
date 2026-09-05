@@ -161,7 +161,11 @@ class PrivateCog(
         )
         await interaction.followup.send(view=view, ephemeral=True)
 
-        await self.bot.close()
+        try:
+            await asyncio.wait_for(self.bot.close(), timeout=5)
+        except asyncio.TimeoutError:
+            pass
+
         os._exit(1)
 
 
