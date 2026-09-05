@@ -161,7 +161,7 @@ class PrivateCog(
         await interaction.followup.send(view=view, ephemeral=True)
 
         await self.bot.close()
-        sys.exit(0)
+        sys.exit(1)
 
 
 async def setup(bot: Melvin) -> None:
