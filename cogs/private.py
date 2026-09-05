@@ -9,7 +9,7 @@ from globals import (
     DisplayNameFont,
 )
 from main import Melvin
-from ui import ErrorUI, GalleryWithItem, GatedUI, PositiveUI
+from ui import ErrorUI, GalleryWithItem, GatedUI, PositiveUI, InfoUI
 
 
 class PrivateCog(
@@ -89,6 +89,22 @@ class PrivateCog(
         view = PositiveUI(title="Tree Sync Complete", subtitle=f"**Synced {len(synced)} command(s).**")
         await interaction.followup.send(view=view, ephemeral=True)
 
+    @commands.Cog.listener()
+    async def on_app_command_completion(
+        self, interaction: discord.Interaction, command: app_commands.Command
+    ) -> None:
+        log_channel = self.bot.get_channel(LOG_CHANNEL)
+        if log_channel is None or not isinstance(log_channel, discord.TextChannel):
+            return
+        location = f"in {interaction.guild.name}" if interaction.guild else "in DMs"
+        view = InfoUI(
+            title="Command Used",
+            subtitle=f"**{interaction.user} ran /{command.qualified_name} {location}**",
+        )
+        try:
+            await log_channel.send(view=view, allowed_mentions=discord.AllowedMentions.none())
+        except (discord.Forbidden, discord.HTTPException):
+            pass
 
 async def setup(bot: Melvin) -> None:
     await bot.add_cog(PrivateCog(bot))
