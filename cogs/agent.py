@@ -20,6 +20,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 log = logging.getLogger(__name__)
 
 
+
 class AgentCog(
     commands.GroupCog,
     name="ai",
