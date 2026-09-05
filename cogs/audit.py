@@ -9,7 +9,7 @@ from globals import ERROR_MESSAGE, PRIMARY, SECONDARY, TERTIARY
 from ui import (
     ErrorUI,
     InfoUI,
-    LargeSeparator,
+    LargeSeparator, ResponseUI, ExceptionUI,
 )
 
 log = logging.getLogger(__name__)
@@ -89,12 +89,28 @@ class AuditCog(
     async def channel(
         self,
         interaction: discord.Interaction,
-        channel: discord.TextChannel,
+        channel: discord.TextChannel | None = None
     ) -> None:
         if not interaction.guild:
             return
 
         await interaction.response.defer()
+
+        if channel is None:
+            try:
+                async with aiosqlite.connect(self.db_path) as conn:
+                    await conn.execute(
+                        "DELETE FROM log_channels WHERE guild_id = ?",
+                        (str(interaction.guild.id),),
+                    )
+                    await conn.commit()
+            except Exception:
+                log.exception("failed to reset logging channel in guild %s", interaction.guild.id)
+                await interaction.followup.send(view=ExceptionUI())
+                return
+            view = InfoUI(title="Logging Channel Reset", subtitle="**Logging channel settings have been reset.**")
+            await interaction.followup.send(view=view)
+            return
 
         try:
             async with aiosqlite.connect(self.db_path) as conn:
@@ -155,55 +171,7 @@ class AuditCog(
 
         return self.bot.get_channel(int(row[0]))
 
-    @app_commands.command(
-        name="reset", description="reset the channel set for server logs.",
-    )
-    @app_commands.checks.has_permissions(manage_guild=True)
-    @app_commands.guild_only()
-    async def reset(self, interaction: discord.Interaction) -> None:
-        if not interaction.guild:
-            return
-        await interaction.response.defer()
-        try:
-            async with aiosqlite.connect(self.db_path) as conn:
-                cursor = await conn.execute(
-                    "DELETE FROM log_channels WHERE guild_id = ?",
-                    (str(interaction.guild.id),),
-                )
-                await conn.commit()
-                deleted = cursor.rowcount > 0
-        except Exception:
-            log.exception(
-                "Failed to reset log channel for guild %s.",
-                interaction.guild.id,
-            )
-            view = ErrorUI(message="**Something went wrong resetting this.**")
-            await interaction.followup.send(view=view)
-            return
-        if not deleted:
-            view = InfoUI(title="# Logging", subtitle="**No log channel was set.**")
-        else:
-            view = InfoUI(title="# Logging", subtitle="**Log channel has been reset.**")
-        await interaction.followup.send(view=view)
 
-    @reset.error
-    async def reset_error(
-            self,
-            interaction: discord.Interaction,
-            error: app_commands.AppCommandError,
-    ) -> None:
-        if isinstance(error, app_commands.MissingPermissions):
-            msg = "**You do not have permission to do this.**"
-        elif isinstance(error, app_commands.NoPrivateMessage):
-            msg = "**This command can only be used in a server.**"
-        else:
-            msg = ERROR_MESSAGE
-
-        error_ui = ErrorUI(msg)
-        if interaction.response.is_done():
-            await interaction.edit_original_response(view=error_ui)
-        else:
-            await interaction.response.send_message(view=error_ui, ephemeral=False)
 
 
     @commands.Cog.listener()
