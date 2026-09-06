@@ -1,6 +1,5 @@
-import glob
 import logging
-import os
+from pathlib import Path
 
 import aiosqlite
 import discord
@@ -16,7 +15,7 @@ log = logging.getLogger(__name__)
 imagedir = "data/welcome_images"
 
 
-async def safe_finish(interaction: discord.Interaction, view: discord.ui.View, file: discord.File | None = None) -> None:
+async def safe_finish(interaction: discord.Interaction, view: discord.ui.LayoutView, file: discord.File | None = None) -> None:
     try:
         if file is not None:
             await interaction.edit_original_response(view=view, attachments=[file])
@@ -34,30 +33,30 @@ async def safe_finish(interaction: discord.Interaction, view: discord.ui.View, f
 
 
 def _delete_stored_image(guild_id: int) -> None:
-    for path in glob.glob(os.path.join(imagedir, f"{guild_id}.*")):
+    for path in Path(imagedir).glob(f"{guild_id}.*"):
         try:
-            os.remove(path)
+            path.unlink()
         except OSError:
             log.exception("Failed to delete a stale welcome image at %s", path)
 
 
 async def _save_uploaded_image(guild_id: int, uploaded_file: discord.Attachment) -> str:
-
-    os.makedirs(imagedir, exist_ok=True)
+    Path(imagedir).mkdir(parents=True, exist_ok=True)
     _delete_stored_image(guild_id)
-    ext = os.path.splitext(uploaded_file.filename)[1] or ".png"
-    path = os.path.join(imagedir, f"{guild_id}{ext}")
+    ext = Path(uploaded_file.filename).suffix or ".png"
+    path = Path(imagedir) / f"{guild_id}{ext}"
     data = await uploaded_file.read()
-    with open(path, "wb") as f:
-        f.write(data)
-    return path
+    path.write_bytes(data)
+    return str(path)
 
 
 def _load_attachment_file(attachment_path: str | None) -> discord.File | None:
-    if not attachment_path or not os.path.isfile(attachment_path):
+    if not attachment_path:
         return None
-    filename = os.path.basename(attachment_path)
-    return discord.File(attachment_path, filename=filename)
+    path = Path(attachment_path)
+    if not path.is_file():
+        return None
+    return discord.File(path, filename=path.name)
 
 
 class ConfigModal(discord.ui.Modal, title="Welcome Configuration"):
