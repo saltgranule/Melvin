@@ -8,8 +8,9 @@ from discord.ext import commands
 from globals import ERROR_MESSAGE, PRIMARY, SECONDARY, TERTIARY
 from ui import (
     ErrorUI,
+    ExceptionUI,
     InfoUI,
-    LargeSeparator, ResponseUI, ExceptionUI,
+    LargeSeparator,
 )
 
 log = logging.getLogger(__name__)
@@ -89,7 +90,7 @@ class AuditCog(
     async def channel(
         self,
         interaction: discord.Interaction,
-        channel: discord.TextChannel | None = None
+        channel: discord.TextChannel | None = None,
     ) -> None:
         if not interaction.guild:
             return
@@ -170,9 +171,6 @@ class AuditCog(
             return None
 
         return self.bot.get_channel(int(row[0]))
-
-
-
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:

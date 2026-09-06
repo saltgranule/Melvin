@@ -14,7 +14,9 @@ log = logging.getLogger(__name__)
 
 
 imagedir = "data/welcome_images"
-async def safe_finish(interaction: discord.Interaction, view: discord.ui.View, file: discord.File | None = None,) -> None:
+
+
+async def safe_finish(interaction: discord.Interaction, view: discord.ui.View, file: discord.File | None = None) -> None:
     try:
         if file is not None:
             await interaction.edit_original_response(view=view, attachments=[file])
@@ -37,6 +39,7 @@ def _delete_stored_image(guild_id: int) -> None:
             os.remove(path)
         except OSError:
             log.exception("Failed to delete a stale welcome image at %s", path)
+
 
 async def _save_uploaded_image(guild_id: int, uploaded_file: discord.Attachment) -> str:
 
