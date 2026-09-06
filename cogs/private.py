@@ -96,7 +96,15 @@ class PrivateCog(
         log_channel = self.bot.get_channel(LOG_CHANNEL)
         if log_channel is None or not isinstance(log_channel, discord.TextChannel):
             return
-        location = f"in {interaction.guild.name}" if interaction.guild else "in DMs"
+
+        guild = interaction.guild
+        if guild:
+            location = f" in {guild.name}."
+        elif isinstance(interaction.channel, discord.DMChannel):
+            location = " in DMs."
+        else:
+            location = "."
+
         view = InfoUI(
             title="Command Used",
             subtitle=f"**{interaction.user} ran /{command.qualified_name} {location}**",
