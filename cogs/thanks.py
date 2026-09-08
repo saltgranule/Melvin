@@ -186,7 +186,7 @@ class ThanksCog(
 
     @app_commands.command(name="count", description="Check how many times a user has been thanked.")
     async def count(
-        self, interaction: discord.Interaction, user: discord.Member | None = None,
+        self, interaction: discord.Interaction, user: discord.User | None = None,
     ) -> None:
         target = user or interaction.user
         total = await self._get_thanks(target.id)
