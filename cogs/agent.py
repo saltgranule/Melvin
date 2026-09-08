@@ -214,9 +214,9 @@ class AgentCog(
             )
 
             grounding_text = (
-                "-# **Grounded using DDGS web search context.**"
+                f"-# **Grounded using DDGS web search context with {GROQ_MODEL}**"
                 if search else
-                "-# **Generated without web search.**"
+                f"-# **Generated without web search using {GROQ_MODEL}**"
             )
 
             response_display = discord.ui.TextDisplay(
