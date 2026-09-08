@@ -1,5 +1,5 @@
 # AI Cog Documentation
-AI query tools powered by google's gemini API, with optional DDGS web search grounding.
+AI query tools powered by GROQ's API, with optional DDGS web search grounding.
 Command group name: `ai`
 
 ## ask command
@@ -15,7 +15,7 @@ Ask a free AI model a question, with an optional web search for grounding.
 | search | boolean | no | Whether to ground the response with web search context. Defaults to false. |
 
 **Rate limit**
-Limited to 2 uses per 60 seconds, per the command's cooldown. Expect this to change as Melvin grows to a larger, more demanding audience.
+Users using this cog get 10 requests to the API every hour. This is to prevent abuse, and ensure that the cog is accessible to absolutely everyone. There is no paywall here, that users can use to gain higher access to this cog.
 
 **Behavior**
 The command defers its response, since generation can take a few seconds.
@@ -34,7 +34,7 @@ Once a response comes back, it is truncated to 1500 characters if needed. The fi
 - The AI response text, followed by a small note showing how long the request took, and whether the response was grounded with DDGS web search.
 
 **Error handling**
-If Gemini returns an empty response, or if the API call fails for any reason, the command replies with an errorUI class message.
+If GROQ's API returns an empty response, or if the API call fails for any reason, the command replies with an errorUI class message.
 
 If the command is used more than twice within 60 seconds, the command replies with a rate limit message instead of running.
 
