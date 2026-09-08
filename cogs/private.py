@@ -91,29 +91,50 @@ class PrivateCog(
 
     @commands.Cog.listener()
     async def on_app_command_completion(
-        self, interaction: discord.Interaction, command: app_commands.Command,
+            self, interaction: discord.Interaction, command: app_commands.Command,
     ) -> None:
         log_channel = self.bot.get_channel(LOG_CHANNEL)
         if log_channel is None or not isinstance(log_channel, discord.TextChannel):
             return
 
         guild = interaction.guild
+
         if guild:
             location = f" in {guild.name}."
-        elif isinstance(interaction.channel, discord.DMChannel):
-            location = " in DMs."
+        elif isinstance(interaction.channel, (discord.DMChannel, discord.GroupChannel)):
+            location = " in DMs invoked as app."
         else:
-            location = "."
+            location = ""
+
+        args_str = ""
+        if interaction.namespace:
+            parts = []
+            for key, value in vars(interaction.namespace).items():
+                if isinstance(value, discord.Attachment):
+                    val = value.filename
+                else:
+                    val = str(value)
+
+                val = discord.utils.escape_markdown(val)
+                val = discord.utils.escape_mentions(val)
+                if len(val) > 100:
+                    val = val[:97] + "..."
+
+                parts.append(f"{key}: {val}")
+
+            if parts:
+                args_str = " - " + ", ".join(parts)
+
+        subtitle = f"**{interaction.user} ran /{command.qualified_name}{location}{args_str}**"
 
         view = InfoUI(
             title="Command Used",
-            subtitle=f"**{interaction.user} ran /{command.qualified_name} {location}**",
+            subtitle=subtitle,
         )
         try:
             await log_channel.send(view=view, allowed_mentions=discord.AllowedMentions.none())
         except (discord.Forbidden, discord.HTTPException):
             pass
-
 
 async def setup(bot: Melvin) -> None:
     await bot.add_cog(PrivateCog(bot))
