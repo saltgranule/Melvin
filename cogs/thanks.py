@@ -20,9 +20,26 @@ trigger = [
 ]
 # trigger phrases, pretty self-explanitory
 
+negations = [
+    "no",
+    "not",
+    "dont",
+    "don't",
+    "never",
+    "no thanks to",
+]
+# words that, if immediately preceding a trigger, cancel it out (e.g. "no thanks")
+
 # avoid false flags with regex
 TRIGGER_PATTERN = re.compile(
     r"\b(" + "|".join(re.escape(t) for t in trigger) + r")\b",
+    re.IGNORECASE,
+)
+
+# matches a negation word immediately followed by a trigger word/phrase
+NEGATION_PATTERN = re.compile(
+    r"\b(" + "|".join(re.escape(n) for n in negations) + r")\s+"
+    r"(" + "|".join(re.escape(t) for t in trigger) + r")\b",
     re.IGNORECASE,
 )
 
@@ -86,31 +103,9 @@ class ThanksCog(
                 row = await cursor.fetchone()
                 return row[0] if row else 0
 
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message) -> None:
-        if message.author.bot:
-            return
-
-        if message.reference is None:
-            return
-
-        if not TRIGGER_PATTERN.search(message.content):
-            return
-
-        # resolve the message being replied to
-        replied_message = message.reference.resolved
-        if replied_message is None:
-            try:
-                replied_message = await message.channel.fetch_message(
-                    message.reference.message_id
-                )
-            except (discord.NotFound, discord.HTTPException):
-                return
-
-        thanker = message.author
-        thanked = replied_message.author
-
-        # don't let people thank themselves or bots
+    async def _credit_thanks(
+        self, message: discord.Message, thanker: discord.abc.User, thanked: discord.abc.User
+    ) -> None:
         if thanked.bot or thanked.id == thanker.id:
             return
 
@@ -121,9 +116,47 @@ class ThanksCog(
 
         view = PositiveUI(
             title=f"Thanks {thanked.mention}!",
-            subtitle=f"{thanker.mention} thanked you — you now have **{new_total}** thanks.",
+            subtitle=f"{thanker.mention} thanked you, you now have **{new_total}** thanks.",
         )
-        await message.reply(view=view, allowed_mentions=discord.AllowedMentions(everyone=False))
+        await message.reply(
+            view=view, allowed_mentions=discord.AllowedMentions(everyone=False)
+        )
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message) -> None:
+        if message.author.bot:
+            return
+
+        content = message.content
+
+        # skip if it's a negated trigger
+        if NEGATION_PATTERN.search(content):
+            return
+
+        if not TRIGGER_PATTERN.search(content):
+            return
+
+        thanker = message.author
+
+        # reply based handling
+        if message.reference is not None:
+            replied_message = message.reference.resolved
+            if replied_message is None:
+                try:
+                    replied_message = await message.channel.fetch_message(
+                        message.reference.message_id
+                    )
+                except (discord.NotFound, discord.HTTPException):
+                    replied_message = None
+
+            if replied_message is not None:
+                await self._credit_thanks(message, thanker, replied_message.author)
+                return  # don't also process mentions in the same message
+
+        # mention based handling
+        if message.mentions:
+            for mentioned in message.mentions:
+                await self._credit_thanks(message, thanker, mentioned)
 
     @app_commands.command(name="count", description="Check how many times a user has been thanked.")
     async def count(
