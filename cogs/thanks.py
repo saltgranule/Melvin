@@ -1,10 +1,11 @@
-import discord
 import re
 import time
-import asyncio
+
 import aiosqlite
+import discord
 from discord import app_commands
 from discord.ext import commands
+
 from ui import InfoUI, PositiveUI
 
 rate_int = 1
@@ -74,7 +75,7 @@ NEGATION_PATTERN = re.compile(
 class ThanksCog(
     commands.GroupCog,
     name="thanks",
-    description="thank you count tracking.",
+    description="'Thank you' count tracking.",
 ):
     def __init__(self, bot: commands.Bot) -> None:
         super().__init__()
@@ -91,7 +92,7 @@ class ThanksCog(
                     user_id INTEGER PRIMARY KEY,
                     count INTEGER NOT NULL DEFAULT 0
                 )
-                """
+                """,
             )
             await db.commit()
 
@@ -106,7 +107,9 @@ class ThanksCog(
         return False
 
     async def _add_thanks(self, user_id: int) -> int:
-        async with aiosqlite.connect(self.db_path) as db:
+        async with aiosqlite.connect(self.db_path) as db, db.execute(
+            "SELECT count FROM thanks WHERE user_id = ?", (user_id,),
+        ) as cursor:
             await db.execute(
                 """
                 INSERT INTO thanks (user_id, count)
@@ -116,22 +119,18 @@ class ThanksCog(
                 (user_id,),
             )
             await db.commit()
-            async with db.execute(
-                "SELECT count FROM thanks WHERE user_id = ?", (user_id,)
-            ) as cursor:
-                row = await cursor.fetchone()
-                return row[0] if row else 1
+            row = await cursor.fetchone()
+            return row[0] if row else 1
 
     async def _get_thanks(self, user_id: int) -> int:
-        async with aiosqlite.connect(self.db_path) as db:
-            async with db.execute(
-                "SELECT count FROM thanks WHERE user_id = ?", (user_id,)
-            ) as cursor:
-                row = await cursor.fetchone()
-                return row[0] if row else 0
+        async with aiosqlite.connect(self.db_path) as db, db.execute(
+            "SELECT count FROM thanks WHERE user_id = ?", (user_id,),
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row[0] if row else 0
 
     async def _credit_thanks(
-        self, message: discord.Message, thanker: discord.abc.User, thanked: discord.abc.User
+        self, message: discord.Message, thanker: discord.abc.User, thanked: discord.abc.User,
     ) -> None:
         if thanked.bot or thanked.id == thanker.id:
             return
@@ -146,7 +145,7 @@ class ThanksCog(
             subtitle=f"**{thanker.mention} thanked you, you now have {new_total} thanks.**",
         )
         await message.reply(
-            view=view, allowed_mentions=discord.AllowedMentions(everyone=False)
+            view=view, allowed_mentions=discord.AllowedMentions(everyone=False),
         )
 
     @commands.Cog.listener()
@@ -166,12 +165,12 @@ class ThanksCog(
         thanker = message.author
 
         # reply based handling
-        if message.reference is not None:
+        if message.reference is not None and message.reference.message_id is not None:
             replied_message = message.reference.resolved
             if replied_message is None:
                 try:
                     replied_message = await message.channel.fetch_message(
-                        message.reference.message_id
+                        message.reference.message_id,
                     )
                 except (discord.NotFound, discord.HTTPException):
                     replied_message = None
@@ -187,7 +186,7 @@ class ThanksCog(
 
     @app_commands.command(name="count", description="Check how many times a user has been thanked.")
     async def count(
-        self, interaction: discord.Interaction, user: discord.Member | None = None
+        self, interaction: discord.Interaction, user: discord.Member | None = None,
     ) -> None:
         target = user or interaction.user
         total = await self._get_thanks(target.id)
