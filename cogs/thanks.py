@@ -16,7 +16,24 @@ trigger = [
     "thx",
     "thank you",
     "ty",
+    "ta",
+    "cheers",
+    "tysm",
+    "tyvm",
+    "thanks a lot",
+    "thanks so much",
+    "thank you so much",
+    "thanks a ton",
+    "thanks a million",
+    "much appreciated",
+    "apprecate it",
+    "many thanks",
     "well done",
+    "good job",
+    "great job",
+    "nice job",
+    "kudos",
+    "props",
 ]
 # trigger phrases, pretty self-explanitory
 
@@ -27,6 +44,16 @@ negations = [
     "don't",
     "never",
     "no thanks to",
+    "not thanks to",
+    "hardly a",
+    "barely a",
+    "without any",
+    "zero",
+    "0",
+    "instead of",
+    "far from",
+    "definitely not",
+    "certainly not",
 ]
 # words that, if immediately preceding a trigger, cancel it out (e.g. "no thanks")
 
