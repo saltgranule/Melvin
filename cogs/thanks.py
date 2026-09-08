@@ -144,8 +144,8 @@ class ThanksCog(
             title=f"Thanks {thanked.mention}!",
             subtitle=f"**{thanker.mention} thanked you, you now have {new_total} thanks.**",
         )
-        await message.reply(
-            view=view, allowed_mentions=discord.AllowedMentions(everyone=False),
+        await message.channel.send(
+            view=view, allowed_mentions=discord.AllowedMentions(everyone=False, users=False),
         )
 
     @commands.Cog.listener()
