@@ -27,7 +27,7 @@ trigger = [
     "thanks a ton",
     "thanks a million",
     "much appreciated",
-    "apprecate it",
+    "appreciate it",
     "many thanks",
     "well done",
     "good job",
