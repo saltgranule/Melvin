@@ -1,5 +1,4 @@
 discord.py
-google-genai
 aiosqlite
 aiodns
 faust-cchardet
@@ -7,3 +6,4 @@ ddgs
 python-dotenv
 markdown
 flask
+groq
