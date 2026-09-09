@@ -14,6 +14,8 @@ log = logging.getLogger(__name__)
 
 imagedir = "data/welcome_images"
 
+_UPDATABLE_FIELDS = {"message", "attachment_path", "b1_url", "b1_label", "b2_url", "b2_label"}
+
 
 async def safe_finish(interaction: discord.Interaction, view: discord.ui.LayoutView, file: discord.File | None = None) -> None:
     try:
@@ -59,37 +61,135 @@ def _load_attachment_file(attachment_path: str | None) -> discord.File | None:
     return discord.File(path, filename=path.name)
 
 
-class ConfigModal(discord.ui.Modal, title="Welcome Configuration"):
+def _has_manage_guild(interaction: discord.Interaction) -> bool:
+    permissions = getattr(interaction.user, "guild_permissions", None)
+    return bool(permissions and permissions.manage_guild)
+
+
+class MediaConfigModal(discord.ui.Modal, title="Welcome Media"):
     def __init__(
         self,
-        bot: commands.Bot,
-        db_path: str,
-        text: str,
+        cog: "WelcomeCog",
+        guild_id: int,
+        message: discord.Message,
         current_config: dict | None,
     ) -> None:
         super().__init__()
-        self.bot = bot
-        self.db_path = db_path
-        self.text = text
+        self.cog = cog
+        self.guild_id = guild_id
+        self.message = message
         self.current_config = current_config
 
-        # Retrieve existing settings for defaults
+        self._attachment_image = discord.ui.FileUpload(required=False)
+        self.attachment_image = discord.ui.Label(
+            text="Welcome Image",
+            description="Optional image to attach to welcome message. Leave empty to keep current image."[:100],
+            component=self._attachment_image,
+        )
+        self.add_item(self.attachment_image)
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        await interaction.response.defer()
+
+        attachment_path = self.current_config.get("attachment_path") if self.current_config else None
+        if self._attachment_image.values:
+            uploaded_file = self._attachment_image.values[0]
+            try:
+                attachment_path = await _save_uploaded_image(self.guild_id, uploaded_file)
+            except (discord.HTTPException, OSError):
+                log.exception("Failed to download/save uploaded welcome image")
+                await safe_finish(interaction, ErrorUI("Couldn't save that image, please try again."))
+                return
+
+        try:
+            updated = await self.cog._update_config_fields(self.guild_id, attachment_path=attachment_path)
+        except Exception:
+            log.exception("Database error while updating welcome media")
+            await safe_finish(interaction, ExceptionUI())
+            return
+
+        if not updated:
+            await safe_finish(
+                interaction,
+                ErrorUI("**Set a welcome channel first using `/welcome channel`.**"),
+            )
+            return
+
+        await self.cog._refresh_preview(self.message, self.guild_id, interaction.user)
+
+
+class TextConfigModal(discord.ui.Modal, title="Welcome Text"):
+    def __init__(
+        self,
+        cog: "WelcomeCog",
+        guild_id: int,
+        message: discord.Message,
+        current_config: dict | None,
+    ) -> None:
+        super().__init__()
+        self.cog = cog
+        self.guild_id = guild_id
+        self.message = message
+
+        current_text = (current_config.get("message") if current_config else None) or ""
+
+        self._text = discord.ui.TextInput(
+            style=discord.TextStyle.paragraph,
+            default=current_text,
+            placeholder="Welcome, {member}! We're at {member_count} members now.",
+            required=False,
+        )
+        self.text = discord.ui.Label(
+            text="Welcome Message",
+            description="Use {member} to mention member and {member_count} for count. Empty for default."[:100],
+            component=self._text,
+        )
+        self.add_item(self.text)
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        await interaction.response.defer()
+
+        text_value = str(self._text.value).strip() or None
+
+        try:
+            updated = await self.cog._update_config_fields(self.guild_id, message=text_value)
+        except Exception:
+            log.exception("Database error while updating welcome text")
+            await safe_finish(interaction, ExceptionUI())
+            return
+
+        if not updated:
+            await safe_finish(
+                interaction,
+                ErrorUI("**Set a welcome channel first using `/welcome channel`.**"),
+            )
+            return
+
+        await self.cog._refresh_preview(self.message, self.guild_id, interaction.user)
+
+
+class ButtonsConfigModal(discord.ui.Modal, title="Welcome Buttons"):
+    def __init__(
+        self,
+        cog: "WelcomeCog",
+        guild_id: int,
+        message: discord.Message,
+        current_config: dict | None,
+    ) -> None:
+        super().__init__()
+        self.cog = cog
+        self.guild_id = guild_id
+        self.message = message
+
         b1_url_def = (current_config.get("b1_url") if current_config else None) or ""
         b1_label_def = (current_config.get("b1_label") if current_config else None) or ""
         b2_url_def = (current_config.get("b2_url") if current_config else None) or ""
         b2_label_def = (current_config.get("b2_label") if current_config else None) or ""
 
-        self._attachment_image = discord.ui.FileUpload()
-        self.attachment_image = discord.ui.Label(
-            text="Welcome Image",
-            description="Optional image to attach to the welcome message. Leave empty to keep the current image.",
-            component=self._attachment_image,
-        )
-
         self._button1_url = discord.ui.TextInput(default=b1_url_def, required=False)
         self.button1_url = discord.ui.Label(
             text="Button 1 URL",
-            description="Optional first button URL.",
+            description="Optional first button URL. Leave empty to remove button 1."[:100],
             component=self._button1_url,
         )
         self._button1_text = discord.ui.TextInput(
@@ -99,14 +199,14 @@ class ConfigModal(discord.ui.Modal, title="Welcome Configuration"):
         )
         self.button1_text = discord.ui.Label(
             text="Button 1 Label",
-            description="Label for the first button.",
+            description="Label for the first button."[:100],
             component=self._button1_text,
         )
 
         self._button2_url = discord.ui.TextInput(default=b2_url_def, required=False)
         self.button2_url = discord.ui.Label(
             text="Button 2 URL",
-            description="Optional second button URL.",
+            description="Optional second button URL. Leave empty to remove button 2."[:100],
             component=self._button2_url,
         )
         self._button2_text = discord.ui.TextInput(
@@ -116,12 +216,11 @@ class ConfigModal(discord.ui.Modal, title="Welcome Configuration"):
         )
         self.button2_text = discord.ui.Label(
             text="Button 2 Label",
-            description="Label for the second button.",
+            description="Label for the second button."[:100],
             component=self._button2_text,
         )
 
         for item in [
-            self.attachment_image,
             self.button1_url,
             self.button1_text,
             self.button2_url,
@@ -130,31 +229,13 @@ class ConfigModal(discord.ui.Modal, title="Welcome Configuration"):
             self.add_item(item)
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
-        if not interaction.guild:
-            return
-
         await interaction.response.defer()
 
-        # Extract values from components
         b1_url = str(self._button1_url.value).strip() or None
         b1_label = str(self._button1_text.value).strip() or "Link 1"
         b2_url = str(self._button2_url.value).strip() or None
         b2_label = str(self._button2_text.value).strip() or "Link 2"
 
-        attachment_path = self.current_config.get("attachment_path") if self.current_config else None
-        if self._attachment_image.values:
-            uploaded_file = self._attachment_image.values[0]
-            try:
-                attachment_path = await _save_uploaded_image(interaction.guild.id, uploaded_file)
-            except (discord.HTTPException, OSError):
-                log.exception("Failed to download/save uploaded welcome image")
-                await safe_finish(
-                    interaction,
-                    ErrorUI("Couldn't save that image, please try again."),
-                )
-                return
-
-        # URL Validation
         for url in (b1_url, b2_url):
             if url and not url.startswith(("http://", "https://")):
                 await safe_finish(
@@ -164,56 +245,26 @@ class ConfigModal(discord.ui.Modal, title="Welcome Configuration"):
                 return
 
         try:
-            async with (
-                aiosqlite.connect(self.db_path) as conn,
-                conn.execute(
-                    "SELECT channel_id FROM welcome_channels WHERE guild_id = ?",
-                    (str(interaction.guild.id),),
-                ) as cursor,
-            ):
-                row = await cursor.fetchone()
-            existing_channel_id = row[0] if row else None
+            updated = await self.cog._update_config_fields(
+                self.guild_id,
+                b1_url=b1_url,
+                b1_label=b1_label,
+                b2_url=b2_url,
+                b2_label=b2_label,
+            )
         except Exception:
-            log.exception("Database error while fetching channel")
+            log.exception("Database error while updating welcome buttons")
             await safe_finish(interaction, ExceptionUI())
             return
 
-        if existing_channel_id is None:
+        if not updated:
             await safe_finish(
                 interaction,
-                ErrorUI(
-                    "**Set a welcome channel first using `/welcome channel`.**",
-                ),
+                ErrorUI("**Set a welcome channel first using `/welcome channel`.**"),
             )
             return
 
-        try:
-            async with aiosqlite.connect(self.db_path) as conn:
-                await conn.execute(
-                    """
-                    INSERT OR REPLACE INTO welcome_channels
-                    (guild_id, channel_id, message, attachment_path, b1_url, b1_label, b2_url, b2_label)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        str(interaction.guild.id),
-                        existing_channel_id,
-                        self.text,
-                        attachment_path,
-                        b1_url,
-                        b1_label,
-                        b2_url,
-                        b2_label,
-                    ),
-                )
-                await conn.commit()
-        except Exception:
-            log.exception("Database error")
-            await safe_finish(interaction, ExceptionUI())
-            return
-
-        view = PositiveUI(title="Welcome Config Set", subtitle="Welcome message updated.")
-        await safe_finish(interaction, view)
+        await self.cog._refresh_preview(self.message, self.guild_id, interaction.user)
 
 
 @app_commands.guild_only
@@ -324,6 +375,32 @@ class WelcomeCog(
             "b2_label": b2_label,
         }
 
+    async def _update_config_fields(self, guild_id: int, **fields: str | None) -> bool:
+        unknown = set(fields) - _UPDATABLE_FIELDS
+        if unknown:
+            msg = f"not working, cant update unknown welcome_channels columns: {unknown}"
+            raise ValueError(msg)
+
+        async with aiosqlite.connect(self.db_path) as conn:
+            async with conn.execute(
+                "SELECT channel_id FROM welcome_channels WHERE guild_id = ?",
+                (str(guild_id),),
+            ) as cursor:
+                row = await cursor.fetchone()
+
+            if row is None:
+                return False
+
+            set_clause = ", ".join(f"{column} = ?" for column in fields)
+            values = [*fields.values(), str(guild_id)]
+            await conn.execute(
+                f"UPDATE welcome_channels SET {set_clause} WHERE guild_id = ?",
+                values,
+            )
+            await conn.commit()
+
+        return True
+
     def _build_welcome_ui(
         self,
         config: dict[str, str],
@@ -331,6 +408,10 @@ class WelcomeCog(
     ) -> tuple[ResponseUI, discord.File | None]:
         text = config["message"] or f"Welcome, {target_member.mention}!"
         text = text.replace("{member}", target_member.mention)
+
+        guild = getattr(target_member, "guild", None)
+        if guild is not None:
+            text = text.replace("{member_count}", str(guild.member_count))
 
         view = ResponseUI(text)
 
@@ -361,32 +442,109 @@ class WelcomeCog(
 
         return view, file
 
+    def _build_config_select(self, guild_id: int) -> discord.ui.Select:
+        select = discord.ui.Select(
+            placeholder="Customize the welcome message...",
+            min_values=1,
+            max_values=1,
+            options=[
+                discord.SelectOption(
+                    label="Media",
+                    value="media",
+                    description="Set or replace the welcome image."[:100],
+                ),
+                discord.SelectOption(
+                    label="Text",
+                    value="text",
+                    description="Edit the welcome message text."[:100],
+                ),
+                discord.SelectOption(
+                    label="Buttons",
+                    value="buttons",
+                    description="Configure button 1 and button 2."[:100],
+                ),
+            ],
+        )
+
+        async def _callback(interaction: discord.Interaction) -> None:
+            if not _has_manage_guild(interaction):
+                await interaction.response.send_message(
+                    view=ErrorUI("**You do not have permission to do this.**"),
+                    ephemeral=True,
+                )
+                return
+
+            current_config = await self.get_welcome_config(guild_id)
+            message = interaction.message
+            value = select.values[0]
+
+            if value == "media":
+                modal = MediaConfigModal(self, guild_id, message, current_config)
+            elif value == "text":
+                modal = TextConfigModal(self, guild_id, message, current_config)
+            else:
+                modal = ButtonsConfigModal(self, guild_id, message, current_config)
+
+            await interaction.response.send_modal(modal)
+
+        select.callback = _callback
+        return select
+
+    def _build_config_preview(
+        self,
+        config: dict[str, str],
+        guild_id: int,
+        target_member: discord.Member | discord.User,
+    ) -> tuple[ResponseUI, discord.File | None]:
+        view, file = self._build_welcome_ui(config, target_member)
+        view.container.add_item(discord.ui.ActionRow(self._build_config_select(guild_id)))
+        return view, file
+
+    async def _refresh_preview(
+        self,
+        message: discord.Message,
+        guild_id: int,
+        target_member: discord.Member | discord.User,
+    ) -> None:
+        current_config = await self.get_welcome_config(guild_id)
+        if current_config is None:
+            return
+
+        view, file = self._build_config_preview(current_config, guild_id, target_member)
+        try:
+            if file is not None:
+                await message.edit(view=view, attachments=[file])
+            else:
+                await message.edit(view=view)
+        except (discord.NotFound, discord.HTTPException):
+            log.exception("Failed to refresh welcome config preview")
+
     @app_commands.command(
         name="config",
-        description="Set the welcome message and optional attachments or buttons via modal.",
-    )
-    @app_commands.describe(
-        text="The welcome message to send (use {member} to mention the new member).",
+        description="Preview and customize the welcome message.",
     )
     @app_commands.checks.has_permissions(manage_guild=True)
-    async def config(
-        self,
-        interaction: discord.Interaction,
-        text: str,
-    ) -> None:
+    async def config(self, interaction: discord.Interaction) -> None:
         if not interaction.guild:
             return
 
         await self._ensure_db()
         current_config = await self.get_welcome_config(interaction.guild.id)
 
-        modal = ConfigModal(
-            bot=self.bot,
-            db_path=self.db_path,
-            text=text,
-            current_config=current_config,
-        )
-        await interaction.response.send_modal(modal)
+        if current_config is None or current_config["channel"] is None:
+            await interaction.response.send_message(
+                view=ErrorUI("**Set a welcome channel first using `/welcome channel`.**"),
+                ephemeral=False,
+            )
+            return
+
+        await interaction.response.defer()
+
+        view, file = self._build_config_preview(current_config, interaction.guild.id, interaction.user)
+        if file is not None:
+            await interaction.edit_original_response(view=view, attachments=[file])
+        else:
+            await interaction.edit_original_response(view=view)
 
     @app_commands.command(
         name="preview",
