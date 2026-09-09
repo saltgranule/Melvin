@@ -6,11 +6,14 @@ from discord.ext import commands
 
 from globals import (
     ERROR_MESSAGE,
+    LOG_CHANNEL,
+    MELVIN_BANNER,
+    QUATERNARY,
     DisplayNameEffect,
     DisplayNameFont,
 )
 from main import Melvin
-from ui import ErrorUI, PositiveUI
+from ui import ErrorUI, GalleryWithItem, PositiveUI
 
 COLOR_PATTERN = re.compile(r"^[0-9a-fA-F]{6}(?:-[0-9a-fA-F]{6})?$")
 
@@ -44,6 +47,35 @@ class StyleCog(
             await interaction.edit_original_response(view=view)
         else:
             await interaction.response.send_message(view=view, ephemeral=False)
+
+    @commands.Cog.listener()
+    async def on_guild_join(self, guild: discord.Guild) -> None:
+        await self.bot.set_name_style(
+            guild=guild,
+            font_id=DisplayNameFont.cherry_bomb,
+            effect_id=DisplayNameEffect.gradient,
+            colors=[QUATERNARY.removeprefix("#"), "FFFFFF"],
+        )
+        log_channel = self.bot.get_channel(LOG_CHANNEL)
+        if log_channel is None or not isinstance(log_channel, discord.TextChannel):
+            return
+        view = discord.ui.LayoutView()
+        view.add_item(
+            discord.ui.Container(
+                discord.ui.TextDisplay(
+                    f"**Melvin was just added to {guild.name}.**\n"
+                    f"Now in **{len(self.bot.guilds)}** guild(s).",
+                ),
+                GalleryWithItem(MELVIN_BANNER),
+            ),
+        )
+        try:
+            await log_channel.send(
+                view=view,
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
+        except (discord.Forbidden, discord.HTTPException):
+            pass
 
     @app_commands.command(name="set", description="Set Melvin's name style for this guild. Omit all three arguments to reset.")
     @app_commands.checks.has_permissions(manage_guild=True)

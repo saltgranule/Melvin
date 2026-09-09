@@ -2,12 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from globals import (
-    LOG_CHANNEL,
-    MELVIN_BANNER,
-    DisplayNameEffect,
-    DisplayNameFont,
-)
+from globals import LOG_CHANNEL, MELVIN_BANNER
 from main import Melvin
 from ui import ErrorUI, GalleryWithItem, GatedUI, InfoUI, PositiveUI
 
@@ -20,35 +15,6 @@ class PrivateCog(
     def __init__(self, bot: Melvin) -> None:
         super().__init__()
         self.bot = bot
-
-    @commands.Cog.listener()
-    async def on_guild_join(self, guild: discord.Guild) -> None:
-        await self.bot.set_name_style(
-            guild=guild,
-            font_id=DisplayNameFont.cherry_bomb,
-            effect_id=DisplayNameEffect.gradient,
-            colors=["FFFFFF", "000000"],
-        )
-        log_channel = self.bot.get_channel(LOG_CHANNEL)
-        if log_channel is None or not isinstance(log_channel, discord.TextChannel):
-            return
-        view = discord.ui.LayoutView()
-        view.add_item(
-            discord.ui.Container(
-                discord.ui.TextDisplay(
-                    f"**Melvin was just added to {guild.name}.**\n"
-                    f"Now in **{len(self.bot.guilds)}** guild(s).",
-                ),
-                GalleryWithItem(MELVIN_BANNER),
-            ),
-        )
-        try:
-            await log_channel.send(
-                view=view,
-                allowed_mentions=discord.AllowedMentions.none(),
-            )
-        except (discord.Forbidden, discord.HTTPException):
-            pass
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild) -> None:
