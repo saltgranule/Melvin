@@ -533,7 +533,7 @@ class WelcomeCog(
 
         if current_config is None or current_config["channel"] is None:
             await interaction.response.send_message(
-                view=ErrorUI("**Set a welcome channel first using `/welcome channel`.**"),
+                view=ErrorUI("**Set a welcome channel first using /welcome channel.**"),
                 ephemeral=False,
             )
             return
@@ -561,7 +561,7 @@ class WelcomeCog(
         if config is None or config["channel"] is None:
             await safe_finish(
                 interaction,
-                ErrorUI("**No welcome configuration found. Use `/welcome channel` and `/welcome config` first.**"),
+                ErrorUI("**No welcome configuration found. Use /welcome channel and /welcome config first.**"),
             )
             return
 
