@@ -14,7 +14,7 @@ from globals import (
     PRIMARY,
     QUATERNARY,
     SECONDARY,
-    TERTIARY,
+    TERTIARY, THUMBS_UP,
 )
 
 
@@ -403,6 +403,18 @@ class PositiveUI(discord.ui.LayoutView):
         super().__init__()
         container = discord.ui.Container(
             discord.ui.TextDisplay(f"# {MELVIN_CHECK_EMOJI} {title}\n{subtitle}"),
+            SmallSeparator(),
+            accent_color=discord.Color.from_str(SECONDARY),
+        )
+        self.container = container
+        self.add_item(container)
+
+# ThankUI, duplicated because im too lazy to deal with the hardcoded positiveUI emoji value
+class ThankUI(discord.ui.LayoutView):
+    def __init__(self, *, title: str, subtitle: str) -> None:
+        super().__init__()
+        container = discord.ui.Container(
+            discord.ui.TextDisplay(f"# {THUMBS_UP} {title}\n{subtitle}"),
             SmallSeparator(),
             accent_color=discord.Color.from_str(SECONDARY),
         )

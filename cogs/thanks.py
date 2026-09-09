@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from ui import InfoUI, PositiveUI
+from ui import InfoUI, ThankUI
 
 rate_int = 1
 rate_time = 60.0
@@ -140,7 +140,7 @@ class ThanksCog(
 
         new_total = await self._add_thanks(thanked.id)
 
-        view = PositiveUI(
+        view = ThankUI(
             title=f"Thanks {thanked.mention}!",
             subtitle=f"**{thanker.mention} thanked you, you now have {new_total} thanks.**",
         )
