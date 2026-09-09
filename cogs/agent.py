@@ -22,6 +22,126 @@ log = logging.getLogger(__name__)
 RATE_LIMIT = 10
 RATE_PERIOD = 60 * 60  # 1 hour, in seconds
 GROQ_MODEL = "openai/gpt-oss-20b"
+PAGE_SIZE = 2000
+
+
+def paginate(text: str, size: int = PAGE_SIZE) -> list[str]:
+    pages: list[str] = []
+    current = ""
+    for word in text.split(" "):
+        candidate = f"{current} {word}".strip()
+        if len(candidate) > size:
+            if current:
+                pages.append(current)
+            current = word
+        else:
+            current = candidate
+    if current:
+        pages.append(current)
+    return pages or [""]
+
+
+class ResponsePaginator(discord.ui.LayoutView):
+    def __init__(
+        self,
+        *,
+        pages: list[str],
+        prompt: str,
+        elapsed: float,
+        remaining: int,
+        total: int,
+        search: bool,
+        author_id: int,
+    ) -> None:
+        super().__init__(timeout=300)
+        self.pages = pages
+        self.index = 0
+        self.author_id = author_id
+
+        model_button = discord.ui.Button(
+            label="Model",
+            style=discord.ButtonStyle.link,
+            url="https://huggingface.co/openai/gpt-oss-20b",
+        )
+        self.prompt_section = discord.ui.Section(
+            f"# **Prompt:** {discord.utils.escape_markdown(prompt)}",
+            accessory=model_button,
+        )
+
+        grounding_text = (
+            f"-# **Grounded using DDGS web search context with {GROQ_MODEL}**"
+            if search
+            else f"-# **Generated without web search using {GROQ_MODEL}**"
+        )
+        self.footer = (
+            f"\n\n-# **{MELVIN_EMOJI} Took {elapsed:.1f}s. "
+            f"{remaining}/{total} requests left this hour.**\n"
+            f"{grounding_text}"
+        )
+
+        self.body = discord.ui.TextDisplay(self._page_content())
+
+        self.prev_button = discord.ui.Button(
+            label="Previous",
+            style=discord.ButtonStyle.secondary,
+            disabled=True,
+        )
+        self.next_button = discord.ui.Button(
+            label="Next",
+            style=discord.ButtonStyle.secondary,
+            disabled=len(pages) <= 1,
+        )
+        self.prev_button.callback = self._on_prev
+        self.next_button.callback = self._on_next
+
+        nav_row = discord.ui.ActionRow()
+        nav_row.add_item(self.prev_button)
+        nav_row.add_item(self.next_button)
+
+        self.add_item(
+            discord.ui.Container(
+                self.prompt_section,
+                SmallSeparator(),
+                self.body,
+                nav_row,
+            ),
+        )
+
+    def _page_content(self) -> str:
+        marker = (
+            f"\n\n-# Page {self.index + 1}/{len(self.pages)}"
+            if len(self.pages) > 1
+            else ""
+        )
+        footer = self.footer if self.index == len(self.pages) - 1 else ""
+        return f"{self.pages[self.index]}{marker}{footer}"
+
+    def _sync(self) -> None:
+        self.body.content = self._page_content()
+        self.prev_button.disabled = self.index == 0
+        self.next_button.disabled = self.index == len(self.pages) - 1
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.author_id:
+            await interaction.response.send_message(
+                "**Not your command output.**", ephemeral=True,
+            )
+            return False
+        return True
+
+    async def _on_prev(self, interaction: discord.Interaction) -> None:
+        self.index = max(0, self.index - 1)
+        self._sync()
+        await interaction.response.edit_message(view=self)
+
+    async def _on_next(self, interaction: discord.Interaction) -> None:
+        self.index = min(len(self.pages) - 1, self.index + 1)
+        self._sync()
+        await interaction.response.edit_message(view=self)
+
+    async def on_timeout(self) -> None:
+        self.prev_button.disabled = True
+        self.next_button.disabled = True
 
 
 class AgentCog(
@@ -52,9 +172,6 @@ class AgentCog(
                 "ON ai_requests (user_id, timestamp)",
             )
             await db.commit()
-
-    def truncate(self, text: str, length: int = 1500) -> str:
-        return (text)[: length - 3] + "..." if len(text) > length else text
 
     def _get_web_context(self, query: str, max_results: int = 5) -> str:
         try:
@@ -117,7 +234,7 @@ class AgentCog(
         if isinstance(error, app_commands.CommandOnCooldown):
             msg = "**You are being rate limited.**"
         else:
-            msg = f"**Something went wrong.**"
+            msg = "**Something went wrong.**"
         error_ui = ErrorUI(msg)
         if interaction.response.is_done():
             await interaction.followup.send(view=error_ui, ephemeral=True)
@@ -188,55 +305,35 @@ class AgentCog(
             minutes = max(1, retry_after // 60)
             await interaction.edit_original_response(
                 view=ErrorUI(
-                    f"**You've hit the limit of {RATE_LIMIT} requests per hour, try again in about {minutes} minute(s).",
+                    f"**You've hit the limit of {RATE_LIMIT} requests per hour, try again in about {minutes} minute(s).**",
                 ),
             )
             return
 
         try:
             start = time.time()
-            ai_response = self.truncate(
-                await self.query_groq(prompt, use_search=search),
-            )
+            ai_response = await self.query_groq(prompt, use_search=search)
             elapsed = time.time() - start
 
             await self._record_request(interaction.user.id)
             remaining = max(0, RATE_LIMIT - (used + 1))
 
-            model_button = discord.ui.Button(
-                label="Model",
-                style=discord.ButtonStyle.link,
-                url="https://huggingface.co/openai/gpt-oss-20b",
-            )
-            prompt_section = discord.ui.Section(
-                f"# **Prompt:** {discord.utils.escape_markdown(prompt)}",
-                accessory=model_button,
-            )
-
-            grounding_text = (
-                f"-# **Grounded using DDGS web search context with {GROQ_MODEL}**"
-                if search else
-                f"-# **Generated without web search using {GROQ_MODEL}**"
-            )
-
-            response_display = discord.ui.TextDisplay(
-                f"{ai_response}\n\n"
-                f"-# **{MELVIN_EMOJI} Responses may be shortened due to Discord UI limitations. Took {elapsed:.1f}s. "
-                f"{remaining}/{RATE_LIMIT} requests left this hour.**\n"
-                f"{grounding_text}",
-            )
-            view = discord.ui.LayoutView()
-            view.add_item(
-                discord.ui.Container(
-                    prompt_section,
-                    SmallSeparator(),
-                    response_display,
-                ),
+            pages = paginate(ai_response)
+            view = ResponsePaginator(
+                pages=pages,
+                prompt=prompt,
+                elapsed=elapsed,
+                remaining=remaining,
+                total=RATE_LIMIT,
+                search=search,
+                author_id=interaction.user.id,
             )
             await interaction.edit_original_response(view=view)
-        except Exception as e:
+        except Exception:
             log.exception("Failure in agent command")
-            await interaction.edit_original_response(view=ErrorUI("**something went wrong, likely an API error.**"))
+            await interaction.edit_original_response(
+                view=ErrorUI("**something went wrong, likely an API error.**"),
+            )
 
 
 async def setup(bot: commands.Bot) -> None:
