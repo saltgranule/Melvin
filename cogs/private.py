@@ -136,5 +136,6 @@ class PrivateCog(
         except (discord.Forbidden, discord.HTTPException):
             pass
 
+
 async def setup(bot: Melvin) -> None:
     await bot.add_cog(PrivateCog(bot))

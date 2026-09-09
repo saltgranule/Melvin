@@ -69,7 +69,7 @@ def _has_manage_guild(interaction: discord.Interaction) -> bool:
 class MediaConfigModal(discord.ui.Modal, title="Welcome Media"):
     def __init__(
         self,
-        cog: "WelcomeCog",
+        cog: WelcomeCog,
         guild_id: int,
         message: discord.Message,
         current_config: dict | None,
@@ -121,7 +121,7 @@ class MediaConfigModal(discord.ui.Modal, title="Welcome Media"):
 class TextConfigModal(discord.ui.Modal, title="Welcome Text"):
     def __init__(
         self,
-        cog: "WelcomeCog",
+        cog: WelcomeCog,
         guild_id: int,
         message: discord.Message,
         current_config: dict | None,
@@ -171,7 +171,7 @@ class TextConfigModal(discord.ui.Modal, title="Welcome Text"):
 class ButtonsConfigModal(discord.ui.Modal, title="Welcome Buttons"):
     def __init__(
         self,
-        cog: "WelcomeCog",
+        cog: WelcomeCog,
         guild_id: int,
         message: discord.Message,
         current_config: dict | None,
