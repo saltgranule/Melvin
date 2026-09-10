@@ -2,9 +2,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from globals import LOG_CHANNEL, MELVIN_BANNER
+from globals import LOG_CHANNEL, MELVIN_BANNER, MELVIN_MISC_EMOJI, QUATERNARY
 from main import Melvin
-from ui import ErrorUI, GalleryWithItem, GatedUI, InfoUI, PositiveUI
+from ui import ErrorUI, GalleryWithItem, GatedUI, InfoUI, PositiveUI, SmallSeparator
 
 
 class PrivateCog(
@@ -57,7 +57,9 @@ class PrivateCog(
 
     @commands.Cog.listener()
     async def on_app_command_completion(
-            self, interaction: discord.Interaction, command: app_commands.Command,
+            self,
+            interaction: discord.Interaction,
+            command: app_commands.Command,
     ) -> None:
         log_channel = self.bot.get_channel(LOG_CHANNEL)
         if log_channel is None or not isinstance(log_channel, discord.TextChannel):
@@ -66,15 +68,14 @@ class PrivateCog(
         guild = interaction.guild
 
         if guild:
-            location = f" in {guild.name}."
+            location = f"in {guild.name}"
         elif isinstance(interaction.channel, (discord.DMChannel, discord.GroupChannel)):
-            location = " in DMs invoked as app."
+            location = "in DMs (invoked as app)"
         else:
             location = ""
 
-        args_str = ""
+        args_lines = []
         if interaction.namespace:
-            parts = []
             for key, value in vars(interaction.namespace).items():
                 if isinstance(value, discord.Attachment):
                     val = value.filename
@@ -86,19 +87,35 @@ class PrivateCog(
                 if len(val) > 100:
                     val = val[:97] + "..."
 
-                parts.append(f"{key}: {val}")
+                args_lines.append(f"**{key}: {val}**")
 
-            if parts:
-                args_str = " - " + ", ".join(parts)
-
-        subtitle = f"**{interaction.user} ran /{command.qualified_name}{location}{args_str}**"
-
-        view = InfoUI(
-            title="Command Used",
-            subtitle=subtitle,
+        container = discord.ui.Container(
+            discord.ui.TextDisplay(
+                f"# {MELVIN_MISC_EMOJI} Command Used | {discord.utils.format_dt(discord.utils.utcnow(), style='F')}",
+            ),
+            discord.ui.Section(
+                f"**User: {interaction.user.mention} | {interaction.user.id}**\n"
+                f"**Command: /{command.qualified_name} {location}**",
+                accessory=discord.ui.Thumbnail(media=interaction.user.display_avatar.url),
+            ),
+            accent_color=discord.Color.from_str(QUATERNARY),
         )
+
+        if args_lines:
+            args_text = "\n".join(args_lines)
+            container.add_item(SmallSeparator())
+            container.add_item(
+                discord.ui.TextDisplay(f"### Arguments\n{args_text}"),
+            )
+
+        view = discord.ui.LayoutView()
+        view.add_item(container)
+
         try:
-            await log_channel.send(view=view, allowed_mentions=discord.AllowedMentions.none())
+            await log_channel.send(
+                view=view,
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
         except (discord.Forbidden, discord.HTTPException):
             pass
 
