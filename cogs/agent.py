@@ -7,11 +7,7 @@ from datetime import UTC, datetime
 
 import aiosqlite
 import discord
-
-# DDGS-based manual web search is no longer used — replaced with Groq's
-# built-in `browser_search` tool, which lets the model ground its own
-# response server-side instead of us fetching snippets ourselves.
-# from ddgs import DDGS
+from ddgs import DDGS
 from discord import app_commands
 from discord.ext import commands
 from groq import AsyncGroq
@@ -54,7 +50,7 @@ class ResponsePaginator(discord.ui.LayoutView):
         elapsed: float,
         remaining: int,
         total: int,
-        search: bool,  # whether browser_search was actually invoked this turn
+        search: bool,
         author_id: int,
     ) -> None:
         super().__init__(timeout=300)
@@ -73,9 +69,9 @@ class ResponsePaginator(discord.ui.LayoutView):
         )
 
         grounding_text = (
-            f"-# **Web grounding was used for this prompt. {GROQ_MODEL}**"
+            f"-# **Grounded using DDGS web search context with {GROQ_MODEL}**"
             if search
-            else f"-# **Web grounding was not used for this prompt. {GROQ_MODEL}**"
+            else f"-# **Generated without web search using {GROQ_MODEL}**"
         )
         self.footer = (
             f"\n\n-# **{MELVIN_EMOJI} Took {elapsed:.1f}s. "
@@ -177,21 +173,21 @@ class AgentCog(
             )
             await db.commit()
 
-    # def _get_web_context(self, query: str, max_results: int = 5) -> str:
-    #     try:
-    #         ddgs = DDGS()
-    #         results = list(ddgs.text(query, max_results=max_results))
-    #         if not results:
-    #             return "No search context available."
-    #
-    #         formatted_results = []
-    #         for i, r in enumerate(results, 1):
-    #             formatted_results.append(
-    #                 f"Source {i}:\nTitle: {r.get('title')}\nURL: {r.get('href')}\nSnippet: {r.get('body')}\n",
-    #             )
-    #         return "\n---\n".join(formatted_results)
-    #     except Exception:
-    #         return "Could not fetch search context."
+    def _get_web_context(self, query: str, max_results: int = 5) -> str:
+        try:
+            ddgs = DDGS()
+            results = list(ddgs.text(query, max_results=max_results))
+            if not results:
+                return "No search context available."
+
+            formatted_results = []
+            for i, r in enumerate(results, 1):
+                formatted_results.append(
+                    f"Source {i}:\nTitle: {r.get('title')}\nURL: {r.get('href')}\nSnippet: {r.get('body')}\n",
+                )
+            return "\n---\n".join(formatted_results)
+        except Exception:
+            return "Could not fetch search context."
 
     async def _check_rate_limit(self, user_id: int) -> tuple[bool, int, int]:
         now = int(time.time())
@@ -245,7 +241,7 @@ class AgentCog(
         else:
             await interaction.response.send_message(view=error_ui, ephemeral=True)
 
-    async def query_groq(self, prompt: str) -> tuple[str, bool]:
+    async def query_groq(self, prompt: str, *, use_search: bool = False) -> str:
         current_date_str = datetime.now(UTC).strftime("%B %d, %Y")
 
         system_instruction = (
@@ -253,13 +249,22 @@ class AgentCog(
             "Try to keep responses tidy, brief, and minimal to stay within Discord's 4000 character limit. "
             "Contain responses in short, yet informative paragraphs, rather than graphs or tables or bulletpoints. "
             "Refrain from using emojis unless told to. "
-            "You have access to a browser_search tool, use it whenever the question "
-            "benefits from current, up-to-date, or fact-checked information relative to today's date. "
         )
 
-        full_prompt = (
-            f"--- CURRENT DATE: {current_date_str} ---\n\nUser Question: {prompt}"
-        )
+        if use_search:
+            search_context = await asyncio.to_thread(self._get_web_context, prompt)
+            system_instruction += "Use the provided search context to ground your answer relative to today's date. "
+            full_prompt = (
+                f"--- CURRENT DATE: {current_date_str} ---\n"
+                f"--- SEARCH CONTEXT ---\n"
+                f"{search_context}\n"
+                f"--- END CONTEXT ---\n\n"
+                f"User Question: {prompt}"
+            )
+        else:
+            full_prompt = (
+                f"--- CURRENT DATE: {current_date_str} ---\n\nUser Question: {prompt}"
+            )
 
         try:
             response = await self.client.chat.completions.create(
@@ -269,20 +274,11 @@ class AgentCog(
                     {"role": "user", "content": full_prompt},
                 ],
                 temperature=0.7,
-                tools=[{"type": "browser_search"}],
             )
-            message = response.choices[0].message
-            text = message.content
-            if not text:
-                raise RuntimeError("**Groq returned an empty response.**")
-
-            executed_tools = getattr(message, "executed_tools", None) or []
-            used_search = any(
-                getattr(t, "type", None) == "browser_search"
-                or (isinstance(t, dict) and t.get("type") == "browser_search")
-                for t in executed_tools
-            )
-            return text, used_search
+            text = response.choices[0].message.content
+            if text:
+                return text
+            raise RuntimeError("**Groq returned an empty response.**")
         except Exception as e:
             raise RuntimeError(f"**Groq API Error: {e!s}.**")
 
@@ -292,12 +288,15 @@ class AgentCog(
     )
     @app_commands.describe(
         prompt="The question or prompt to ask the AI model.",
+        search="Whether to perform a web search for grounding context.",
     )
     @app_commands.checks.cooldown(2, 60)
     async def ask(
         self,
         interaction: discord.Interaction,
         prompt: str,
+        *,
+        search: bool = False,
     ) -> None:
         await interaction.response.defer()
 
@@ -313,7 +312,7 @@ class AgentCog(
 
         try:
             start = time.time()
-            ai_response, used_search = await self.query_groq(prompt)
+            ai_response = await self.query_groq(prompt, use_search=search)
             elapsed = time.time() - start
 
             await self._record_request(interaction.user.id)
@@ -326,7 +325,7 @@ class AgentCog(
                 elapsed=elapsed,
                 remaining=remaining,
                 total=RATE_LIMIT,
-                search=used_search,
+                search=search,
                 author_id=interaction.user.id,
             )
             await interaction.edit_original_response(view=view)
