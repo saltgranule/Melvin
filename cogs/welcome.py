@@ -8,7 +8,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from globals import ERROR_MESSAGE, TEXT, IMAGE, CLICK
+from globals import CLICK, ERROR_MESSAGE, IMAGE, TEXT
 from ui import ErrorUI, ExceptionUI, GalleryWithItem, PositiveUI, ResponseUI
 
 log = logging.getLogger(__name__)
@@ -454,19 +454,19 @@ class WelcomeCog(
                     label="Media",
                     value="media",
                     description="Set or replace the welcome image."[:100],
-                    emoji=f"{IMAGE}"
+                    emoji=f"{IMAGE}",
                 ),
                 discord.SelectOption(
                     label="Text",
                     value="text",
                     description="Edit the welcome message text."[:100],
-                    emoji=f"{TEXT}"
+                    emoji=f"{TEXT}",
                 ),
                 discord.SelectOption(
                     label="Buttons",
                     value="buttons",
                     description="Configure button 1 and button 2."[:100],
-                    emoji=f"{CLICK}"
+                    emoji=f"{CLICK}",
                 ),
             ],
         )

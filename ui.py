@@ -14,7 +14,8 @@ from globals import (
     PRIMARY,
     QUATERNARY,
     SECONDARY,
-    TERTIARY, THUMBS_UP,
+    TERTIARY,
+    THUMBS_UP,
 )
 
 
@@ -68,7 +69,9 @@ class CogSelect(discord.ui.Select):
                     else None
                 ),
             )
-            for cog in cogs
+            for cog in cogs if
+            not isinstance(cog.__cog_group_name__, discord.app_commands.locale_str) and
+            not isinstance(cog.__cog_group_description__, discord.app_commands.locale_str)
         ]
 
         super().__init__(
@@ -120,7 +123,7 @@ class HelpView(discord.ui.LayoutView):
         return [c for c in self.bot.cogs.values() if get_cog_commands(c)]
 
     async def on_select_cog(self, interaction: discord.Interaction) -> None:
-        selected_cog_name = interaction.data["values"][0]
+        selected_cog_name = self.cog_select.values[0]
 
         cogs_map = {
             getattr(c, "__cog_group_name__", c.qualified_name): c
@@ -320,9 +323,13 @@ class CasesView(discord.ui.LayoutView):
         )
 
     async def refresh(self, interaction: discord.Interaction) -> None:
-        await self.build_components(
-            interaction.guild_id, interaction.user, interaction.client.user,
-        )
+        if not interaction.guild_id:
+            return
+
+        if not interaction.client.user:
+            return
+
+        await self.build_components(interaction.guild_id, interaction.user, interaction.client.user)
         await interaction.edit_original_response(view=self)
 
 
@@ -408,6 +415,7 @@ class PositiveUI(discord.ui.LayoutView):
         )
         self.container = container
         self.add_item(container)
+
 
 # ThankUI, duplicated because im too lazy to deal with the hardcoded positiveUI emoji value
 class ThankUI(discord.ui.LayoutView):
