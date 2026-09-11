@@ -1,12 +1,24 @@
 import base64
 import binascii
-
+import random
 import discord
-from discord import app_commands
+from discord import app_commands, AllowedMentions
 from discord.ext import commands
 
 from ui import ErrorUI, GalleryWithItem, GatedUI, ResponseUI
 
+EIGHTBALL = [
+    "It is certain.",
+    "Without a doubt.",
+    "Yes, definitely.",
+    "You may rely on it.",
+    "Reply hazy, try again.",
+    "Ask again later.",
+    "Cannot predict now.",
+    "Don't count on it.",
+    "My reply is no.",
+    "Very doubtful.",
+]
 
 class ToolCog(
     commands.GroupCog,
@@ -151,6 +163,14 @@ class ToolCog(
 
         view = ResponseUI(f"**{encodedstr}** was the encoded result.")
         await interaction.edit_original_response(view=view)
+
+    @app_commands.command(name="8ball", description="game of fate")
+    @app_commands.describe(prompt = "the prompt for the 8ball")
+    async def eightball(self, interaction: discord.Interaction, prompt: str):
+        await interaction.response.defer(ephemeral=False)
+        answer = random.choice(EIGHTBALL)
+        view = ResponseUI(f"**{prompt}**\n**{answer}**")
+        await interaction.followup.send(view = view, allowed_mentions = discord.AllowedMentions(everyone=False))
 
 
 async def setup(bot: commands.Bot) -> None:
