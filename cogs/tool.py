@@ -72,7 +72,6 @@ class ToolCog(
         text="The message text to send.",
         attachment="Optional attachment to include with the message.",
     )
-    @app_commands.checks.has_permissions(manage_messages=True)
     async def speak(
         self,
         interaction: discord.Interaction,
@@ -81,6 +80,15 @@ class ToolCog(
     ) -> None:
         await interaction.response.defer(ephemeral=False)
         view = ResponseUI(text)
+
+        if isinstance(interaction.user, discord.Member) and not interaction.user.guild_permissions.manage_messages:
+            view = GatedUI()
+
+            if interaction.response.is_done():
+                await interaction.followup.send(view=view, ephemeral=True)
+            else:
+                await interaction.response.send_message(view=view, ephemeral=True)
+            return
 
         if attachment is not None:
             file = await attachment.to_file()
@@ -143,20 +151,6 @@ class ToolCog(
 
         view = ResponseUI(f"**{encodedstr}** was the encoded result.")
         await interaction.edit_original_response(view=view)
-
-    @speak.error
-    async def speak_error(
-        self,
-        interaction: discord.Interaction,
-        error: app_commands.AppCommandError,
-    ) -> None:
-        if isinstance(error, app_commands.MissingPermissions):
-            view = GatedUI()
-
-            if interaction.response.is_done():
-                await interaction.followup.send(view=view, ephemeral=True)
-            else:
-                await interaction.response.send_message(view=view, ephemeral=True)
 
 
 async def setup(bot: commands.Bot) -> None:
