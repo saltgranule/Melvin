@@ -9,15 +9,14 @@ from ui import ErrorUI, GalleryWithItem, GatedUI, ResponseUI
 
 EIGHTBALL = [
     "It is certain.",
+    "Yes."
     "Without a doubt.",
     "Yes, definitely.",
-    "You may rely on it.",
-    "Reply hazy, try again.",
-    "Ask again later.",
-    "Cannot predict now.",
-    "Don't count on it.",
+    "100%.",
+    "Probably not.",
     "My reply is no.",
     "Very doubtful.",
+    "No."
 ]
 
 class ToolCog(
