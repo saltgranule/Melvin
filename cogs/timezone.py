@@ -25,7 +25,7 @@ time_quotes = [
 def format_ordinal(day: int) -> str:
     if 11 <= day <= 13:
         return f"{day}th"
-    suffixes = {1: "st", 2: "nd", 3: "rd"}
+    suffixes = {1: "st", 2: "nd", 3: "rd"}  # codespell:ignore
     return f"{day}{suffixes.get(day % 10, 'th')}"
 
 

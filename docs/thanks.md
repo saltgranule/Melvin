@@ -20,7 +20,7 @@ When a user includes any of these phrases in a message (by replying to someone o
 * thanks a ton
 * thanks a million
 * much appreciated
-* apprecate it
+* appreciate it
 * many thanks
 * well done
 * good job

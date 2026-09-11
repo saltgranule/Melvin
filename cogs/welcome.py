@@ -380,7 +380,7 @@ class WelcomeCog(
     async def _update_config_fields(self, guild_id: int, **fields: str | None) -> bool:
         unknown = set(fields) - _UPDATABLE_FIELDS
         if unknown:
-            msg = f"not working, cant update unknown welcome_channels columns: {unknown}"
+            msg = f"not working, can't update unknown welcome_channels columns: {unknown}"
             raise ValueError(msg)
 
         async with aiosqlite.connect(self.db_path) as conn:
