@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from pathlib import Path
 
@@ -45,12 +46,12 @@ def _delete_stored_image(guild_id: int) -> None:
 
 
 async def _save_uploaded_image(guild_id: int, uploaded_file: discord.Attachment) -> str:
-    Path(imagedir).mkdir(parents=True, exist_ok=True)
-    _delete_stored_image(guild_id)
+    await asyncio.to_thread(Path(imagedir).mkdir, parents=True, exist_ok=True)
+    await asyncio.to_thread(_delete_stored_image, guild_id)
     ext = Path(uploaded_file.filename).suffix or ".png"
     path = Path(imagedir) / f"{guild_id}{ext}"
     data = await uploaded_file.read()
-    path.write_bytes(data)
+    await asyncio.to_thread(path.write_bytes, data)
     return str(path)
 
 
@@ -104,7 +105,7 @@ class MediaConfigModal(discord.ui.Modal, title="Welcome Media"):
                 return
 
         try:
-            updated = await self.cog._update_config_fields(self.guild_id, attachment_path=attachment_path)
+            updated = await self.cog.update_config_fields(self.guild_id, attachment_path=attachment_path)
         except Exception:
             log.exception("Database error while updating welcome media")
             await safe_finish(interaction, ExceptionUI())
@@ -117,7 +118,7 @@ class MediaConfigModal(discord.ui.Modal, title="Welcome Media"):
             )
             return
 
-        await self.cog._refresh_preview(self.message, self.guild_id, interaction.user)
+        await self.cog.refresh_preview(self.message, self.guild_id, interaction.user)
 
 
 class TextConfigModal(discord.ui.Modal, title="Welcome Text"):
@@ -154,7 +155,7 @@ class TextConfigModal(discord.ui.Modal, title="Welcome Text"):
         text_value = str(self._text.value).strip() or None
 
         try:
-            updated = await self.cog._update_config_fields(self.guild_id, message=text_value)
+            updated = await self.cog.update_config_fields(self.guild_id, message=text_value)
         except Exception:
             log.exception("Database error while updating welcome text")
             await safe_finish(interaction, ExceptionUI())
@@ -167,7 +168,7 @@ class TextConfigModal(discord.ui.Modal, title="Welcome Text"):
             )
             return
 
-        await self.cog._refresh_preview(self.message, self.guild_id, interaction.user)
+        await self.cog.refresh_preview(self.message, self.guild_id, interaction.user)
 
 
 class ButtonsConfigModal(discord.ui.Modal, title="Welcome Buttons"):
@@ -247,7 +248,7 @@ class ButtonsConfigModal(discord.ui.Modal, title="Welcome Buttons"):
                 return
 
         try:
-            updated = await self.cog._update_config_fields(
+            updated = await self.cog.update_config_fields(
                 self.guild_id,
                 b1_url=b1_url,
                 b1_label=b1_label,
@@ -266,7 +267,7 @@ class ButtonsConfigModal(discord.ui.Modal, title="Welcome Buttons"):
             )
             return
 
-        await self.cog._refresh_preview(self.message, self.guild_id, interaction.user)
+        await self.cog.refresh_preview(self.message, self.guild_id, interaction.user)
 
 
 @app_commands.guild_only
@@ -377,7 +378,7 @@ class WelcomeCog(
             "b2_label": b2_label,
         }
 
-    async def _update_config_fields(self, guild_id: int, **fields: str | None) -> bool:
+    async def update_config_fields(self, guild_id: int, **fields: str | None) -> bool:
         unknown = set(fields) - _UPDATABLE_FIELDS
         if unknown:
             msg = f"not working, can't update unknown welcome_channels columns: {unknown}"
@@ -505,7 +506,7 @@ class WelcomeCog(
         view.container.add_item(discord.ui.ActionRow(self._build_config_select(guild_id)))
         return view, file
 
-    async def _refresh_preview(
+    async def refresh_preview(
         self,
         message: discord.Message,
         guild_id: int,

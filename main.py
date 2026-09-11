@@ -84,7 +84,7 @@ class Melvin(commands.Bot):
         loop.set_debug(True)
         try:
             resolver = aiodns.DNSResolver(nameservers=["1.1.1.1", "8.8.8.8"])
-            self.http._HTTPClient__session._connector._resolver._resolver = resolver
+            self.http._HTTPClient__session._connector._resolver._resolver = resolver  # ruff: ignore[private-member-access]  # pyright: ignore[ reportAttributeAccessIssue]
             log.info("DNS resolver successfully configured.")
         except Exception:
             log.exception("Could not configure DNS resolver")

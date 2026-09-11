@@ -39,16 +39,15 @@ class StatsCog(commands.Cog, name="stats", description="Commands relating to Mel
     async def before_daily_task(self) -> None:
         await self.bot.wait_until_ready()
 
-        async with aiosqlite.connect(self.db_path) as conn:
-            async with conn.execute("SELECT COUNT(*) FROM daily_snapshots") as cursor:
-                row = await cursor.fetchone()
-                if row and row[0] == 0:
-                    app = self.bot.application or await self.bot.application_info()
-                    await conn.execute(
-                        "INSERT INTO daily_snapshots (guild_count, user_count) VALUES (?, ?)",
-                        (len(self.bot.guilds), app.approximate_user_install_count or 0),
-                    )
-                    await conn.commit()
+        async with aiosqlite.connect(self.db_path) as conn, conn.execute("SELECT COUNT(*) FROM daily_snapshots") as cursor:
+            row = await cursor.fetchone()
+            if row and row[0] == 0:
+                app = self.bot.application or await self.bot.application_info()
+                await conn.execute(
+                    "INSERT INTO daily_snapshots (guild_count, user_count) VALUES (?, ?)",
+                    (len(self.bot.guilds), app.approximate_user_install_count or 0),
+                )
+                await conn.commit()
 
     async def _ensure_db(self) -> None:
         async with aiosqlite.connect(self.db_path) as conn:

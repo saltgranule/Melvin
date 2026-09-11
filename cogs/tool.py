@@ -1,23 +1,25 @@
 import base64
 import binascii
 import random
+
 import discord
-from discord import app_commands, AllowedMentions
+from discord import app_commands
 from discord.ext import commands
 
 from ui import ErrorUI, GalleryWithItem, GatedUI, ResponseUI
 
 EIGHTBALL = [
     "It is certain.",
-    "Yes."
+    "Yes.",
     "Without a doubt.",
     "Yes, definitely.",
     "100%.",
     "Probably not.",
     "My reply is no.",
     "Very doubtful.",
-    "No."
+    "No.",
 ]
+
 
 class ToolCog(
     commands.GroupCog,
@@ -93,12 +95,7 @@ class ToolCog(
         view = ResponseUI(text)
 
         if isinstance(interaction.user, discord.Member) and not interaction.user.guild_permissions.manage_messages:
-            view = GatedUI()
-
-            if interaction.response.is_done():
-                await interaction.followup.send(view=view, ephemeral=True)
-            else:
-                await interaction.response.send_message(view=view, ephemeral=True)
+            await interaction.followup.send(view=GatedUI(), ephemeral=True)
             return
 
         if attachment is not None:
@@ -164,12 +161,12 @@ class ToolCog(
         await interaction.edit_original_response(view=view)
 
     @app_commands.command(name="8ball", description="game of fate")
-    @app_commands.describe(prompt = "the prompt for the 8ball")
-    async def eightball(self, interaction: discord.Interaction, prompt: str):
+    @app_commands.describe(prompt="the prompt for the 8ball")
+    async def eightball(self, interaction: discord.Interaction, prompt: str) -> None:
         await interaction.response.defer(ephemeral=False)
         answer = random.choice(EIGHTBALL)
         view = ResponseUI(f"**{prompt}**\n<:8ball:1548098650482413608>**{answer}**")
-        await interaction.followup.send(view = view, allowed_mentions = discord.AllowedMentions(everyone=False))
+        await interaction.followup.send(view=view, allowed_mentions=discord.AllowedMentions(everyone=False))
 
 
 async def setup(bot: commands.Bot) -> None:
