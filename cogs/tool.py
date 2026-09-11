@@ -169,7 +169,7 @@ class ToolCog(
     async def eightball(self, interaction: discord.Interaction, prompt: str):
         await interaction.response.defer(ephemeral=False)
         answer = random.choice(EIGHTBALL)
-        view = ResponseUI(f"**{prompt}**\n**{answer}**")
+        view = ResponseUI(f"**{prompt}**\n<:8ball:1548098650482413608>**{answer}**")
         await interaction.followup.send(view = view, allowed_mentions = discord.AllowedMentions(everyone=False))
 
 
