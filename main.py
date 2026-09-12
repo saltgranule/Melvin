@@ -127,42 +127,42 @@ async def help_command(interaction: discord.Interaction) -> None:
     await interaction.followup.send(view=view)
 
 
-@bot.tree.command(name="melvin", description="here's melvin")
+@bot.tree.command(name="melvin", description="Here's Melvin.")
 async def melvin_command(interaction: discord.Interaction) -> None:
     await interaction.response.defer()
     current_guilds = len(bot.guilds)
     goal_guilds = 100
 
     view = ResponseUI(
-        f"{MELVIN_EMOJI} **melvin**\n-# **a growing utility app, {current_guilds}/{goal_guilds} guild(s)**",
+        f"{MELVIN_EMOJI} **Melvin**\n-# **A growing utility app. {current_guilds}/{goal_guilds} guilds.**",
     )
     row = discord.ui.ActionRow()
     invite = discord.ui.Button(
-        label="add me",
+        label="Add Me",
         style=discord.ButtonStyle.link,
         url="https://discord.com/oauth2/authorize?client_id=1468362201197973756",
         emoji="<:pluscircleduotone:1548410107484835942>",
     )
     support = discord.ui.Button(
-        label="support",
+        label="Support",
         style=discord.ButtonStyle.link,
         url="https://discord.gg/PfyKM7dyx4",
         emoji="<:questionduotone:1548410071195844668>",
     )
     web = discord.ui.Button(
-        label="web page",
+        label="Website",
         style=discord.ButtonStyle.link,
         url="https://justmelvin.site",
         emoji="<:browsersduotone:1548410087037477066>",
     )
     status = discord.ui.Button(
-        label="status page",
+        label="Status",
         style=discord.ButtonStyle.link,
         url="https://justmelvin.site/status",
         emoji="<:browsersduotone:1548410087037477066>",
     )
     github = discord.ui.Button(
-        label="github repo",
+        label="Github",
         style=discord.ButtonStyle.link,
         url="https://github.com/saltgranule/melvin",
         emoji="<:githublogoduotone:1548410053382643723>",
