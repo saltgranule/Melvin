@@ -113,7 +113,7 @@ async def update_stats() -> None:
     )
 
 
-@tasks.loop(minutes=1)
+@tasks.loop(minutes=5)
 async def update_shard_latency() -> None:
     latencies = getattr(bot, "latencies", None) or [(0, bot.latency)]
     for shard_id, latency in latencies:

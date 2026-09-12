@@ -27,4 +27,28 @@
     <p class="status-empty">No shard data yet.</p>
     {% endif %}
 </section>
+
+<section class="hero section-container">
+    <div class="hero-text">
+        <h1 class="hero-title">Experiencing issues?</h1>
+        <p class="hero-subtitle">
+            if you're having issues, please report them to the support server, be sure to read documentation to avoid wasting our, and your own time.
+        </p>
+        <div class="hero-cta">
+            <a href="https://discord.com/oauth2/authorize?client_id=1468362201197973756" class="btn btn-dark">Support server</a>
+            <a href="/docs" class="docs-search">
+                <svg class="docs-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+                    <path d="M20 20L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span class="docs-search-input docs-search-fake-input">Search docs...</span>
+                <kbd class="docs-search-kbd">/</kbd>
+            </a>
+        </div>
+    </div>
+
+    <div class="hero-logo-wrap">
+        <img src="{{ url_for('static', filename='media/MelvinLogo.png') }}" alt="Melvin" class="hero-logo">
+    </div>
+</section>
 {% endblock %}
