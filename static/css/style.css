@@ -326,7 +326,9 @@ a {
 }
 
 .btn {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     text-decoration: none;
     font-family: inherit;
     font-size: 14px;
@@ -336,6 +338,11 @@ a {
     border-radius: 8px;
     cursor: pointer;
     transition: transform 100ms ease, border-bottom-width 100ms ease;
+}
+
+.btn-icon {
+    flex: 0 0 auto;
+    display: block;
 }
 
 .btn-primary {
