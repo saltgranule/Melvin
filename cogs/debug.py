@@ -2,9 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from globals import INVITE_URL, MELVIN_BANNER, MELVIN_EMOJI
-from ui import ExceptionUI, GalleryWithItem, ResponseUI, SmallSeparator, ThinkingText
-
+from ui import ExceptionUI, ResponseUI, ThinkingText
 
 
 class DebugCog(
@@ -25,6 +23,7 @@ class DebugCog(
     async def error(self, interaction: discord.Interaction) -> None:
         view = ExceptionUI()
         await interaction.response.send_message(view=view)
+
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(DebugCog(bot))
