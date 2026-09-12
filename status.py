@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import aiosqlite
@@ -25,18 +25,18 @@ async def init_db() -> None:
                 latency_ms REAL NOT NULL,
                 checked_at TEXT NOT NULL
             )
-            """
+            """,
         )
         await db.execute(
             "CREATE INDEX IF NOT EXISTS idx_shard_latency_shard_checked "
-            "ON shard_latency (shard_id, checked_at)"
+            "ON shard_latency (shard_id, checked_at)",
         )
         await db.commit()
 
 
 async def record_latency(shard_id: int, latency_ms: float) -> None:
     await init_db()
-    checked_at = datetime.now(timezone.utc).isoformat()
+    checked_at = datetime.now(UTC).isoformat()
 
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
@@ -63,7 +63,7 @@ async def record_latency(shard_id: int, latency_ms: float) -> None:
 
 def _format_relative(checked_at: str) -> str:
     checked = datetime.fromisoformat(checked_at)
-    seconds = int((datetime.now(timezone.utc) - checked).total_seconds())
+    seconds = int((datetime.now(UTC) - checked).total_seconds())
 
     if seconds < 10:
         return "just now"
@@ -112,7 +112,7 @@ async def get_shard_status() -> list[dict]:
         db.row_factory = aiosqlite.Row
 
         cursor = await db.execute(
-            "SELECT DISTINCT shard_id FROM shard_latency ORDER BY shard_id ASC"
+            "SELECT DISTINCT shard_id FROM shard_latency ORDER BY shard_id ASC",
         )
         shard_ids = [row["shard_id"] for row in await cursor.fetchall()]
 
@@ -142,7 +142,7 @@ async def get_shard_status() -> list[dict]:
                     "chart_points": _build_area_points(history),
                     "chart_width": CHART_WIDTH,
                     "chart_height": CHART_HEIGHT,
-                }
+                },
             )
 
     return shards

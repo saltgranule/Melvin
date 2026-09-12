@@ -153,7 +153,7 @@ def render_doc(slug: str) -> str | None:
 
 
 @app.route("/")
-def home() -> None:
+def home() -> str:
     return render_template(
         "index.html",
         active="home",
@@ -165,7 +165,7 @@ def home() -> None:
 
 
 @app.route("/docs")
-def docs_index() -> None:
+def docs_index() -> str:
     return render_template(
         "docs.html",
         active="docs",
@@ -178,7 +178,7 @@ def docs_index() -> None:
 
 
 @app.route("/docs/<slug>")
-def docs_page(slug: str) -> None:
+def docs_page(slug: str) -> str:
     content = render_doc(slug)
     if content is None:
         abort(404)
@@ -194,7 +194,7 @@ def docs_page(slug: str) -> None:
 
 
 @app.route("/status")
-async def status() -> None:
+async def status() -> str:
     return render_template(
         "status.html",
         active="status",
