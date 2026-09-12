@@ -1,6 +1,6 @@
 import json
 import os
-import subprocess
+import subprocess  # ruff: ignore[suspicious-subprocess-import]
 import sys
 import time
 import urllib.error
@@ -27,8 +27,7 @@ bot_process = None
 
 
 def start_bot() -> None:
-    global bot_process
-    bot_process = subprocess.Popen([sys.executable, "main.py"])
+    globals()["bot_process"] = subprocess.Popen([sys.executable, "main.py"])
 
 
 THEME = {
@@ -50,7 +49,7 @@ REPO_META_TTL = 600
 _repo_meta_cache = {"data": None, "fetched_at": 0}
 
 
-def _github_get(path: str) -> None:
+def _github_get(path: str) -> dict | list:
     headers = {
         "Accept": "application/vnd.github+json",
         "User-Agent": "Melvin-Frontend",
@@ -59,8 +58,12 @@ def _github_get(path: str) -> None:
     if token:
         headers["Authorization"] = f"Bearer {token}"
 
-    request = urllib.request.Request(f"{GITHUB_API}{path}", headers=headers)
-    with urllib.request.urlopen(request, timeout=5) as response:
+    url = f"{GITHUB_API}{path}"
+    if not url.startswith("https://"):
+        raise ValueError("Invalid URL scheme")
+
+    request = urllib.request.Request(url, headers=headers)  # ruff: ignore[suspicious-url-open-usage]
+    with urllib.request.urlopen(request, timeout=5) as response:  # ruff: ignore[suspicious-url-open-usage]
         return json.load(response)
 
 
@@ -205,7 +208,7 @@ async def status() -> str:
 
 
 @app.errorhandler(404)
-def not_found(error) -> tuple:
+def not_found(_error: Exception) -> tuple[str, int]:
     return render_template("404.html", active=None, theme=THEME, links=LINKS), 404
 
 
@@ -213,7 +216,12 @@ if __name__ == "__main__":
     start_bot()
 
     try:
-        app.run(host="0.0.0.0", port=3005, debug=True, use_reloader=False)
+        app.run(
+            host=os.environ.get("HOST", "0.0.0.0"),  # ruff: ignore[hardcoded-bind-all-interfaces]
+            port=int(os.environ.get("PORT", "3005")),
+            debug=os.environ.get("FLASK_DEBUG", "false").lower() == "true",
+            use_reloader=False,
+        )
     finally:
         if bot_process is not None:
             bot_process.terminate()

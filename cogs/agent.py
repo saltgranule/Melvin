@@ -280,7 +280,8 @@ class AgentCog(
                 return text
             raise RuntimeError("**Groq returned an empty response.**")
         except Exception as e:
-            raise RuntimeError(f"**Groq API Error: {e!s}.**")
+            error = f"**Groq API Error: {e!s}.**"
+            raise RuntimeError(error) from e
 
     @app_commands.command(
         name="ask",

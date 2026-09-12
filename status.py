@@ -1,5 +1,4 @@
-from __future__ import annotations
-
+import asyncio
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -15,7 +14,7 @@ CHART_PADDING = 4
 
 
 async def init_db() -> None:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    await asyncio.to_thread(DATA_DIR.mkdir, parents=True, exist_ok=True)
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             """
