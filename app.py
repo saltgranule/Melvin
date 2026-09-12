@@ -18,6 +18,7 @@ from globals import (
     SECONDARY,
     TERTIARY,
 )
+from status import get_shard_status
 
 app = Flask(__name__)
 
@@ -189,6 +190,17 @@ def docs_page(slug: str) -> None:
         docs=get_docs_list(),
         content=content,
         active_slug=slug,
+    )
+
+
+@app.route("/status")
+async def status() -> None:
+    return render_template(
+        "status.html",
+        active="status",
+        theme=THEME,
+        links=LINKS,
+        shards=await get_shard_status(),
     )
 
 

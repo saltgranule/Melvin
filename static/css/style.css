@@ -585,6 +585,94 @@ a {
     background: #f4f3f0;
 }
 
+
+.status-section {
+    padding-top: 40px;
+    padding-bottom: 64px;
+}
+
+.status-heading {
+    font-size: 22px;
+    margin-bottom: 20px;
+}
+
+.status-grid {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.status-card {
+    display: flex;
+    flex-direction: column;
+    width: 240px;
+    height: 160px;
+    border: 1px solid #e5e3df;
+    border-bottom: 3px solid #b9762c;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.status-card-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 240px;
+    height: 160px;
+    padding: 16px;
+    border: 1px solid #e5e3df;
+    border-radius: 8px;
+    background: #f4f3f0;
+    color: #6b675f;
+    font-size: 14px;
+    text-align: center;
+}
+
+.status-card-header {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    padding: 14px 16px 8px;
+}
+
+.status-shard-label {
+    font-size: 12px;
+    color: #6b675f;
+    margin-bottom: 4px;
+}
+
+.status-latency {
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.status-checked {
+    font-size: 12px;
+    color: #a8a49c;
+    margin-top: 2px;
+}
+
+.status-chart {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.status-chart svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.status-empty {
+    color: #a8a49c;
+    font-size: 14px;
+}
+
 @media (max-width: 900px) {
     .docs-layout {
         flex-direction: column;
@@ -734,6 +822,12 @@ a {
 
     .footer-col {
         gap: 8px;
+    }
+
+    .status-card,
+    .status-card-empty {
+        width: 100%;
+        max-width: 280px;
     }
 }
 

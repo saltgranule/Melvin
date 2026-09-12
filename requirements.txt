@@ -5,5 +5,5 @@ faust-cchardet
 ddgs
 python-dotenv
 markdown
-flask
+flask[async]
 groq

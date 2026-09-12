@@ -9,6 +9,7 @@ import discord
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
 
+import status
 from globals import DisplayNameEffect, DisplayNameFont
 from ui import HelpView
 
@@ -95,6 +96,8 @@ class Melvin(commands.Bot):
         await self.tree.sync()
         if not update_stats.is_running():
             update_stats.start()
+        if not update_shard_latency.is_running():
+            update_shard_latency.start()
 
 
 bot = Melvin()
@@ -108,6 +111,13 @@ async def update_stats() -> None:
     STATS_FILE.write_text(
         json.dumps({"guild_count": guild_count, "member_count": member_count}),
     )
+
+
+@tasks.loop(minutes=1)
+async def update_shard_latency() -> None:
+    latencies = getattr(bot, "latencies", None) or [(0, bot.latency)]
+    for shard_id, latency in latencies:
+        await status.record_latency(shard_id, latency * 1000)
 
 
 @bot.tree.command(name="help", description="Take a peek at Melvin's commands.")

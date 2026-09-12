@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section-container status-section">
+    <h1 class="status-heading">latency statistics</h1>
+
+    {% if shards %}
+    <div class="status-grid">
+        {% for shard in shards %}
+        <div class="status-card">
+            <div class="status-card-header">
+                <span class="status-shard-label">shard {{ shard.shard_id }}</span>
+                <span class="status-latency">{{ shard.latency_ms }}ms</span>
+                <span class="status-checked">last checked {{ shard.last_checked }}</span>
+            </div>
+            <div class="status-chart">
+                <svg viewBox="0 0 {{ shard.chart_width }} {{ shard.chart_height }}" preserveAspectRatio="none">
+                    <polygon points="{{ shard.chart_points }}" fill="var(--primary)" stroke="none"></polygon>
+                </svg>
+            </div>
+        </div>
+        {% endfor %}
+        {% if shards|length <= 1 %}
+        <div class="status-card-empty">no other shards... yet</div>
+        {% endif %}
+    </div>
+    {% else %}
+    <p class="status-empty">No shard data yet.</p>
+    {% endif %}
+</section>
+{% endblock %}
