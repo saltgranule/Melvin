@@ -10,8 +10,8 @@ from discord.ext import commands, tasks
 from dotenv import load_dotenv
 
 import status
-from globals import DisplayNameEffect, DisplayNameFont
-from ui import HelpView
+from globals import DisplayNameEffect, DisplayNameFont, MELVIN_EMOJI
+from ui import HelpView, ResponseUI
 
 logging.basicConfig(level=logging.INFO)
 intents = discord.Intents.default()
@@ -124,6 +124,56 @@ async def update_shard_latency() -> None:
 async def help_command(interaction: discord.Interaction) -> None:
     await interaction.response.defer()
     view = HelpView(bot)
+    await interaction.followup.send(view=view)
+
+@bot.tree.command(name="melvin", description="here's melvin")
+async def help_command(interaction: discord.Interaction) -> None:
+    await interaction.response.defer()
+    current_guilds = len(bot.guilds)
+    goal_guilds = 100
+
+    view = ResponseUI(
+        f"{MELVIN_EMOJI} **melvin**\n-# **a growing utility app, {current_guilds}/{goal_guilds} guild(s)**"
+    )
+    row = discord.ui.ActionRow()
+    invite = discord.ui.Button(
+        label="add me",
+        style=discord.ButtonStyle.link,
+        url="https://discord.com/oauth2/authorize?client_id=1468362201197973756",
+        emoji=f"<:pluscircleduotone:1548410107484835942>"
+    )
+    support = discord.ui.Button(
+        label="support",
+        style=discord.ButtonStyle.link,
+        url="https://discord.gg/PfyKM7dyx4",
+        emoji=f"<:questionduotone:1548410071195844668>"
+    )
+    web = discord.ui.Button(
+        label="web page",
+        style=discord.ButtonStyle.link,
+        url="https://justmelvin.site",
+        emoji=f"<:browsersduotone:1548410087037477066>"
+    )
+    status = discord.ui.Button(
+        label="status page",
+        style=discord.ButtonStyle.link,
+        url="https://justmelvin.site/status",
+        emoji=f"<:browsersduotone:1548410087037477066>"
+    )
+    github = discord.ui.Button(
+        label="github repo",
+        style=discord.ButtonStyle.link,
+        url="https://github.com/saltgranule/melvin",
+        emoji=f"<:githublogoduotone:1548410053382643723>"
+    )
+
+    row.add_item(invite)
+    row.add_item(support)
+    row.add_item(web)
+    row.add_item(status)
+    row.add_item(github)
+    view.container.add_item(row)
+
     await interaction.followup.send(view=view)
 
 
