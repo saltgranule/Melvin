@@ -51,4 +51,16 @@
         <img src="{{ url_for('static', filename='media/MelvinLogo.png') }}" alt="Melvin" class="hero-logo">
     </div>
 </section>
+
+<script>
+    document.addEventListener("keydown", function (event) {
+        var isTypingElsewhere = ["INPUT", "TEXTAREA"].indexOf(document.activeElement.tagName) !== -1;
+        var isCmdK = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
+        var isSlash = event.key === "/" && !isTypingElsewhere;
+        if (isCmdK || isSlash) {
+            event.preventDefault();
+            window.location.href = "/docs";
+        }
+    });
+</script>
 {% endblock %}
