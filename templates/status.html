@@ -8,9 +8,9 @@
         {% for shard in shards %}
         <div class="status-card">
             <div class="status-card-header">
-                <span class="status-shard-label">shard {{ shard.shard_id }}</span>
+                <span class="status-shard-label">Shard {{ shard.shard_id }}</span>
                 <span class="status-latency">{{ shard.latency_ms }}ms</span>
-                <span class="status-checked">last checked {{ shard.last_checked }}</span>
+                <span class="status-checked">Last checked {{ shard.last_checked }}</span>
             </div>
             <div class="status-chart">
                 <svg viewBox="0 0 {{ shard.chart_width }} {{ shard.chart_height }}" preserveAspectRatio="none">
@@ -20,7 +20,7 @@
         </div>
         {% endfor %}
         {% if shards|length <= 1 %}
-        <div class="status-card-empty">no other shards... yet</div>
+        <div class="status-card-empty">No other shards... yet.</div>
         {% endif %}
     </div>
     {% else %}
@@ -35,7 +35,7 @@
             if you're having issues, please report them to the support server, be sure to read documentation to avoid wasting our, and your own time.
         </p>
         <div class="hero-cta">
-            <a href="https://discord.com/oauth2/authorize?client_id=1468362201197973756" class="btn btn-dark">Support server</a>
+            <a href="https://discord.com/oauth2/authorize?client_id=1468362201197973756" class="btn btn-dark">Support Server</a>
             <a href="/docs" class="docs-search">
                 <svg class="docs-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
