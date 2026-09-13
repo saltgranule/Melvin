@@ -85,7 +85,7 @@ class Melvin(commands.Bot):
         loop.set_debug(True)
         try:
             resolver = aiodns.DNSResolver(nameservers=["1.1.1.1", "8.8.8.8"])
-            self.http._HTTPClient__session._connector._resolver._resolver = resolver  # ruff: ignore[private-member-access]  # pyright: ignore[ reportAttributeAccessIssue]
+            self.http._HTTPClient__session._connector._resolver._resolver = resolver  # ruff: ignore[private-member-access]  # pyright: ignore[reportAttributeAccessIssue]
             log.info("DNS resolver successfully configured.")
         except Exception:
             log.exception("Could not configure DNS resolver")
@@ -134,7 +134,7 @@ async def melvin_command(interaction: discord.Interaction) -> None:
     goal_guilds = 100
 
     view = ResponseUI(
-        f"{MELVIN_EMOJI} **Melvin**\n-# **A growing utility app. {current_guilds}/{goal_guilds} guilds.**",
+        f"{MELVIN_EMOJI} **Melvin**\n-# **A growing utility app. {current_guilds}/{goal_guilds} guilds{"." if goal_guilds > current_guilds else "! 🎉"}**",
     )
     row = discord.ui.ActionRow()
     invite = discord.ui.Button(
