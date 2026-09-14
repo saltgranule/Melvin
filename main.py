@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import time
 from pathlib import Path
 
 import aiodns
@@ -85,7 +86,7 @@ class Melvin(commands.Bot):
         loop.set_debug(True)
         try:
             resolver = aiodns.DNSResolver(nameservers=["1.1.1.1", "8.8.8.8"])
-            self.http._HTTPClient__session._connector._resolver._resolver = resolver  # ruff: ignore[private-member-access]  # pyright: ignore[reportAttributeAccessIssue]
+            self.http._HTTPClient__session._connector._resolver._resolver = resolver  # ruff: ignore[private-member-access]  # pyright: ignore[ reportAttributeAccessIssue]
             log.info("DNS resolver successfully configured.")
         except Exception:
             log.exception("Could not configure DNS resolver")
@@ -113,11 +114,22 @@ async def update_stats() -> None:
     )
 
 
+async def _measure_api_latency() -> float:
+    start = time.perf_counter()
+    try:
+        await bot.http.request(discord.http.Route("GET", "/users/@me"))
+    except Exception:
+        log.exception("Failed to measure API latency")
+        return 0.0
+    return (time.perf_counter() - start) * 1000
+
+
 @tasks.loop(minutes=5)
 async def update_shard_latency() -> None:
+    api_latency_ms = await _measure_api_latency()
     latencies = getattr(bot, "latencies", None) or [(0, bot.latency)]
     for shard_id, latency in latencies:
-        await status.record_latency(shard_id, latency * 1000)
+        await status.record_latency(shard_id, latency * 1000, api_latency_ms)
 
 
 @bot.tree.command(name="help", description="Take a peek at Melvin's commands.")

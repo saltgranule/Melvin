@@ -22,10 +22,15 @@ async def init_db() -> None:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 shard_id INTEGER NOT NULL,
                 latency_ms REAL NOT NULL,
+                api_latency_ms REAL,
                 checked_at TEXT NOT NULL
             )
             """,
         )
+        cursor = await db.execute("PRAGMA table_info(shard_latency)")
+        columns = {row[1] for row in await cursor.fetchall()}
+        if "api_latency_ms" not in columns:
+            await db.execute("ALTER TABLE shard_latency ADD COLUMN api_latency_ms REAL")
         await db.execute(
             "CREATE INDEX IF NOT EXISTS idx_shard_latency_shard_checked "
             "ON shard_latency (shard_id, checked_at)",
@@ -33,17 +38,17 @@ async def init_db() -> None:
         await db.commit()
 
 
-async def record_latency(shard_id: int, latency_ms: float) -> None:
+async def record_latency(shard_id: int, latency_ms: float, api_latency_ms: float) -> None:
     await init_db()
     checked_at = datetime.now(UTC).isoformat()
 
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             """
-            INSERT INTO shard_latency (shard_id, latency_ms, checked_at)
-            VALUES (?, ?, ?)
+            INSERT INTO shard_latency (shard_id, latency_ms, api_latency_ms, checked_at)
+            VALUES (?, ?, ?, ?)
             """,
-            (shard_id, latency_ms, checked_at),
+            (shard_id, latency_ms, api_latency_ms, checked_at),
         )
         await db.execute(
             """
@@ -65,36 +70,34 @@ def _format_relative(checked_at: str) -> str:
     seconds = int((datetime.now(UTC) - checked).total_seconds())
 
     if seconds < 10:
-        return "just now."
+        return "just now"
     if seconds < 60:
-        return f"{seconds}s ago."
+        return f"{seconds}s ago"
     minutes = seconds // 60
     if minutes < 60:
-        return f"{minutes}m ago."
+        return f"{minutes}m ago"
     hours = minutes // 60
     if hours < 24:
-        return f"{hours}h ago."
-    return f"{hours // 24}d ago."
+        return f"{hours}h ago"
+    return f"{hours // 24}d ago"
 
 
-def _build_area_points(history: list[float]) -> str:
+def _build_area_points(history: list[float], lo: float, hi: float) -> str:
     n = len(history)
     if n == 0:
         return ""
 
+    span = (hi - lo) or 1.0
+    usable_height = CHART_HEIGHT - (CHART_PADDING * 2)
+
     if n == 1:
-        y = CHART_HEIGHT / 2
+        y = CHART_HEIGHT - CHART_PADDING - ((history[0] - lo) / span) * usable_height
         return (
             f"0,{CHART_HEIGHT} 0,{y:.2f} "
             f"{CHART_WIDTH},{y:.2f} {CHART_WIDTH},{CHART_HEIGHT}"
         )
 
-    lo = min(history)
-    hi = max(history)
-    span = (hi - lo) or 1.0
-    usable_height = CHART_HEIGHT - (CHART_PADDING * 2)
     step = CHART_WIDTH / (n - 1)
-
     top_edge = []
     for i, value in enumerate(history):
         x = i * step
@@ -119,7 +122,7 @@ async def get_shard_status() -> list[dict]:
         for shard_id in shard_ids:
             cursor = await db.execute(
                 """
-                SELECT latency_ms, checked_at FROM shard_latency
+                SELECT latency_ms, api_latency_ms, checked_at FROM shard_latency
                 WHERE shard_id = ?
                 ORDER BY checked_at DESC
                 LIMIT ?
@@ -130,15 +133,20 @@ async def get_shard_status() -> list[dict]:
             if not rows:
                 continue
 
-            history = [row["latency_ms"] for row in rows]
+            gateway_history = [row["latency_ms"] for row in rows]
+            api_history = [row["api_latency_ms"] or 0.0 for row in rows]
             latest = rows[-1]
+            combined = gateway_history + api_history
+            lo, hi = min(combined), max(combined)
 
             shards.append(
                 {
                     "shard_id": shard_id,
                     "latency_ms": round(latest["latency_ms"]),
+                    "api_latency_ms": round(latest["api_latency_ms"] or 0.0),
                     "last_checked": _format_relative(latest["checked_at"]),
-                    "chart_points": _build_area_points(history),
+                    "chart_points": _build_area_points(gateway_history, lo, hi),
+                    "api_chart_points": _build_area_points(api_history, lo, hi),
                     "chart_width": CHART_WIDTH,
                     "chart_height": CHART_HEIGHT,
                 },
