@@ -10,11 +10,13 @@
             <div class="status-card-header">
                 <span class="status-shard-label">Shard {{ shard.shard_id }}</span>
                 <span class="status-latency">{{ shard.latency_ms }}ms</span>
+                <span class="status-latency-api">api {{ shard.api_latency_ms }}ms</span>
                 <span class="status-checked">Last checked {{ shard.last_checked }}</span>
             </div>
             <div class="status-chart">
                 <svg viewBox="0 0 {{ shard.chart_width }} {{ shard.chart_height }}" preserveAspectRatio="none">
-                    <polygon points="{{ shard.chart_points }}" fill="var(--primary)" stroke="none"></polygon>
+                    <polygon points="{{ shard.api_chart_points }}" class="status-chart-api"></polygon>
+                    <polygon points="{{ shard.chart_points }}" class="status-chart-gateway"></polygon>
                 </svg>
             </div>
         </div>
