@@ -14,6 +14,16 @@
             --quaternary: {{ theme.quaternary }};
         }
     </style>
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Melvin">
+    <meta property="og:description" content="Melvin is a community attempt to create a python based Discord bot from scratch. Melvin is entirely open sourced, and open to contributions.">
+    <meta property="og:image" content="{{ url_for('static', filename='media/OG.jpg', _external=True) }}">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta name="theme-color" content="{{ theme.primary }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Melvin">
+    <meta name="twitter:description" content="Melvin is a community attempt to create a python based Discord bot from scratch. Melvin is entirely open sourced, and open to contributions.">
+    <meta name="twitter:image" content="{{ url_for('static', filename='media/OG.jpg', _external=True) }}">
 </head>
 <body>
     <nav class="navbar">
