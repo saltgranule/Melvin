@@ -85,6 +85,29 @@ class ModCog(
     async def cog_load(self) -> None:
         await self._ensure_db()
 
+    @commands.Cog.listener()
+    async def on_member_join(self, member: discord.Member) -> None:
+        async with aiosqlite.connect(self.db_path) as conn:
+            async with conn.execute(
+                    "SELECT role_id FROM auto_roles WHERE guild_id = ?",
+                    (member.guild.id,),
+            ) as cursor:
+                row = await cursor.fetchone()
+
+        if not row:
+            return
+
+        role_id = row[0]
+        role = member.guild.get_role(role_id)
+
+        if role is None:
+            return
+
+        try:
+            await member.add_roles(role, reason="/role auto configuration")
+        except discord.HTTPException:
+            pass
+
     # newer cogwide EH
     async def cog_app_command_error(
         self,
