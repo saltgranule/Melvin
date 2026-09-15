@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import asyncio
 import logging
 from pathlib import Path
@@ -396,7 +397,7 @@ class WelcomeCog(
             set_clause = ", ".join(f"{column} = ?" for column in fields)
             values = [*fields.values(), str(guild_id)]
             await conn.execute(
-                f"UPDATE welcome_channels SET {set_clause} WHERE guild_id = ?",
+                f"UPDATE welcome_channels SET {set_clause} WHERE guild_id = ?",  # ruff: ignore[hardcoded-sql-expression]
                 values,
             )
             await conn.commit()

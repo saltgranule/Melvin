@@ -276,12 +276,13 @@ class AgentCog(
                 temperature=0.7,
             )
             text = response.choices[0].message.content
-            if text:
-                return text
-            raise RuntimeError("**Groq returned an empty response.**")
         except Exception as e:
             error = f"**Groq API Error: {e!s}.**"
             raise RuntimeError(error) from e
+
+        if text:
+            return text
+        raise RuntimeError("**Groq returned an empty response.**")
 
     @app_commands.command(
         name="ask",

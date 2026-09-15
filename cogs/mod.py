@@ -87,12 +87,11 @@ class ModCog(
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
-        async with aiosqlite.connect(self.db_path) as conn:
-            async with conn.execute(
-                    "SELECT role_id FROM auto_roles WHERE guild_id = ?",
-                    (member.guild.id,),
-            ) as cursor:
-                row = await cursor.fetchone()
+        async with aiosqlite.connect(self.db_path) as conn, conn.execute(
+                "SELECT role_id FROM auto_roles WHERE guild_id = ?",
+                (member.guild.id,),
+        ) as cursor:
+            row = await cursor.fetchone()
 
         if not row:
             return
