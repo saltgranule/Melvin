@@ -1,4 +1,15 @@
 {% extends "base.html" %}
+{% block meta_tags %}
+    <meta property="og:title" content="Status">
+    <meta property="og:description" content="A page dedicated to latency information regarding melvin.">
+    <meta property="og:image" content="{{ url_for('static', filename='media/OG.png', _external=True) }}">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta name="theme-color" content="{{ theme.primary }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Melvin - Status & Latency">
+    <meta name="twitter:description" content="A page dedicated to latency information regarding melvin.">
+    <meta name="twitter:image" content="{{ url_for('static', filename='media/OG.png', _external=True) }}">
+{% endblock %}
 {% block content %}
 <section class="section-container status-section">
     <h1 class="status-heading">latency statistics</h1>

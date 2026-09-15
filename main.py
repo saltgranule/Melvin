@@ -146,7 +146,7 @@ async def melvin_command(interaction: discord.Interaction) -> None:
     goal_guilds = 100
 
     view = ResponseUI(
-        f"{MELVIN_EMOJI} **Melvin**\n-# **A growing utility app. {current_guilds}/{goal_guilds} guilds{"." if goal_guilds > current_guilds else "! 🎉"}**",
+        f"{MELVIN_EMOJI} **Melvin**\n-# **a demonstration of community driven consistency towards the discord bot space. Open to contributions. {current_guilds}/{goal_guilds} guilds{"." if goal_guilds > current_guilds else "! 🎉"}**",
     )
     row = discord.ui.ActionRow()
     invite = discord.ui.Button(
