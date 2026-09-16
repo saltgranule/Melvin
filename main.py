@@ -192,7 +192,7 @@ async def melvin_command(interaction: discord.Interaction) -> None:
 
 async def main() -> None:
     load_dotenv()
-    token = os.getenv("token")
+    token = os.getenv("TOKEN")
     if not token:
         raise RuntimeError("Token is not set.")
     async with bot:
