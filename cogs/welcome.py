@@ -482,6 +482,8 @@ class WelcomeCog(
 
             current_config = await self.get_welcome_config(guild_id)
             message = interaction.message
+            if not message:
+                return
             value = select.values[0]
 
             if value == "media":

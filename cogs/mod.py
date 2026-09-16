@@ -140,6 +140,8 @@ class ModCog(
         target: discord.User | discord.Member,
     ) -> None:
         await interaction.response.defer()
+        if not interaction.client.user:
+            return
         if not interaction.guild:
             return
         # guard clause

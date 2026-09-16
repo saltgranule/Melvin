@@ -174,7 +174,7 @@ class ThanksCog(
                 except (discord.NotFound, discord.HTTPException):
                     replied_message = None
 
-            if replied_message is not None:
+            if replied_message is not None and isinstance(replied_message, discord.Message):
                 await self._credit_thanks(message, thanker, replied_message.author)
                 return  # don't also process mentions in the same message
 
