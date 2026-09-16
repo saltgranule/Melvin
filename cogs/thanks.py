@@ -107,19 +107,18 @@ class ThanksCog(
         return False
 
     async def _add_thanks(self, user_id: int) -> int:
-        async with aiosqlite.connect(self.db_path) as db, db.execute(
-            "SELECT count FROM thanks WHERE user_id = ?", (user_id,),
-        ) as cursor:
-            await db.execute(
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute(
                 """
                 INSERT INTO thanks (user_id, count)
                 VALUES (?, 1)
                 ON CONFLICT(user_id) DO UPDATE SET count = count + 1
+                RETURNING count
                 """,
                 (user_id,),
             )
-            await db.commit()
             row = await cursor.fetchone()
+            await db.commit()
             return row[0] if row else 1
 
     async def _get_thanks(self, user_id: int) -> int:
