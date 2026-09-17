@@ -22,7 +22,7 @@
                 <span class="status-shard-label">Shard {{ shard.shard_id }}</span>
                 <span class="status-latency">{{ shard.latency_ms }}ms</span>
                 <span class="status-latency-api">api {{ shard.api_latency_ms }}ms</span>
-                <span class="status-checked">Last checked {{ shard.last_checked }}</span>
+                <span class="status-checked">Last checked {{ shard.last_checked }}, Uptime {{ shard.uptime }}</span>
             </div>
             <div class="status-chart">
                 <svg viewBox="0 0 {{ shard.chart_width }} {{ shard.chart_height }}" preserveAspectRatio="none">
@@ -38,6 +38,40 @@
     </div>
     {% else %}
     <p class="status-empty">No shard data yet.</p>
+    {% endif %}
+
+    <h2 class="status-heading status-heading-secondary">other info</h2>
+
+    {% if metrics %}
+    <div class="status-grid">
+        <div class="status-card">
+            <div class="status-card-header">
+                <span class="status-shard-label">Server Count</span>
+                <span class="status-latency">{{ metrics.guild_count }}</span>
+                <span class="status-checked">Last checked {{ metrics.last_checked }}</span>
+            </div>
+            <div class="status-chart">
+                <svg viewBox="0 0 {{ metrics.chart_width }} {{ metrics.chart_height }}" preserveAspectRatio="none">
+                    <polygon points="{{ metrics.guild_chart_points }}" class="status-chart-gateway"></polygon>
+                </svg>
+            </div>
+        </div>
+        <div class="status-card">
+            <div class="status-card-header">
+                <span class="status-shard-label">User Count</span>
+                <span class="status-latency">{{ metrics.member_count }}</span>
+                <span class="status-checked">Last checked {{ metrics.last_checked }}</span>
+            </div>
+            <div class="status-chart">
+                <svg viewBox="0 0 {{ metrics.chart_width }} {{ metrics.chart_height }}" preserveAspectRatio="none">
+                    <polygon points="{{ metrics.member_chart_points }}" class="status-chart-gateway"></polygon>
+                </svg>
+            </div>
+        </div>
+        <div class="status-card-empty">That's all for now.</div>
+    </div>
+    {% else %}
+    <p class="status-empty">No metrics data yet.</p>
     {% endif %}
 </section>
 

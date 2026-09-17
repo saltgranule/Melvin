@@ -638,6 +638,10 @@ a {
     margin-bottom: 20px;
 }
 
+.status-heading-secondary {
+    margin-top: 40px;
+}
+
 .status-grid {
     display: flex;
     flex-direction: row;
