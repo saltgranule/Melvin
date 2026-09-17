@@ -112,7 +112,7 @@ class Melvin(commands.Bot):
 bot = Melvin()
 
 
-@tasks.loop(minutes=1)
+@tasks.loop(minutes=30)
 async def update_stats() -> None:  # ruff: ignore[unused-async]
     guild_count = len(bot.guilds)
     member_count = sum(guild.member_count or 0 for guild in bot.guilds)
