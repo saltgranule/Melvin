@@ -18,7 +18,7 @@ from globals import (
     SECONDARY,
     TERTIARY,
 )
-from status import get_shard_status, get_metrics_status
+from status import get_metrics_status, get_shard_status
 
 app = Flask(__name__)
 

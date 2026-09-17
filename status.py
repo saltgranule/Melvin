@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -13,6 +14,8 @@ CHART_WIDTH = 200
 CHART_HEIGHT = 60
 CHART_PADDING = 4
 
+log = logging.getLogger(__name__)
+
 
 def set_start_time() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -25,7 +28,7 @@ def _get_start_time() -> datetime | None:
         if START_TIME_FILE.is_file():
             return datetime.fromisoformat(START_TIME_FILE.read_text(encoding="utf-8").strip())
     except Exception:
-        pass
+        log.exception("retrieving the start time failed")
     return None
 
 

@@ -39,12 +39,12 @@ class Melvin(commands.Bot):
         )
 
     async def set_name_style(
-            self,
-            *,
-            guild: discord.Guild,
-            font_id: DisplayNameFont,
-            effect_id: DisplayNameEffect,
-            colors: list[str],
+        self,
+        *,
+        guild: discord.Guild,
+        font_id: DisplayNameFont,
+        effect_id: DisplayNameEffect,
+        colors: list[str],
     ) -> None:
         color_integers = [int(hex_code, 16) for hex_code in colors]
         await self.http.request(
@@ -113,7 +113,7 @@ bot = Melvin()
 
 
 @tasks.loop(minutes=30)
-async def update_stats() -> None:  # ruff: ignore[unused-async]
+async def update_stats() -> None:
     guild_count = len(bot.guilds)
     member_count = sum(guild.member_count or 0 for guild in bot.guilds)
     STATS_FILE.parent.mkdir(parents=True, exist_ok=True)
