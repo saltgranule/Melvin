@@ -39,20 +39,20 @@ class Melvin(commands.Bot):
         )
 
     async def set_name_style(
-        self,
-        *,
-        guild: discord.Guild,
-        font_id: DisplayNameFont,
-        effect_id: DisplayNameEffect,
-        colors: list[str],
+            self,
+            *,
+            guild: discord.Guild,
+            font_id: DisplayNameFont,
+            effect_id: DisplayNameEffect,
+            colors: list[str],
     ) -> None:
         color_integers = [int(hex_code, 16) for hex_code in colors]
         await self.http.request(
             route=discord.http.Route("PATCH", "/guilds/{guild_id}/members/@me", guild_id=guild.id),
             json={
-              "display_name_font_id": font_id.value,
-              "display_name_effect_id": effect_id.value,
-              "display_name_colors": color_integers,
+                "display_name_font_id": font_id.value,
+                "display_name_effect_id": effect_id.value,
+                "display_name_colors": color_integers,
             },
         )
 
@@ -90,11 +90,19 @@ class Melvin(commands.Bot):
             log.info("DNS resolver successfully configured.")
         except Exception:
             log.exception("Could not configure DNS resolver")
+        status.set_start_time()
         log.info("Logging started.")
 
     async def on_ready(self) -> None:
         log.info("Logged in as %s.", self.user)
         await self.tree.sync()
+
+        try:
+            await update_stats()
+            await update_shard_latency()
+        except Exception:
+            log.exception("Failed to record initial startup metrics")
+
         if not update_stats.is_running():
             update_stats.start()
         if not update_shard_latency.is_running():
@@ -104,7 +112,7 @@ class Melvin(commands.Bot):
 bot = Melvin()
 
 
-@tasks.loop(minutes=5)
+@tasks.loop(minutes=1)
 async def update_stats() -> None:  # ruff: ignore[unused-async]
     guild_count = len(bot.guilds)
     member_count = sum(guild.member_count or 0 for guild in bot.guilds)
@@ -112,6 +120,7 @@ async def update_stats() -> None:  # ruff: ignore[unused-async]
     STATS_FILE.write_text(
         json.dumps({"guild_count": guild_count, "member_count": member_count}),
     )
+    await status.record_metrics(guild_count, member_count)
 
 
 async def _measure_api_latency() -> float:
@@ -124,7 +133,7 @@ async def _measure_api_latency() -> float:
     return (time.perf_counter() - start) * 1000
 
 
-@tasks.loop(minutes=5)
+@tasks.loop(minutes=1)
 async def update_shard_latency() -> None:
     api_latency_ms = await _measure_api_latency()
     latencies = getattr(bot, "latencies", None) or [(0, bot.latency)]
@@ -167,7 +176,7 @@ async def melvin_command(interaction: discord.Interaction) -> None:
         url="https://justmelvin.site",
         emoji="<:browsersduotone:1548410087037477066>",
     )
-    status = discord.ui.Button(
+    status_btn = discord.ui.Button(
         label="Status",
         style=discord.ButtonStyle.link,
         url="https://justmelvin.site/status",
@@ -183,7 +192,7 @@ async def melvin_command(interaction: discord.Interaction) -> None:
     row.add_item(invite)
     row.add_item(support)
     row.add_item(web)
-    row.add_item(status)
+    row.add_item(status_btn)
     row.add_item(github)
     view.container.add_item(row)
 

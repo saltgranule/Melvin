@@ -18,7 +18,7 @@ from globals import (
     SECONDARY,
     TERTIARY,
 )
-from status import get_shard_status
+from status import get_shard_status, get_metrics_status
 
 app = Flask(__name__)
 
@@ -204,6 +204,7 @@ async def status() -> str:
         theme=THEME,
         links=LINKS,
         shards=await get_shard_status(),
+        metrics=await get_metrics_status(),
     )
 
 

@@ -6,11 +6,40 @@ import aiosqlite
 
 DATA_DIR = Path("data")
 DB_PATH = DATA_DIR / "uptime.db"
+START_TIME_FILE = DATA_DIR / "start_time.txt"
 
 MAX_HISTORY_POINTS = 14
 CHART_WIDTH = 200
 CHART_HEIGHT = 60
 CHART_PADDING = 4
+
+
+def set_start_time() -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    now = datetime.now(UTC).isoformat()
+    START_TIME_FILE.write_text(now, encoding="utf-8")
+
+
+def _get_start_time() -> datetime | None:
+    try:
+        if START_TIME_FILE.is_file():
+            return datetime.fromisoformat(START_TIME_FILE.read_text(encoding="utf-8").strip())
+    except Exception:
+        pass
+    return None
+
+
+def _format_uptime(start: datetime) -> str:
+    seconds = int((datetime.now(UTC) - start).total_seconds())
+    days, seconds = divmod(seconds, 86400)
+    hours, seconds = divmod(seconds, 3600)
+    minutes, _ = divmod(seconds, 60)
+
+    if days:
+        return f"{days}d {hours}h"
+    if hours:
+        return f"{hours}h {minutes}m"
+    return f"{minutes}m"
 
 
 async def init_db() -> None:
@@ -34,6 +63,20 @@ async def init_db() -> None:
         await db.execute(
             "CREATE INDEX IF NOT EXISTS idx_shard_latency_shard_checked "
             "ON shard_latency (shard_id, checked_at)",
+        )
+
+        await db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS bot_metrics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_count INTEGER NOT NULL,
+                member_count INTEGER NOT NULL,
+                checked_at TEXT NOT NULL
+            )
+            """,
+        )
+        await db.execute(
+            "CREATE INDEX IF NOT EXISTS idx_bot_metrics_checked ON bot_metrics (checked_at)",
         )
         await db.commit()
 
@@ -61,6 +104,32 @@ async def record_latency(shard_id: int, latency_ms: float, api_latency_ms: float
             )
             """,
             (shard_id, shard_id, MAX_HISTORY_POINTS),
+        )
+        await db.commit()
+
+
+async def record_metrics(guild_count: int, member_count: int) -> None:
+    await init_db()
+    checked_at = datetime.now(UTC).isoformat()
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """
+            INSERT INTO bot_metrics (guild_count, member_count, checked_at)
+            VALUES (?, ?, ?)
+            """,
+            (guild_count, member_count, checked_at),
+        )
+        await db.execute(
+            """
+            DELETE FROM bot_metrics
+            WHERE id NOT IN (
+                SELECT id FROM bot_metrics
+                ORDER BY checked_at DESC
+                LIMIT ?
+            )
+            """,
+            (MAX_HISTORY_POINTS,),
         )
         await db.commit()
 
@@ -110,6 +179,9 @@ def _build_area_points(history: list[float], lo: float, hi: float) -> str:
 async def get_shard_status() -> list[dict]:
     await init_db()
 
+    start_time = _get_start_time()
+    uptime = _format_uptime(start_time) if start_time else "—"
+
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
 
@@ -145,6 +217,7 @@ async def get_shard_status() -> list[dict]:
                     "latency_ms": round(latest["latency_ms"]),
                     "api_latency_ms": round(latest["api_latency_ms"] or 0.0),
                     "last_checked": _format_relative(latest["checked_at"]),
+                    "uptime": uptime,
                     "chart_points": _build_area_points(gateway_history, lo, hi),
                     "api_chart_points": _build_area_points(api_history, lo, hi),
                     "chart_width": CHART_WIDTH,
@@ -153,3 +226,39 @@ async def get_shard_status() -> list[dict]:
             )
 
     return shards
+
+
+async def get_metrics_status() -> dict | None:
+    await init_db()
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            """
+            SELECT guild_count, member_count, checked_at FROM bot_metrics
+            ORDER BY checked_at DESC
+            LIMIT ?
+            """,
+            (MAX_HISTORY_POINTS,),
+        )
+        rows = list(reversed(await cursor.fetchall()))
+
+    if not rows:
+        return None
+
+    guild_history = [row["guild_count"] for row in rows]
+    member_history = [row["member_count"] for row in rows]
+    latest = rows[-1]
+
+    guild_lo, guild_hi = min(guild_history), max(guild_history)
+    member_lo, member_hi = min(member_history), max(member_history)
+
+    return {
+        "guild_count": latest["guild_count"],
+        "member_count": latest["member_count"],
+        "last_checked": _format_relative(latest["checked_at"]),
+        "guild_chart_points": _build_area_points(guild_history, guild_lo, guild_hi),
+        "member_chart_points": _build_area_points(member_history, member_lo, member_hi),
+        "chart_width": CHART_WIDTH,
+        "chart_height": CHART_HEIGHT,
+    }
