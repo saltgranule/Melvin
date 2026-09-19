@@ -24,19 +24,7 @@ STATS_FILE = Path(__file__).parent / "data" / "bot_stats.json"
 
 class Melvin(commands.Bot):
     def __init__(self) -> None:
-        super().__init__(
-            command_prefix="-",
-            intents=intents,
-            allowed_contexts=discord.app_commands.AppCommandContext(
-                guild=True,
-                dm_channel=True,
-                private_channel=True,
-            ),
-            allowed_installs=discord.app_commands.AppInstallationType(
-                guild=True,
-                user=True,
-            ),
-        )
+        super().__init__(command_prefix="-", intents=intents)
 
     async def set_name_style(
         self,
