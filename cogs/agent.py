@@ -334,7 +334,7 @@ class AgentCog(
         except Exception:
             log.exception("Failure in agent command")
             await interaction.edit_original_response(
-                view=ErrorUI("**something went wrong, likely an API error.**"),
+                view=ErrorUI("**Something went wrong. This is likely an API error.**"),
             )
 
 
