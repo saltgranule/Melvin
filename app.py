@@ -85,7 +85,7 @@ def get_repo_meta() -> int | dict:
     try:
         repo = _github_get("")
         star_count = repo.get("stargazers_count", 0)
-    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError):
+    except urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError:
         pass
 
     try:
@@ -100,7 +100,7 @@ def get_repo_meta() -> int | dict:
             if c.get("type") == "User"
             and c.get("login", "").lower() not in HIDDEN_CONTRIBUTORS
         ]
-    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError):
+    except urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError:
         pass
 
     data = {
@@ -122,7 +122,7 @@ def get_bot_stats() -> dict[str, str]:
         raw = json.loads(BOT_STATS_FILE.read_text(encoding="utf-8"))
         guild_count = int(raw.get("guild_count", 0))
         member_count = int(raw.get("member_count", 0))
-    except (FileNotFoundError, ValueError, OSError):
+    except FileNotFoundError, ValueError, OSError:
         guild_count = 0
         member_count = 0
 

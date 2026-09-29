@@ -124,7 +124,8 @@ class ResponsePaginator(discord.ui.LayoutView):
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.author_id:
             await interaction.response.send_message(
-                "**Not your command output.**", ephemeral=True,
+                "**Not your command output.**",
+                ephemeral=True,
             )
             return False
         return True

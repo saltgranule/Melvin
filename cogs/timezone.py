@@ -130,7 +130,8 @@ class TimezoneCog(
         if target_user.bot:
             view = ErrorUI("You tried to view a bot's timezone.")
             await interaction.response.send_message(
-                view=view, allowed_mentions=AllowedMentions.none(),
+                view=view,
+                allowed_mentions=AllowedMentions.none(),
             )
             return
 
@@ -138,12 +139,13 @@ class TimezoneCog(
             name = "You" if target_user == interaction.user else target_user.mention
             suffix = (
                 " do not have a timezone set."
-                if target_user == interaction.user else
-                " does not have a timezone set."
+                if target_user == interaction.user
+                else " does not have a timezone set."
             )
             view = ErrorUI(f"{name}{suffix}")
             await interaction.response.send_message(
-                view=view, allowed_mentions=AllowedMentions.none(),
+                view=view,
+                allowed_mentions=AllowedMentions.none(),
             )
             return
 
@@ -154,18 +156,26 @@ class TimezoneCog(
         if target_user == interaction.user:
             time_str = target_time.strftime("%I:%M %p").lstrip("0")
             date_str = format_date(target_time)
-            view = InfoUI(title="Your Timezone", subtitle=f"It is currently **{time_str}** for you. Today is **{date_str}**.")
+            view = InfoUI(
+                title="Your Timezone",
+                subtitle=f"It is currently **{time_str}** for you. Today is **{date_str}**.",
+            )
             await interaction.response.send_message(
-                view=view, allowed_mentions=AllowedMentions.none(),
+                view=view,
+                allowed_mentions=AllowedMentions.none(),
             )
             return
 
         runner_tz_str = await self._get_user_timezone(interaction.user.id)
         if not runner_tz_str:
             time_str = target_time.strftime("%I:%M %p").lstrip("0")
-            view = InfoUI(title=f"Timezone for {target_user.mention}", subtitle=f"It is currently **{time_str}** for {target_user.mention}. (Set your own timezone to see time differences.)")
+            view = InfoUI(
+                title=f"Timezone for {target_user.mention}",
+                subtitle=f"It is currently **{time_str}** for {target_user.mention}. (Set your own timezone to see time differences.)",
+            )
             await interaction.response.send_message(
-                view=view, allowed_mentions=AllowedMentions.none(),
+                view=view,
+                allowed_mentions=AllowedMentions.none(),
             )
             return
 
@@ -175,8 +185,12 @@ class TimezoneCog(
         target_utcoffset = target_time.utcoffset()
         runner_utcoffset = runner_time.utcoffset()
 
-        target_offset = target_utcoffset.total_seconds() / 3600 if target_utcoffset else 0.0
-        runner_offset = runner_utcoffset.total_seconds() / 3600 if runner_utcoffset else 0.0
+        target_offset = (
+            target_utcoffset.total_seconds() / 3600 if target_utcoffset else 0.0
+        )
+        runner_offset = (
+            runner_utcoffset.total_seconds() / 3600 if runner_utcoffset else 0.0
+        )
 
         diff_hours = abs(runner_offset - target_offset)
 
@@ -199,7 +213,8 @@ class TimezoneCog(
                 subtitle=f"It is currently **{target_time_str}** for {target_user.mention}. You are both in the same timezone.",
             )
             await interaction.response.send_message(
-                view=view, allowed_mentions=AllowedMentions.none(),
+                view=view,
+                allowed_mentions=AllowedMentions.none(),
             )
         else:
             view = InfoUI(
@@ -211,7 +226,8 @@ class TimezoneCog(
                 ),
             )
             await interaction.response.send_message(
-                view=view, allowed_mentions=AllowedMentions.none(),
+                view=view,
+                allowed_mentions=AllowedMentions.none(),
             )
 
     @app_commands.command(name="at", description="View a timezone at a certain area.")
@@ -231,12 +247,14 @@ class TimezoneCog(
                 subtitle=f"It is currently **{time_str}** for those in **{timezone.replace('_', ' ')}**. It is **{date_str}** for them.",
             )
             await interaction.response.send_message(
-                view=view, allowed_mentions=AllowedMentions.none(),
+                view=view,
+                allowed_mentions=AllowedMentions.none(),
             )
-        except (zoneinfo.ZoneInfoNotFoundError, ValueError, KeyError):
+        except zoneinfo.ZoneInfoNotFoundError, ValueError, KeyError:
             view = ErrorUI(f"{timezone.replace('_', ' ')} is not a valid timezone.")
             await interaction.response.send_message(
-                view=view, allowed_mentions=AllowedMentions.none(),
+                view=view,
+                allowed_mentions=AllowedMentions.none(),
             )
 
     @app_commands.command(name="set", description="Set your timezone.")
@@ -246,14 +264,19 @@ class TimezoneCog(
         try:
             zoneinfo.ZoneInfo(timezone)
             await self._set_user_timezone(interaction.user.id, timezone)
-            view = PositiveUI(title="Timezone Set", subtitle=f"Set your timezone to **{timezone.replace('_', ' ')}**.")
-            await interaction.response.send_message(
-                view=view, allowed_mentions=AllowedMentions.none(),
+            view = PositiveUI(
+                title="Timezone Set",
+                subtitle=f"Set your timezone to **{timezone.replace('_', ' ')}**.",
             )
-        except (zoneinfo.ZoneInfoNotFoundError, ValueError, KeyError):
+            await interaction.response.send_message(
+                view=view,
+                allowed_mentions=AllowedMentions.none(),
+            )
+        except zoneinfo.ZoneInfoNotFoundError, ValueError, KeyError:
             view = ErrorUI(f"{timezone.replace('_', ' ')} is not a valid timezone.")
             await interaction.response.send_message(
-                view=view, allowed_mentions=AllowedMentions.none(),
+                view=view,
+                allowed_mentions=AllowedMentions.none(),
             )
 
     @app_commands.command(name="reset", description="Reset your timezone.")
@@ -262,13 +285,15 @@ class TimezoneCog(
         if not deleted:
             view = ErrorUI("You do not have a timezone set.")
             await interaction.response.send_message(
-                view=view, allowed_mentions=AllowedMentions.none(),
+                view=view,
+                allowed_mentions=AllowedMentions.none(),
             )
             return
 
         view = PositiveUI(title="Timezone Reset", subtitle="Reset your timezone.")
         await interaction.response.send_message(
-            view=view, allowed_mentions=AllowedMentions.none(),
+            view=view,
+            allowed_mentions=AllowedMentions.none(),
         )
 
 

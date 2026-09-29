@@ -26,7 +26,9 @@ def set_start_time() -> None:
 def _get_start_time() -> datetime | None:
     try:
         if START_TIME_FILE.is_file():
-            return datetime.fromisoformat(START_TIME_FILE.read_text(encoding="utf-8").strip())
+            return datetime.fromisoformat(
+                START_TIME_FILE.read_text(encoding="utf-8").strip()
+            )
     except Exception:
         log.exception("retrieving the start time failed")
     return None
@@ -84,7 +86,9 @@ async def init_db() -> None:
         await db.commit()
 
 
-async def record_latency(shard_id: int, latency_ms: float, api_latency_ms: float) -> None:
+async def record_latency(
+    shard_id: int, latency_ms: float, api_latency_ms: float
+) -> None:
     await init_db()
     checked_at = datetime.now(UTC).isoformat()
 

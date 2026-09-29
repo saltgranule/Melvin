@@ -7,7 +7,9 @@ from ui import ErrorUI, GalleryWithItem, InfoUI, SmallSeparator
 
 # UI Classes
 class AvatarView(discord.ui.LayoutView):
-    def __init__(self, interaction: discord.Interaction, target: discord.User | discord.Member) -> None:
+    def __init__(
+        self, interaction: discord.Interaction, target: discord.User | discord.Member
+    ) -> None:
         super().__init__()
 
         if target == interaction.client.user:
@@ -78,8 +80,8 @@ class BannerView(discord.ui.LayoutView):
         if fetched_user.banner:
             formats = (
                 ("png", "jpg", "webp", "gif")
-                if fetched_user.banner.is_animated() else
-                ("png", "jpg", "webp")
+                if fetched_user.banner.is_animated()
+                else ("png", "jpg", "webp")
             )
             buttons = [
                 discord.ui.Button(
@@ -122,7 +124,9 @@ class InfoCog(
     async def latency(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer()
         latency = round(self.bot.latency * 1000)
-        view = InfoUI(title="Latency", subtitle=f"The bot's latency is **{latency}**ms.")
+        view = InfoUI(
+            title="Latency", subtitle=f"The bot's latency is **{latency}**ms."
+        )
         await interaction.followup.send(view=view)
 
     @app_commands.command(name="avatar", description="View a user's avatar.")
@@ -136,7 +140,8 @@ class InfoCog(
         target = user or interaction.user
         view = AvatarView(interaction, target)
         await interaction.followup.send(
-            view=view, allowed_mentions=discord.AllowedMentions.none(),
+            view=view,
+            allowed_mentions=discord.AllowedMentions.none(),
         )
 
     @app_commands.command(name="banner", description="View a user's banner.")
@@ -167,7 +172,8 @@ class InfoCog(
             return
         view = BannerView(interaction, target, fetched_user)
         await interaction.followup.send(
-            view=view, allowed_mentions=discord.AllowedMentions.none(),
+            view=view,
+            allowed_mentions=discord.AllowedMentions.none(),
         )
 
 

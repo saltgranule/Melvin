@@ -82,7 +82,8 @@ class AuditCog(
             await conn.commit()
 
     @app_commands.command(
-        name="channel", description="Set the channel for server logs.",
+        name="channel",
+        description="Set the channel for server logs.",
     )
     @app_commands.describe(channel="The channel to send logs to.")
     @app_commands.checks.has_permissions(manage_guild=True)
@@ -106,10 +107,15 @@ class AuditCog(
                     )
                     await conn.commit()
             except Exception:
-                log.exception("failed to reset logging channel in guild %s", interaction.guild.id)
+                log.exception(
+                    "failed to reset logging channel in guild %s", interaction.guild.id
+                )
                 await interaction.followup.send(view=ExceptionUI())
                 return
-            view = InfoUI(title="Logging Channel Reset", subtitle="**Logging channel settings have been reset.**")
+            view = InfoUI(
+                title="Logging Channel Reset",
+                subtitle="**Logging channel settings have been reset.**",
+            )
             await interaction.followup.send(view=view)
             return
 
@@ -132,7 +138,9 @@ class AuditCog(
             await interaction.followup.send(view=view)
             return
 
-        view = InfoUI(title="Logging", subtitle=f"**Logging channel set to {channel.mention}.**")
+        view = InfoUI(
+            title="Logging", subtitle=f"**Logging channel set to {channel.mention}.**"
+        )
         await interaction.followup.send(view=view)
 
     @channel.error
@@ -154,7 +162,9 @@ class AuditCog(
         else:
             await interaction.response.send_message(view=error_ui, ephemeral=False)
 
-    async def get_log_channel(self, guild_id: int) -> discord.abc.GuildChannel | discord.Thread | discord.abc.PrivateChannel | None:
+    async def get_log_channel(
+        self, guild_id: int
+    ) -> discord.abc.GuildChannel | discord.Thread | discord.abc.PrivateChannel | None:
         try:
             async with (
                 aiosqlite.connect(self.db_path) as conn,
@@ -193,7 +203,7 @@ class AuditCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-        except (discord.Forbidden, discord.HTTPException):
+        except discord.Forbidden, discord.HTTPException:
             pass
 
     @commands.Cog.listener()
@@ -217,7 +227,7 @@ class AuditCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-        except (discord.Forbidden, discord.HTTPException):
+        except discord.Forbidden, discord.HTTPException:
             pass
 
     @commands.Cog.listener()
@@ -288,7 +298,7 @@ class AuditCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-        except (discord.Forbidden, discord.HTTPException):
+        except discord.Forbidden, discord.HTTPException:
             pass
 
     @commands.Cog.listener()
@@ -347,7 +357,7 @@ class AuditCog(
                     view=view,
                     allowed_mentions=discord.AllowedMentions.none(),
                 )
-            except (discord.Forbidden, discord.HTTPException):
+            except discord.Forbidden, discord.HTTPException:
                 pass
 
     @commands.Cog.listener()
@@ -411,7 +421,7 @@ class AuditCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-        except (discord.Forbidden, discord.HTTPException):
+        except discord.Forbidden, discord.HTTPException:
             pass
 
     @commands.Cog.listener()
@@ -456,7 +466,7 @@ class AuditCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-        except (discord.Forbidden, discord.HTTPException):
+        except discord.Forbidden, discord.HTTPException:
             pass
 
     @commands.Cog.listener()
@@ -488,7 +498,7 @@ class AuditCog(
                     view=view,
                     allowed_mentions=discord.AllowedMentions.none(),
                 )
-            except (discord.Forbidden, discord.HTTPException):
+            except discord.Forbidden, discord.HTTPException:
                 pass
             return
 
@@ -510,7 +520,7 @@ class AuditCog(
                     view=view,
                     allowed_mentions=discord.AllowedMentions.none(),
                 )
-            except (discord.Forbidden, discord.HTTPException):
+            except discord.Forbidden, discord.HTTPException:
                 pass
             return
 
@@ -536,7 +546,7 @@ class AuditCog(
                     view=view,
                     allowed_mentions=discord.AllowedMentions.none(),
                 )
-            except (discord.Forbidden, discord.HTTPException):
+            except discord.Forbidden, discord.HTTPException:
                 pass
 
     @commands.Cog.listener()
@@ -562,7 +572,7 @@ class AuditCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-        except (discord.Forbidden, discord.HTTPException):
+        except discord.Forbidden, discord.HTTPException:
             pass
 
     @commands.Cog.listener()
@@ -588,7 +598,7 @@ class AuditCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-        except (discord.Forbidden, discord.HTTPException):
+        except discord.Forbidden, discord.HTTPException:
             pass
 
     @commands.Cog.listener()
@@ -633,7 +643,7 @@ class AuditCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-        except (discord.Forbidden, discord.HTTPException):
+        except discord.Forbidden, discord.HTTPException:
             pass
 
     @commands.Cog.listener()
@@ -657,7 +667,7 @@ class AuditCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-        except (discord.Forbidden, discord.HTTPException):
+        except discord.Forbidden, discord.HTTPException:
             pass
 
     @commands.Cog.listener()
@@ -681,7 +691,7 @@ class AuditCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-        except (discord.Forbidden, discord.HTTPException):
+        except discord.Forbidden, discord.HTTPException:
             pass
 
     @commands.Cog.listener()
@@ -743,7 +753,7 @@ class AuditCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-        except (discord.Forbidden, discord.HTTPException):
+        except discord.Forbidden, discord.HTTPException:
             pass
 
     @commands.Cog.listener()
@@ -774,7 +784,7 @@ class AuditCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-        except (discord.Forbidden, discord.HTTPException):
+        except discord.Forbidden, discord.HTTPException:
             pass
 
     @commands.Cog.listener()
@@ -801,7 +811,7 @@ class AuditCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-        except (discord.Forbidden, discord.HTTPException):
+        except discord.Forbidden, discord.HTTPException:
             pass
 
 

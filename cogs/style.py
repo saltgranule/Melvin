@@ -74,10 +74,13 @@ class StyleCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-        except (discord.Forbidden, discord.HTTPException):
+        except discord.Forbidden, discord.HTTPException:
             pass
 
-    @app_commands.command(name="set", description="Set Melvin's name style for this guild. Omit all three arguments to reset.")
+    @app_commands.command(
+        name="set",
+        description="Set Melvin's name style for this guild. Omit all three arguments to reset.",
+    )
     @app_commands.checks.has_permissions(manage_guild=True)
     @app_commands.describe(
         font="The display name's font. Leave Empty for no change.",
@@ -116,18 +119,24 @@ class StyleCog(
         style = await self.bot.get_name_style(interaction.guild)
 
         selected_font = DisplayNameFont[font] if font is not None else style["font_id"]
-        selected_effect = DisplayNameEffect[effect] if effect is not None else style["effect_id"]
+        selected_effect = (
+            DisplayNameEffect[effect] if effect is not None else style["effect_id"]
+        )
 
         if colors is not None:
             valid = bool(COLOR_PATTERN.match(colors))
             dashed = "-" in colors
             effect_name = effect if effect is not None else selected_effect.name
 
-            if not valid or (effect_name == "gradient" and not dashed) or (effect_name != "gradient" and dashed):
+            if (
+                not valid
+                or (effect_name == "gradient" and not dashed)
+                or (effect_name != "gradient" and dashed)
+            ):
                 msg = (
                     "Gradient must be of the form `ABCDEF-123456`."
-                    if effect_name == "gradient" else
-                    "Color must be of the form `ABCDEF`."
+                    if effect_name == "gradient"
+                    else "Color must be of the form `ABCDEF`."
                 )
                 await interaction.response.send_message(view=ErrorUI(msg))
                 return
@@ -138,7 +147,10 @@ class StyleCog(
 
         if font is None and effect is None and colors is None:
             await self.bot.reset_name_style(guild=interaction.guild)
-            view = PositiveUI(title="Style Reset", subtitle="Melvin's display name style has been reset for this server.")
+            view = PositiveUI(
+                title="Style Reset",
+                subtitle="Melvin's display name style has been reset for this server.",
+            )
         else:
             await self.bot.set_name_style(
                 guild=interaction.guild,
@@ -146,7 +158,10 @@ class StyleCog(
                 effect_id=selected_effect,
                 colors=color_list,
             )
-            view = PositiveUI(title="Style Set", subtitle="Melvin's display name style has been set for this server.")
+            view = PositiveUI(
+                title="Style Set",
+                subtitle="Melvin's display name style has been set for this server.",
+            )
 
         await interaction.response.send_message(view=view)
 

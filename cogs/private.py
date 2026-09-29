@@ -36,7 +36,7 @@ class PrivateCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-        except (discord.Forbidden, discord.HTTPException):
+        except discord.Forbidden, discord.HTTPException:
             pass
 
     @app_commands.command(name="sync", description="Sync the application command tree.")
@@ -52,14 +52,16 @@ class PrivateCog(
             view = ErrorUI(message=f"**{e}**")
             await interaction.followup.send(view=view, ephemeral=True)
             return
-        view = PositiveUI(title="Tree Sync Complete", subtitle=f"**Synced {len(synced)} command(s).**")
+        view = PositiveUI(
+            title="Tree Sync Complete", subtitle=f"**Synced {len(synced)} command(s).**"
+        )
         await interaction.followup.send(view=view, ephemeral=True)
 
     @commands.Cog.listener()
     async def on_app_command_completion(
-            self,
-            interaction: discord.Interaction,
-            command: app_commands.Command,
+        self,
+        interaction: discord.Interaction,
+        command: app_commands.Command,
     ) -> None:
         log_channel = self.bot.get_channel(LOG_CHANNEL)
         if log_channel is None or not isinstance(log_channel, discord.TextChannel):
@@ -96,7 +98,9 @@ class PrivateCog(
             discord.ui.Section(
                 f"**User: {interaction.user.mention} | {interaction.user.id}**\n"
                 f"**Command: /{command.qualified_name} {location}**",
-                accessory=discord.ui.Thumbnail(media=interaction.user.display_avatar.url),
+                accessory=discord.ui.Thumbnail(
+                    media=interaction.user.display_avatar.url
+                ),
             ),
             accent_color=discord.Color.from_str(QUATERNARY),
         )
@@ -116,7 +120,7 @@ class PrivateCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-        except (discord.Forbidden, discord.HTTPException):
+        except discord.Forbidden, discord.HTTPException:
             pass
 
 

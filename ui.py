@@ -69,9 +69,11 @@ class CogSelect(discord.ui.Select):
                     else None
                 ),
             )
-            for cog in cogs if
-            not isinstance(cog.__cog_group_name__, discord.app_commands.locale_str) and
-            not isinstance(cog.__cog_group_description__, discord.app_commands.locale_str)
+            for cog in cogs
+            if not isinstance(cog.__cog_group_name__, discord.app_commands.locale_str)
+            and not isinstance(
+                cog.__cog_group_description__, discord.app_commands.locale_str
+            )
         ]
 
         super().__init__(
@@ -111,7 +113,9 @@ class HelpView(discord.ui.LayoutView):
             self.cog_select = CogSelect(cogs)
             select_row = discord.ui.ActionRow(self.cog_select)
             content_container = discord.ui.Container(
-                self.text_display, separator, select_row,
+                self.text_display,
+                separator,
+                select_row,
             )
         else:
             content_container = discord.ui.Container(self.text_display, separator)
@@ -160,7 +164,9 @@ class CaseRemoveButton(discord.ui.Button):
             isinstance(interaction.user, discord.Member)
             and not interaction.user.guild_permissions.moderate_members
         ):
-            await interaction.response.send_message("**You lack permissions to remove cases.**", ephemeral=True)
+            await interaction.response.send_message(
+                "**You lack permissions to remove cases.**", ephemeral=True
+            )
             return
 
         await interaction.response.defer()
@@ -179,7 +185,9 @@ class CaseRemoveButton(discord.ui.Button):
 
 class CaseActionSelect(discord.ui.Select):
     def __init__(
-        self, target_user: discord.User | discord.Member, db_path: str,
+        self,
+        target_user: discord.User | discord.Member,
+        db_path: str,
     ) -> None:
         self.target_user = target_user
         self.db_path = db_path
@@ -304,7 +312,9 @@ class CasesView(discord.ui.LayoutView):
             if self.current_action == "all":
                 msg = f"**No cases found for {who}.**"
             else:
-                msg = f"**No cases found for {who} under filter {self.current_action}.**"
+                msg = (
+                    f"**No cases found for {who} under filter {self.current_action}.**"
+                )
             self.container.add_item(discord.ui.TextDisplay(msg))
         else:
             for case_id, action_type, reason, mod_id in rows:
@@ -329,7 +339,9 @@ class CasesView(discord.ui.LayoutView):
         if not interaction.client.user:
             return
 
-        await self.build_components(interaction.guild_id, interaction.user, interaction.client.user)
+        await self.build_components(
+            interaction.guild_id, interaction.user, interaction.client.user
+        )
         await interaction.edit_original_response(view=self)
 
 
@@ -355,7 +367,9 @@ class LargeSeparator(discord.ui.Separator):
 
 
 class GalleryWithItem(discord.ui.MediaGallery):
-    def __init__(self, media: str | discord.File | discord.UnfurledMediaItem, /) -> None:
+    def __init__(
+        self, media: str | discord.File | discord.UnfurledMediaItem, /
+    ) -> None:
         super().__init__(discord.MediaGalleryItem(media))
 
 
@@ -435,7 +449,9 @@ class ErrorUI(discord.ui.LayoutView):
     def __init__(self, message: str) -> None:
         super().__init__()
 
-        text_display = discord.ui.TextDisplay(f"# {MELVIN_CROSS_EMOJI} Error\n\n{message}")
+        text_display = discord.ui.TextDisplay(
+            f"# {MELVIN_CROSS_EMOJI} Error\n\n{message}"
+        )
 
         container = discord.ui.Container(
             text_display,

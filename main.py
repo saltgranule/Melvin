@@ -36,7 +36,9 @@ class Melvin(commands.Bot):
     ) -> None:
         color_integers = [int(hex_code, 16) for hex_code in colors]
         await self.http.request(
-            route=discord.http.Route("PATCH", "/guilds/{guild_id}/members/@me", guild_id=guild.id),
+            route=discord.http.Route(
+                "PATCH", "/guilds/{guild_id}/members/@me", guild_id=guild.id
+            ),
             json={
                 "display_name_font_id": font_id.value,
                 "display_name_effect_id": effect_id.value,
@@ -47,7 +49,8 @@ class Melvin(commands.Bot):
     async def get_name_style(self, guild: discord.Guild, /) -> dict:
         response = await self.http.request(
             route=discord.http.Route(
-                "GET", "/guilds/{guild_id}/members/{user_id}",
+                "GET",
+                "/guilds/{guild_id}/members/{user_id}",
                 guild_id=guild.id,
                 user_id=self.user.id,
             ),
@@ -143,7 +146,7 @@ async def melvin_command(interaction: discord.Interaction) -> None:
     goal_guilds = 100
 
     view = ResponseUI(
-        f"{MELVIN_EMOJI} **Melvin**\n-# **a demonstration of community driven consistency towards the discord bot space. Open to contributions. {current_guilds}/{goal_guilds} guilds{"." if goal_guilds > current_guilds else "! 🎉"}**",
+        f"{MELVIN_EMOJI} **Melvin**\n-# **a demonstration of community driven consistency towards the discord bot space. Open to contributions. {current_guilds}/{goal_guilds} guilds{'.' if goal_guilds > current_guilds else '! 🎉'}**",
     )
     row = discord.ui.ActionRow()
     invite = discord.ui.Button(

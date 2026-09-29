@@ -30,8 +30,12 @@ class ToolCog(
         super().__init__()
         self.bot = bot
 
-    base64 = app_commands.Group(name="base64", description="Utility encoding/decoding commands.")
-    binary = app_commands.Group(name="binary", description="Utility encoding/decoding commands.")
+    base64 = app_commands.Group(
+        name="base64", description="Utility encoding/decoding commands."
+    )
+    binary = app_commands.Group(
+        name="binary", description="Utility encoding/decoding commands."
+    )
 
     @base64.command(
         name="decode",
@@ -94,7 +98,10 @@ class ToolCog(
         await interaction.response.defer(ephemeral=False)
         view = ResponseUI(text)
 
-        if isinstance(interaction.user, discord.Member) and not interaction.user.guild_permissions.manage_messages:
+        if (
+            isinstance(interaction.user, discord.Member)
+            and not interaction.user.guild_permissions.manage_messages
+        ):
             await interaction.followup.send(view=GatedUI(), ephemeral=True)
             return
 
@@ -123,7 +130,9 @@ class ToolCog(
         chunks = text.split()
         if not all(set(chunk) <= {"0", "1"} and len(chunk) == 8 for chunk in chunks):
             await interaction.edit_original_response(
-                view=ErrorUI("Not a valid binary string: expected space-separated 8-bit groups of **0**s and **1**s."),
+                view=ErrorUI(
+                    "Not a valid binary string: expected space-separated 8-bit groups of **0**s and **1**s."
+                ),
             )
             return
 
@@ -166,7 +175,9 @@ class ToolCog(
         await interaction.response.defer(ephemeral=False)
         answer = random.choice(EIGHTBALL)
         view = ResponseUI(f"**{prompt}**\n<:8ball:1548098650482413608>**{answer}**")
-        await interaction.followup.send(view=view, allowed_mentions=discord.AllowedMentions(everyone=False))
+        await interaction.followup.send(
+            view=view, allowed_mentions=discord.AllowedMentions(everyone=False)
+        )
 
 
 async def setup(bot: commands.Bot) -> None:

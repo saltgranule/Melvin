@@ -78,7 +78,7 @@ class ModCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions(users=False, roles=False),
             )
-        except (discord.Forbidden, discord.HTTPException):
+        except discord.Forbidden, discord.HTTPException:
             pass
             # only failing silently here because idk where to put the EH for it
 
@@ -87,10 +87,13 @@ class ModCog(
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
-        async with aiosqlite.connect(self.db_path) as conn, conn.execute(
+        async with (
+            aiosqlite.connect(self.db_path) as conn,
+            conn.execute(
                 "SELECT role_id FROM auto_roles WHERE guild_id = ?",
                 (member.guild.id,),
-        ) as cursor:
+            ) as cursor,
+        ):
             row = await cursor.fetchone()
 
         if not row:
@@ -999,9 +1002,9 @@ class ModCog(
     )
     @app_commands.checks.has_permissions(manage_roles=True)
     async def role_auto(
-            self,
-            interaction: discord.Interaction,
-            role: discord.Role | None = None,
+        self,
+        interaction: discord.Interaction,
+        role: discord.Role | None = None,
     ) -> None:
         await interaction.response.defer()
 
@@ -1032,12 +1035,14 @@ class ModCog(
             return
         if role.managed:
             await interaction.followup.send(
-                view=ErrorUI("**That role is managed by an app and can't be assigned.**"),
+                view=ErrorUI(
+                    "**That role is managed by an app and can't be assigned.**"
+                ),
             )
             return
         if (
-                role.position >= interaction.user.top_role.position
-                and interaction.user.id != interaction.guild.owner_id
+            role.position >= interaction.user.top_role.position
+            and interaction.user.id != interaction.guild.owner_id
         ):
             await interaction.followup.send(
                 view=ErrorUI(
