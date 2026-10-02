@@ -108,7 +108,8 @@ class AuditCog(
                     await conn.commit()
             except Exception:
                 log.exception(
-                    "failed to reset logging channel in guild %s", interaction.guild.id
+                    "failed to reset logging channel in guild %s",
+                    interaction.guild.id,
                 )
                 await interaction.followup.send(view=ExceptionUI())
                 return
@@ -139,7 +140,8 @@ class AuditCog(
             return
 
         view = InfoUI(
-            title="Logging", subtitle=f"**Logging channel set to {channel.mention}.**"
+            title="Logging",
+            subtitle=f"**Logging channel set to {channel.mention}.**",
         )
         await interaction.followup.send(view=view)
 
@@ -163,7 +165,8 @@ class AuditCog(
             await interaction.response.send_message(view=error_ui, ephemeral=False)
 
     async def get_log_channel(
-        self, guild_id: int
+        self,
+        guild_id: int,
     ) -> discord.abc.GuildChannel | discord.Thread | discord.abc.PrivateChannel | None:
         try:
             async with (

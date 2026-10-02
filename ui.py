@@ -72,7 +72,8 @@ class CogSelect(discord.ui.Select):
             for cog in cogs
             if not isinstance(cog.__cog_group_name__, discord.app_commands.locale_str)
             and not isinstance(
-                cog.__cog_group_description__, discord.app_commands.locale_str
+                cog.__cog_group_description__,
+                discord.app_commands.locale_str,
             )
         ]
 
@@ -165,7 +166,8 @@ class CaseRemoveButton(discord.ui.Button):
             and not interaction.user.guild_permissions.moderate_members
         ):
             await interaction.response.send_message(
-                "**You lack permissions to remove cases.**", ephemeral=True
+                "**You lack permissions to remove cases.**",
+                ephemeral=True,
             )
             return
 
@@ -340,7 +342,9 @@ class CasesView(discord.ui.LayoutView):
             return
 
         await self.build_components(
-            interaction.guild_id, interaction.user, interaction.client.user
+            interaction.guild_id,
+            interaction.user,
+            interaction.client.user,
         )
         await interaction.edit_original_response(view=self)
 
@@ -368,7 +372,9 @@ class LargeSeparator(discord.ui.Separator):
 
 class GalleryWithItem(discord.ui.MediaGallery):
     def __init__(
-        self, media: str | discord.File | discord.UnfurledMediaItem, /
+        self,
+        media: str | discord.File | discord.UnfurledMediaItem,
+        /,
     ) -> None:
         super().__init__(discord.MediaGalleryItem(media))
 
@@ -450,7 +456,7 @@ class ErrorUI(discord.ui.LayoutView):
         super().__init__()
 
         text_display = discord.ui.TextDisplay(
-            f"# {MELVIN_CROSS_EMOJI} Error\n\n{message}"
+            f"# {MELVIN_CROSS_EMOJI} Error\n\n{message}",
         )
 
         container = discord.ui.Container(

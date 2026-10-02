@@ -39,7 +39,7 @@ async def safe_finish(
             await interaction.edit_original_response(view=view)
     except discord.NotFound:
         log.warning(
-            "Original interaction response missing; falling back to followup.send"
+            "Original interaction response missing; falling back to followup.send",
         )
         try:
             if file is not None:
@@ -116,18 +116,21 @@ class MediaConfigModal(discord.ui.Modal, title="Welcome Media"):
             uploaded_file = self._attachment_image.values[0]
             try:
                 attachment_path = await _save_uploaded_image(
-                    self.guild_id, uploaded_file
+                    self.guild_id,
+                    uploaded_file,
                 )
             except discord.HTTPException, OSError:
                 log.exception("Failed to download/save uploaded welcome image")
                 await safe_finish(
-                    interaction, ErrorUI("Couldn't save that image, please try again.")
+                    interaction,
+                    ErrorUI("Couldn't save that image, please try again."),
                 )
                 return
 
         try:
             updated = await self.cog.update_config_fields(
-                self.guild_id, attachment_path=attachment_path
+                self.guild_id,
+                attachment_path=attachment_path,
             )
         except Exception:
             log.exception("Database error while updating welcome media")
@@ -181,7 +184,8 @@ class TextConfigModal(discord.ui.Modal, title="Welcome Text"):
 
         try:
             updated = await self.cog.update_config_fields(
-                self.guild_id, message=text_value
+                self.guild_id,
+                message=text_value,
             )
         except Exception:
             log.exception("Database error while updating welcome text")
@@ -368,7 +372,8 @@ class WelcomeCog(
             await interaction.response.send_message(view=error_ui, ephemeral=False)
 
     async def get_log_channel(
-        self, guild_id: int
+        self,
+        guild_id: int,
     ) -> discord.abc.GuildChannel | discord.Thread | discord.abc.PrivateChannel | None:
         try:
             async with (
@@ -545,7 +550,7 @@ class WelcomeCog(
     ) -> tuple[ResponseUI, discord.File | None]:
         view, file = self._build_welcome_ui(config, target_member)
         view.container.add_item(
-            discord.ui.ActionRow(self._build_config_select(guild_id))
+            discord.ui.ActionRow(self._build_config_select(guild_id)),
         )
         return view, file
 
@@ -590,7 +595,9 @@ class WelcomeCog(
         await interaction.response.defer()
 
         view, file = self._build_config_preview(
-            current_config, interaction.guild.id, interaction.user
+            current_config,
+            interaction.guild.id,
+            interaction.user,
         )
         if file is not None:
             await interaction.edit_original_response(view=view, attachments=[file])
@@ -613,7 +620,7 @@ class WelcomeCog(
             await safe_finish(
                 interaction,
                 ErrorUI(
-                    "**No welcome configuration found. Use /welcome channel and /welcome config first.**"
+                    "**No welcome configuration found. Use /welcome channel and /welcome config first.**",
                 ),
             )
             return
@@ -626,7 +633,7 @@ class WelcomeCog(
         description="Set or reset the channel for member join events.",
     )
     @app_commands.describe(
-        channel="The channel to send welcome messages to. Leave empty to reset."
+        channel="The channel to send welcome messages to. Leave empty to reset.",
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def channel(
@@ -648,7 +655,8 @@ class WelcomeCog(
                     await conn.commit()
             except Exception:
                 log.exception(
-                    "failed to reset welcome channel in guild %s", interaction.guild.id
+                    "failed to reset welcome channel in guild %s",
+                    interaction.guild.id,
                 )
                 await interaction.followup.send(view=ExceptionUI())
                 return
@@ -673,7 +681,8 @@ class WelcomeCog(
                 await conn.commit()
         except Exception:
             log.exception(
-                "failed to set welcome channel in guild %s", interaction.guild.id
+                "failed to set welcome channel in guild %s",
+                interaction.guild.id,
             )
             await interaction.followup.send(view=ExceptionUI())
             return
@@ -710,7 +719,8 @@ class WelcomeCog(
                 await conn.commit()
         except Exception:
             log.exception(
-                "failed to clean up welcome config for departed guild %s", guild.id
+                "failed to clean up welcome config for departed guild %s",
+                guild.id,
             )
 
         _delete_stored_image(guild.id)

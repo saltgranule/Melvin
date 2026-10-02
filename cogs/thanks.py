@@ -183,7 +183,8 @@ class ThanksCog(
                     replied_message = None
 
             if replied_message is not None and isinstance(
-                replied_message, discord.Message
+                replied_message,
+                discord.Message,
             ):
                 await self._credit_thanks(message, thanker, replied_message.author)
                 return  # don't also process mentions in the same message
@@ -194,7 +195,8 @@ class ThanksCog(
                 await self._credit_thanks(message, thanker, mentioned)
 
     @app_commands.command(
-        name="count", description="Check how many times a user has been thanked."
+        name="count",
+        description="Check how many times a user has been thanked.",
     )
     async def count(
         self,

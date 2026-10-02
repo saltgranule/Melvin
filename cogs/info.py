@@ -8,7 +8,9 @@ from ui import ErrorUI, GalleryWithItem, InfoUI, SmallSeparator
 # UI Classes
 class AvatarView(discord.ui.LayoutView):
     def __init__(
-        self, interaction: discord.Interaction, target: discord.User | discord.Member
+        self,
+        interaction: discord.Interaction,
+        target: discord.User | discord.Member,
     ) -> None:
         super().__init__()
 
@@ -125,7 +127,8 @@ class InfoCog(
         await interaction.response.defer()
         latency = round(self.bot.latency * 1000)
         view = InfoUI(
-            title="Latency", subtitle=f"The bot's latency is **{latency}**ms."
+            title="Latency",
+            subtitle=f"The bot's latency is **{latency}**ms.",
         )
         await interaction.followup.send(view=view)
 

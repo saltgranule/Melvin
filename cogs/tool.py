@@ -31,10 +31,12 @@ class ToolCog(
         self.bot = bot
 
     base64 = app_commands.Group(
-        name="base64", description="Utility encoding/decoding commands."
+        name="base64",
+        description="Utility encoding/decoding commands.",
     )
     binary = app_commands.Group(
-        name="binary", description="Utility encoding/decoding commands."
+        name="binary",
+        description="Utility encoding/decoding commands.",
     )
 
     @base64.command(
@@ -131,7 +133,7 @@ class ToolCog(
         if not all(set(chunk) <= {"0", "1"} and len(chunk) == 8 for chunk in chunks):
             await interaction.edit_original_response(
                 view=ErrorUI(
-                    "Not a valid binary string: expected space-separated 8-bit groups of **0**s and **1**s."
+                    "Not a valid binary string: expected space-separated 8-bit groups of **0**s and **1**s.",
                 ),
             )
             return
@@ -176,7 +178,8 @@ class ToolCog(
         answer = random.choice(EIGHTBALL)
         view = ResponseUI(f"**{prompt}**\n<:8ball:1548098650482413608>**{answer}**")
         await interaction.followup.send(
-            view=view, allowed_mentions=discord.AllowedMentions(everyone=False)
+            view=view,
+            allowed_mentions=discord.AllowedMentions(everyone=False),
         )
 
 

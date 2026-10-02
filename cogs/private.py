@@ -53,7 +53,8 @@ class PrivateCog(
             await interaction.followup.send(view=view, ephemeral=True)
             return
         view = PositiveUI(
-            title="Tree Sync Complete", subtitle=f"**Synced {len(synced)} command(s).**"
+            title="Tree Sync Complete",
+            subtitle=f"**Synced {len(synced)} command(s).**",
         )
         await interaction.followup.send(view=view, ephemeral=True)
 
@@ -99,7 +100,7 @@ class PrivateCog(
                 f"**User: {interaction.user.mention} | {interaction.user.id}**\n"
                 f"**Command: /{command.qualified_name} {location}**",
                 accessory=discord.ui.Thumbnail(
-                    media=interaction.user.display_avatar.url
+                    media=interaction.user.display_avatar.url,
                 ),
             ),
             accent_color=discord.Color.from_str(QUATERNARY),

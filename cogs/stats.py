@@ -14,7 +14,9 @@ midnight = datetime.time(hour=0, minute=0, second=0, tzinfo=datetime.UTC)
 
 
 class StatsCog(
-    commands.Cog, name="stats", description="Commands relating to Melvins statistics"
+    commands.Cog,
+    name="stats",
+    description="Commands relating to Melvins statistics",
 ):
     def __init__(self, bot: commands.Bot) -> None:
         super().__init__()

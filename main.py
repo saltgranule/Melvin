@@ -37,7 +37,9 @@ class Melvin(commands.Bot):
         color_integers = [int(hex_code, 16) for hex_code in colors]
         await self.http.request(
             route=discord.http.Route(
-                "PATCH", "/guilds/{guild_id}/members/@me", guild_id=guild.id
+                "PATCH",
+                "/guilds/{guild_id}/members/@me",
+                guild_id=guild.id,
             ),
             json={
                 "display_name_font_id": font_id.value,

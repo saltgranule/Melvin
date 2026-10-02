@@ -1036,7 +1036,7 @@ class ModCog(
         if role.managed:
             await interaction.followup.send(
                 view=ErrorUI(
-                    "**That role is managed by an app and can't be assigned.**"
+                    "**That role is managed by an app and can't be assigned.**",
                 ),
             )
             return
