@@ -1,3 +1,5 @@
+package.json
+package-lock.json
 .env
 *.db
 .replit
