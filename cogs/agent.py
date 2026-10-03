@@ -13,7 +13,7 @@ from discord.ext import commands
 from groq import AsyncGroq
 
 from globals import MELVIN_EMOJI
-from ui import ErrorUI, SmallSeparator
+from ui import ErrorUI, Paginator
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -39,110 +39,6 @@ def paginate(text: str, size: int = PAGE_SIZE) -> list[str]:
     if current:
         pages.append(current)
     return pages or [""]
-
-
-class ResponsePaginator(discord.ui.LayoutView):
-    def __init__(
-        self,
-        *,
-        pages: list[str],
-        prompt: str,
-        elapsed: float,
-        remaining: int,
-        total: int,
-        search: bool,
-        author_id: int,
-    ) -> None:
-        super().__init__(timeout=300)
-        self.pages = pages
-        self.index = 0
-        self.author_id = author_id
-
-        model_button = discord.ui.Button(
-            label="Model",
-            style=discord.ButtonStyle.link,
-            url="https://huggingface.co/openai/gpt-oss-20b",
-        )
-        self.prompt_section = discord.ui.Section(
-            f"# **Prompt:** {discord.utils.escape_markdown(prompt)}",
-            accessory=model_button,
-        )
-
-        grounding_text = (
-            f"-# **Grounded using DDGS web search context with {GROQ_MODEL}**"
-            if search
-            else f"-# **Generated without web search using {GROQ_MODEL}**"
-        )
-        self.footer = (
-            f"\n\n-# **{MELVIN_EMOJI} Took {elapsed:.1f}s. "
-            f"{remaining}/{total} requests left this hour.**\n"
-            f"{grounding_text}"
-        )
-
-        self.body = discord.ui.TextDisplay(self._page_content())
-
-        self.prev_button = discord.ui.Button(
-            label="Previous",
-            style=discord.ButtonStyle.secondary,
-            disabled=True,
-        )
-        self.next_button = discord.ui.Button(
-            label="Next",
-            style=discord.ButtonStyle.secondary,
-            disabled=len(pages) <= 1,
-        )
-        self.prev_button.callback = self._on_prev
-        self.next_button.callback = self._on_next
-
-        nav_row = discord.ui.ActionRow()
-        nav_row.add_item(self.prev_button)
-        nav_row.add_item(self.next_button)
-
-        self.add_item(
-            discord.ui.Container(
-                self.prompt_section,
-                SmallSeparator(),
-                self.body,
-                nav_row,
-            ),
-        )
-
-    def _page_content(self) -> str:
-        marker = (
-            f"\n\n-# Page {self.index + 1}/{len(self.pages)}"
-            if len(self.pages) > 1
-            else ""
-        )
-        footer = self.footer if self.index == len(self.pages) - 1 else ""
-        return f"{self.pages[self.index]}{marker}{footer}"
-
-    def _sync(self) -> None:
-        self.body.content = self._page_content()
-        self.prev_button.disabled = self.index == 0
-        self.next_button.disabled = self.index == len(self.pages) - 1
-
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        if interaction.user.id != self.author_id:
-            await interaction.response.send_message(
-                "**Not your command output.**",
-                ephemeral=True,
-            )
-            return False
-        return True
-
-    async def _on_prev(self, interaction: discord.Interaction) -> None:
-        self.index = max(0, self.index - 1)
-        self._sync()
-        await interaction.response.edit_message(view=self)
-
-    async def _on_next(self, interaction: discord.Interaction) -> None:
-        self.index = min(len(self.pages) - 1, self.index + 1)
-        self._sync()
-        await interaction.response.edit_message(view=self)
-
-    async def on_timeout(self) -> None:
-        self.prev_button.disabled = True
-        self.next_button.disabled = True
 
 
 class AgentCog(
@@ -247,7 +143,7 @@ class AgentCog(
 
         system_instruction = (
             f"Today's date is {current_date_str}. "
-            "Try to keep responses tidy, brief, and minimal to stay within Discord's 4000 character limit. "
+            "Try to keep responses tidy and brief, unless otherwise requested by the user. "
             "Contain responses in short, yet informative paragraphs, rather than graphs or tables or bulletpoints. "
             "Refrain from using emojis unless told to. "
         )
@@ -322,16 +218,39 @@ class AgentCog(
             remaining = max(0, RATE_LIMIT - (used + 1))
 
             pages = paginate(ai_response)
-            view = ResponsePaginator(
-                pages=pages,
-                prompt=prompt,
-                elapsed=elapsed,
-                remaining=remaining,
-                total=RATE_LIMIT,
-                search=search,
-                author_id=interaction.user.id,
+
+            grounding_text = (
+                "Grounded using DDGS web search context"
+                if search
+                else "Generated without web search"
             )
-            await interaction.edit_original_response(view=view)
+
+            view = Paginator(
+                f"# Prompt: {discord.utils.escape_markdown(prompt)}",
+                pages,
+                data_name="pages",
+                per_page=1,
+                container=True,
+                timeout=300,
+            )
+
+            view.set_title_button(
+                discord.ui.Button(
+                    label="Model",
+                    style=discord.ButtonStyle.link,
+                    url="https://huggingface.co/openai/gpt-oss-20b",
+                ),
+            )
+            view.add_under(
+                discord.ui.TextDisplay(
+                    f"-# {MELVIN_EMOJI} Took {elapsed:.1f}s. "
+                    f"{remaining}/{RATE_LIMIT} requests left this hour.\n"
+                    f"-# {grounding_text} using {GROQ_MODEL}",
+                ),
+            )
+
+            view.message = await interaction.edit_original_response(view=view)
+
         except Exception:
             log.exception("Failure in agent command")
             await interaction.edit_original_response(

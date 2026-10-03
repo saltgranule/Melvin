@@ -1,6 +1,7 @@
 # ruff: file-ignore[private-member-access]
 # pyright: reportPrivateUsage = false
 import contextlib
+from collections.abc import Sequence
 
 import discord
 
@@ -11,7 +12,7 @@ from .views import ExceptionUI, LargeSeparator
 __all__ = ["Paginator"]
 
 type _ItemsList = list[discord.ui.Item[discord.ui.LayoutView]]
-type _ItemsOrStrList = list[str | discord.ui.Item[discord.ui.LayoutView]]
+type _ItemsOrStrList = Sequence[str | discord.ui.Item[discord.ui.LayoutView]]
 type _TitleButton = discord.ui.Button[Paginator]
 
 
