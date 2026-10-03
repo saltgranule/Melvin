@@ -1,10 +1,11 @@
-import discord
 import math
 import time
+
+import discord
 from discord import app_commands
 from discord.ext import commands
 
-from globals import SHARD_ICON, API_ICON
+from globals import API_ICON, SHARD_ICON
 from ui import ErrorUI, GalleryWithItem, InfoUI, SmallSeparator
 
 

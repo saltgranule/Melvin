@@ -12,7 +12,6 @@ from globals import (
     MELVIN_MISC_EMOJI,
     MELVIN_WARN_EMOJI,
     PRIMARY,
-    QUATERNARY,
     SECONDARY,
     TERTIARY,
     THUMBS_UP,
@@ -417,7 +416,7 @@ class InfoUI(discord.ui.LayoutView):
         super().__init__()
         container = discord.ui.Container(
             discord.ui.TextDisplay(f"# {MELVIN_MISC_EMOJI} {title}\n{subtitle}"),
-            SmallSeparator()
+            SmallSeparator(),
         )
         self.container = container
         self.add_item(container)

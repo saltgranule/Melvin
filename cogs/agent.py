@@ -226,9 +226,9 @@ class AgentCog(
             )
 
             view = Paginator(
-                f"# Prompt: {discord.utils.escape_markdown(prompt)}",
+                f"# Prompt: `{prompt.replace('`', '')}`",
                 pages,
-                data_name="pages",
+                data_name="Pages",
                 per_page=1,
                 container=True,
                 timeout=300,
@@ -243,9 +243,8 @@ class AgentCog(
             )
             view.add_under(
                 discord.ui.TextDisplay(
-                    f"-# {MELVIN_EMOJI} Took {elapsed:.1f}s. "
-                    f"{remaining}/{RATE_LIMIT} requests left this hour.\n"
-                    f"-# {grounding_text} using {GROQ_MODEL}",
+                    f"-# {MELVIN_EMOJI} **Took {elapsed:.1f}s. {remaining}/{RATE_LIMIT} requests left this hour.**\n"
+                    f"-# **{grounding_text} using {GROQ_MODEL}.**",
                 ),
             )
 
