@@ -5,9 +5,7 @@ from collections.abc import Sequence
 
 import discord
 
-from ui import ErrorUI
-
-from .views import ExceptionUI, LargeSeparator
+from .views import ErrorUI, ExceptionUI, LargeSeparator
 
 __all__ = ["Paginator"]
 
