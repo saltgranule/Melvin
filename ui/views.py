@@ -417,8 +417,7 @@ class InfoUI(discord.ui.LayoutView):
         super().__init__()
         container = discord.ui.Container(
             discord.ui.TextDisplay(f"# {MELVIN_MISC_EMOJI} {title}\n{subtitle}"),
-            SmallSeparator(),
-            accent_color=discord.Color.from_str(QUATERNARY),
+            SmallSeparator()
         )
         self.container = container
         self.add_item(container)
