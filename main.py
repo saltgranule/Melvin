@@ -197,6 +197,7 @@ async def main() -> None:
     token = os.getenv("TOKEN")
     if not token:
         raise RuntimeError("Token is not set.")
+    STATS_FILE.parent.mkdir(parents=True, exist_ok=True)
     async with bot:
         await bot.load_extension("cogs.info")
         await bot.load_extension("cogs.agent")

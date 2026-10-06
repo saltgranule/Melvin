@@ -1,10 +1,14 @@
+from typing import TYPE_CHECKING
+
 import discord
 from discord import app_commands
 from discord.ext import commands
 
 from globals import LOG_CHANNEL, MELVIN_BANNER, MELVIN_MISC_EMOJI, QUATERNARY
-from main import Melvin
 from ui import ErrorUI, GalleryWithItem, GatedUI, PositiveUI, SmallSeparator
+
+if TYPE_CHECKING:
+    from main import Melvin
 
 
 class PrivateCog(

@@ -1,4 +1,5 @@
 import re
+from typing import TYPE_CHECKING
 
 import discord
 from discord import app_commands
@@ -12,8 +13,10 @@ from globals import (
     DisplayNameEffect,
     DisplayNameFont,
 )
-from main import Melvin
 from ui import ErrorUI, GalleryWithItem, PositiveUI
+
+if TYPE_CHECKING:
+    from main import Melvin
 
 COLOR_PATTERN = re.compile(r"^[0-9a-fA-F]{6}(?:-[0-9a-fA-F]{6})?$")
 
