@@ -13,7 +13,9 @@ from ui import CasesView, ErrorUI, InfoUI, PositiveUI, open_config
 log = logging.getLogger(__name__)
 
 
-@app_commands.guild_only()
+# server only, installed to a server and used in it, never in dms or as a user app
+@app_commands.allowed_installs(guilds=True, users=False)
+@app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
 class ModCog(
     commands.GroupCog,
     name="mod",

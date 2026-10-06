@@ -63,7 +63,19 @@ class MelvinTree(app_commands.CommandTree):
 
 class Melvin(commands.Bot):
     def __init__(self) -> None:
-        super().__init__(command_prefix="-", intents=intents, tree_cls=MelvinTree)
+        super().__init__(
+            command_prefix="-",
+            intents=intents,
+            tree_cls=MelvinTree,
+            # every command works as a user app and in dms unless it says otherwise,
+            # server only cogs override this with their own allowed_installs and contexts
+            allowed_installs=app_commands.AppInstallationType(guild=True, user=True),
+            allowed_contexts=app_commands.AppCommandContext(
+                guild=True,
+                dm_channel=True,
+                private_channel=True,
+            ),
+        )
 
     async def set_name_style(
         self,

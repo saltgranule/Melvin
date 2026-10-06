@@ -42,7 +42,9 @@ def _load_image_file(path: str | None) -> discord.File | None:
     return discord.File(path, filename=Path(path).name)
 
 
-@app_commands.guild_only
+# server only, installed to a server and used in it, never in dms or as a user app
+@app_commands.allowed_installs(guilds=True, users=False)
+@app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
 class WelcomeCog(
     commands.GroupCog,
     name="welcome",

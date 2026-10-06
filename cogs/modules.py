@@ -116,7 +116,9 @@ class ModulesCog(
         name="modules",
         description="Turn Melvin's features on or off for this server.",
     )
-    @app_commands.guild_only()
+    # server only, installed to a server and used in it, never in dms or as a user app
+    @app_commands.allowed_installs(guilds=True, users=False)
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     @app_commands.checks.has_permissions(manage_guild=True)
     async def modules(self, interaction: discord.Interaction) -> None:
         if interaction.guild is None:

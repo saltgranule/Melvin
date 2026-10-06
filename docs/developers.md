@@ -61,6 +61,22 @@ Listeners that clean up after the bot leaves a guild, like `on_guild_remove`, sh
 
 A module with no commands, like Server Stats, uses a plain `commands.Cog` instead, named after its module key. A GroupCog with no commands would show up in Discord as a command that does nothing. Its listeners still check `is_enabled` like any other module.
 
+**Where commands can be used**
+Every command works in servers, in DMs, and when Melvin is added to someone's account as a user app, unless it says otherwise. That's set once for the whole bot in `main.py`.
+Commands that only make sense in a server, like moderation or welcome messages, should say so with these two decorators on the cog class, or on the command if it isn't in a group. Discord only reads them on top level commands and groups, so they do nothing on subcommands.
+
+```python
+@app_commands.allowed_installs(guilds=True, users=False)
+@app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+class ModCog(
+    commands.GroupCog,
+    name="mod",
+    description="Guild moderation commands.",
+):
+```
+
+Don't use `app_commands.guild_only` for this. The bot wide setting in `main.py` overrides it, so the commands would still show up in DMs.
+
 **What isn't a module**
 Commands outside a group, like `/help`, `/latency`, and `/melvin`, can't be turned off. Neither can the stats, private, and debug cogs, since they aren't listed in `MODULES`.
 
