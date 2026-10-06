@@ -14,6 +14,17 @@ CHART_WIDTH = 200
 CHART_HEIGHT = 60
 CHART_PADDING = 4
 
+DEGRADED_GATEWAY_MS = 400
+DEGRADED_API_MS = 800
+STALE_AFTER_SECONDS = 5 * 60
+STATE_ORDER = ["ok", "degraded", "down"]
+STATE_LABELS = {
+    "ok": "Everything appears normal :)",
+    "degraded": "Things seem a little slow right now :/",
+    "down": "Melvin doesn't seem to be responding :(",
+    "unknown": "No data yet :|",
+}
+
 log = logging.getLogger(__name__)
 
 
@@ -35,7 +46,10 @@ def _get_start_time() -> datetime | None:
 
 
 def _format_uptime(start: datetime) -> str:
-    seconds = int((datetime.now(UTC) - start).total_seconds())
+    return _format_seconds(int((datetime.now(UTC) - start).total_seconds()))
+
+
+def _format_seconds(seconds: int) -> str:
     days, seconds = divmod(seconds, 86400)
     hours, seconds = divmod(seconds, 3600)
     minutes, _ = divmod(seconds, 60)
@@ -143,9 +157,13 @@ async def record_metrics(guild_count: int, member_count: int) -> None:
         await db.commit()
 
 
-def _format_relative(checked_at: str) -> str:
+def _seconds_since(checked_at: str) -> int:
     checked = datetime.fromisoformat(checked_at)
-    seconds = int((datetime.now(UTC) - checked).total_seconds())
+    return int((datetime.now(UTC) - checked).total_seconds())
+
+
+def _format_relative(checked_at: str) -> str:
+    seconds = _seconds_since(checked_at)
 
     if seconds < 10:
         return "just now"
@@ -160,29 +178,76 @@ def _format_relative(checked_at: str) -> str:
     return f"{hours // 24}d ago"
 
 
-def _build_area_points(history: list[float], lo: float, hi: float) -> str:
-    n = len(history)
-    if n == 0:
-        return ""
+def _format_span(rows: list[aiosqlite.Row]) -> str | None:
+    if len(rows) < 2:
+        return None
+    first = datetime.fromisoformat(rows[0]["checked_at"])
+    last = datetime.fromisoformat(rows[-1]["checked_at"])
+    seconds = int((last - first).total_seconds())
+    return _format_seconds(seconds) if seconds >= 60 else None
 
-    span = (hi - lo) or 1.0
+
+def _scale_history(history: list[float], lo: float, hi: float) -> list[float]:
+    # flat data sits in the middle instead of hiding under the card border
+    if hi == lo:
+        return [CHART_HEIGHT / 2] * len(history)
+
     usable_height = CHART_HEIGHT - (CHART_PADDING * 2)
+    return [
+        CHART_HEIGHT - CHART_PADDING - ((value - lo) / (hi - lo)) * usable_height
+        for value in history
+    ]
 
-    if n == 1:
-        y = CHART_HEIGHT - CHART_PADDING - ((history[0] - lo) / span) * usable_height
-        return (
-            f"0,{CHART_HEIGHT} 0,{y:.2f} "
-            f"{CHART_WIDTH},{y:.2f} {CHART_WIDTH},{CHART_HEIGHT}"
-        )
 
-    step = CHART_WIDTH / (n - 1)
-    top_edge = []
-    for i, value in enumerate(history):
-        x = i * step
-        y = CHART_HEIGHT - CHART_PADDING - ((value - lo) / span) * usable_height
-        top_edge.append(f"{x:.2f},{y:.2f}")
+def _build_line_points(ys: list[float]) -> str:
+    if not ys:
+        return ""
+    if len(ys) == 1:
+        return f"0,{ys[0]:.2f} {CHART_WIDTH},{ys[0]:.2f}"
 
-    return f"0,{CHART_HEIGHT} " + " ".join(top_edge) + f" {CHART_WIDTH},{CHART_HEIGHT}"
+    step = CHART_WIDTH / (len(ys) - 1)
+    return " ".join(f"{i * step:.2f},{y:.2f}" for i, y in enumerate(ys))
+
+
+def _build_area_points(ys: list[float]) -> str:
+    line = _build_line_points(ys)
+    if not line:
+        return ""
+    return f"0,{CHART_HEIGHT} {line} {CHART_WIDTH},{CHART_HEIGHT}"
+
+
+def _build_tooltip_points(
+    rows: list[aiosqlite.Row],
+    ys: list[float],
+    series: list[tuple[str, list[float], str, str]],
+) -> list[dict]:
+    return [
+        {
+            "when": _format_relative(row["checked_at"]),
+            "y": round(ys[i] / CHART_HEIGHT * 100, 2),
+            "rows": [
+                [label, f"{round(values[i]):,}{unit}", key]
+                for label, values, unit, key in series
+            ],
+        }
+        for i, row in enumerate(rows)
+    ]
+
+
+def _shard_state(latency_ms: float, api_latency_ms: float, checked_at: str) -> str:
+    if _seconds_since(checked_at) > STALE_AFTER_SECONDS:
+        return "down"
+    if latency_ms > DEGRADED_GATEWAY_MS or api_latency_ms > DEGRADED_API_MS:
+        return "degraded"
+    return "ok"
+
+
+def summarize_status(shards: list[dict]) -> dict[str, str]:
+    if not shards:
+        state = "unknown"
+    else:
+        state = max((shard["state"] for shard in shards), key=STATE_ORDER.index)
+    return {"state": state, "label": STATE_LABELS[state]}
 
 
 async def get_shard_status() -> list[dict]:
@@ -219,16 +284,34 @@ async def get_shard_status() -> list[dict]:
             latest = rows[-1]
             combined = gateway_history + api_history
             lo, hi = min(combined), max(combined)
+            gateway_ys = _scale_history(gateway_history, lo, hi)
+            api_ys = _scale_history(api_history, lo, hi)
+            latency_ms = round(latest["latency_ms"])
+            api_latency_ms = round(latest["api_latency_ms"] or 0.0)
 
             shards.append(
                 {
                     "shard_id": shard_id,
-                    "latency_ms": round(latest["latency_ms"]),
-                    "api_latency_ms": round(latest["api_latency_ms"] or 0.0),
+                    "state": _shard_state(
+                        latency_ms,
+                        api_latency_ms,
+                        latest["checked_at"],
+                    ),
+                    "latency_ms": latency_ms,
+                    "api_latency_ms": api_latency_ms,
                     "last_checked": _format_relative(latest["checked_at"]),
                     "uptime": uptime,
-                    "chart_points": _build_area_points(gateway_history, lo, hi),
-                    "api_chart_points": _build_area_points(api_history, lo, hi),
+                    "span": _format_span(rows),
+                    "chart_points": _build_area_points(gateway_ys),
+                    "api_chart_points": _build_area_points(api_ys),
+                    "tooltip_points": _build_tooltip_points(
+                        rows,
+                        gateway_ys,
+                        [
+                            ("Gateway", gateway_history, "ms", "gateway"),
+                            ("API", api_history, "ms", "api"),
+                        ],
+                    ),
                     "chart_width": CHART_WIDTH,
                     "chart_height": CHART_HEIGHT,
                 },
@@ -259,15 +342,30 @@ async def get_metrics_status() -> dict | None:
     member_history = [row["member_count"] for row in rows]
     latest = rows[-1]
 
-    guild_lo, guild_hi = min(guild_history), max(guild_history)
-    member_lo, member_hi = min(member_history), max(member_history)
+    guild_ys = _scale_history(guild_history, min(guild_history), max(guild_history))
+    member_ys = _scale_history(
+        member_history,
+        min(member_history),
+        max(member_history),
+    )
 
     return {
         "guild_count": latest["guild_count"],
         "member_count": latest["member_count"],
         "last_checked": _format_relative(latest["checked_at"]),
-        "guild_chart_points": _build_area_points(guild_history, guild_lo, guild_hi),
-        "member_chart_points": _build_area_points(member_history, member_lo, member_hi),
+        "span": _format_span(rows),
+        "guild_chart_points": _build_area_points(guild_ys),
+        "member_chart_points": _build_area_points(member_ys),
+        "guild_tooltip_points": _build_tooltip_points(
+            rows,
+            guild_ys,
+            [("Servers", guild_history, "", "gateway")],
+        ),
+        "member_tooltip_points": _build_tooltip_points(
+            rows,
+            member_ys,
+            [("Users", member_history, "", "gateway")],
+        ),
         "chart_width": CHART_WIDTH,
         "chart_height": CHART_HEIGHT,
     }

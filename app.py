@@ -1,3 +1,5 @@
+import functools
+import html
 import json
 import os
 import subprocess  # ruff: ignore[suspicious-subprocess-import]
@@ -11,6 +13,7 @@ import markdown
 from flask import Flask, abort, render_template
 
 from globals import (
+    ADD_BOT_URL,
     INVITE_URL,
     MELVIN_GITHUB_URL,
     PRIMARY,
@@ -18,7 +21,7 @@ from globals import (
     SECONDARY,
     TERTIARY,
 )
-from status import get_metrics_status, get_shard_status
+from status import get_metrics_status, get_shard_status, summarize_status
 
 app = Flask(__name__)
 
@@ -38,6 +41,7 @@ THEME = {
 }
 
 LINKS = {
+    "add": ADD_BOT_URL,
     "invite": INVITE_URL,
     "github": MELVIN_GITHUB_URL,
 }
@@ -132,27 +136,57 @@ def get_bot_stats() -> dict[str, str]:
     }
 
 
-def get_docs_list() -> list[str]:
+@functools.lru_cache(maxsize=64)
+def _parse_doc(path: Path, _mtime: float) -> dict:
+    # _mtime is only part of the cache key, so edited docs get re-parsed
+    text = path.read_text(encoding="utf-8")
+    md = markdown.Markdown(
+        extensions=["fenced_code", "tables", "toc"],
+        extension_configs={"toc": {"toc_depth": "2-3"}},
+    )
+    content = md.convert(text)
+
+    title = path.stem.replace("-", " ").replace("_", " ").title()
+    for line in text.splitlines():
+        if line.startswith("# "):
+            title = line[2:].strip()
+            break
+
+    headings = []
+    for token in md.toc_tokens:
+        headings.append(
+            {"id": token["id"], "name": html.unescape(token["name"]), "level": 2},
+        )
+        headings.extend(
+            {"id": child["id"], "name": html.unescape(child["name"]), "level": 3}
+            for child in token["children"]
+        )
+
+    return {"title": title, "content": content, "headings": headings}
+
+
+def load_doc(path: Path) -> dict:
+    return _parse_doc(path, path.stat().st_mtime)
+
+
+def get_docs_list() -> list[dict]:
     if not DOCS_DIR.is_dir():
         return []
 
     docs = []
     for path in sorted(DOCS_DIR.glob("*.md")):
-        title = path.stem.replace("-", " ").replace("_", " ").title()
-        for line in path.read_text(encoding="utf-8").splitlines():
-            if line.startswith("# "):
-                title = line[2:].strip()
-                break
-        docs.append({"slug": path.stem, "title": title})
+        doc = load_doc(path)
+        docs.append(
+            {"slug": path.stem, "title": doc["title"], "headings": doc["headings"]},
+        )
     return docs
 
 
-def render_doc(slug: str) -> str | None:
+def render_doc(slug: str) -> dict | None:
     path = DOCS_DIR / f"{slug}.md"
     if not path.is_file():
         return None
-    text = path.read_text(encoding="utf-8")
-    return markdown.markdown(text, extensions=["fenced_code", "tables"])
+    return load_doc(path)
 
 
 @app.route("/")
@@ -175,15 +209,15 @@ def docs_index() -> str:
         theme=THEME,
         links=LINKS,
         docs=get_docs_list(),
-        content=None,
+        doc=None,
         active_slug=None,
     )
 
 
 @app.route("/docs/<slug>")
 def docs_page(slug: str) -> str:
-    content = render_doc(slug)
-    if content is None:
+    doc = render_doc(slug)
+    if doc is None:
         abort(404)
     return render_template(
         "docs.html",
@@ -191,19 +225,21 @@ def docs_page(slug: str) -> str:
         theme=THEME,
         links=LINKS,
         docs=get_docs_list(),
-        content=content,
+        doc=doc,
         active_slug=slug,
     )
 
 
 @app.route("/status")
 async def status() -> str:
+    shards = await get_shard_status()
     return render_template(
         "status.html",
         active="status",
         theme=THEME,
         links=LINKS,
-        shards=await get_shard_status(),
+        shards=shards,
+        overall=summarize_status(shards),
         metrics=await get_metrics_status(),
     )
 

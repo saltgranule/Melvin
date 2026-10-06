@@ -2,16 +2,18 @@
 {% block meta_tags %}
     <meta property="og:title" content="Status">
     <meta property="og:description" content="A page dedicated to latency information regarding melvin.">
-    <meta property="og:image" content="{{ url_for('static', filename='media/SOG.png', _external=True) }}">
+    <meta property="og:image" content="{{ url_for('static', filename='media/MelvinLogo.png', _external=True) }}">
     <meta property="og:url" content="{{ request.url }}">
     <meta name="theme-color" content="{{ theme.primary }}">
-    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="Status">
     <meta name="twitter:description" content="A page dedicated to latency information regarding melvin.">
-    <meta name="twitter:image" content="{{ url_for('static', filename='media/SOG.png', _external=True) }}">
+    <meta name="twitter:image" content="{{ url_for('static', filename='media/MelvinLogo.png', _external=True) }}">
 {% endblock %}
 {% block content %}
-<section class="section-container status-section">
+<section class="section-container status-section" id="status-section">
+    <p class="status-notice" role="status">{{ overall.label }}</p>
+
     <h1 class="status-heading">latency statistics</h1>
 
     {% if shards %}
@@ -19,13 +21,20 @@
         {% for shard in shards %}
         <div class="status-card">
             <div class="status-card-header">
-                <span class="status-shard-label">Shard {{ shard.shard_id }}</span>
-                <span class="status-latency">{{ shard.latency_ms }}ms</span>
-                <span class="status-latency-api">api {{ shard.api_latency_ms }}ms</span>
-                <span class="status-checked">Last checked {{ shard.last_checked }}, Uptime {{ shard.uptime }}</span>
+                <div class="status-card-row">
+                    <span class="status-shard-label">Shard {{ shard.shard_id }}</span>
+                    <span class="status-checked">{{ shard.last_checked }}</span>
+                </div>
+                <div class="status-card-row is-start">
+                    <span class="status-latency">{{ shard.latency_ms }}ms</span>
+                    <span class="status-latency-api">api {{ shard.api_latency_ms }}ms</span>
+                </div>
+                <span class="status-checked">Uptime {{ shard.uptime }}{% if shard.span %}, {{ shard.span }} charted{% endif %}</span>
             </div>
-            <div class="status-chart">
-                <svg viewBox="0 0 {{ shard.chart_width }} {{ shard.chart_height }}" preserveAspectRatio="none">
+            <div class="status-chart" tabindex="0" role="img"
+                 aria-label="Shard {{ shard.shard_id }} latency{% if shard.span %} over the last {{ shard.span }}{% endif %}: gateway {{ shard.latency_ms }}ms, API {{ shard.api_latency_ms }}ms. Use left and right arrow keys to step through readings."
+                 data-points='{{ shard.tooltip_points | tojson }}'>
+                <svg viewBox="0 0 {{ shard.chart_width }} {{ shard.chart_height }}" preserveAspectRatio="none" aria-hidden="true">
                     <polygon points="{{ shard.api_chart_points }}" class="status-chart-api"></polygon>
                     <polygon points="{{ shard.chart_points }}" class="status-chart-gateway"></polygon>
                 </svg>
@@ -44,30 +53,28 @@
 
     {% if metrics %}
     <div class="status-grid">
+        {% for card in [
+            {"label": "Server Count", "value": metrics.guild_count, "points": metrics.guild_chart_points, "tooltip": metrics.guild_tooltip_points},
+            {"label": "User Count", "value": metrics.member_count, "points": metrics.member_chart_points, "tooltip": metrics.member_tooltip_points},
+        ] %}
         <div class="status-card">
             <div class="status-card-header">
-                <span class="status-shard-label">Server Count</span>
-                <span class="status-latency">{{ metrics.guild_count }}</span>
-                <span class="status-checked">Last checked {{ metrics.last_checked }}</span>
+                <div class="status-card-row">
+                    <span class="status-shard-label">{{ card.label }}</span>
+                    <span class="status-checked">{{ metrics.last_checked }}</span>
+                </div>
+                <span class="status-latency">{{ "{:,}".format(card.value) }}</span>
+                {% if metrics.span %}<span class="status-checked">{{ metrics.span }} charted</span>{% endif %}
             </div>
-            <div class="status-chart">
-                <svg viewBox="0 0 {{ metrics.chart_width }} {{ metrics.chart_height }}" preserveAspectRatio="none">
-                    <polygon points="{{ metrics.guild_chart_points }}" class="status-chart-gateway"></polygon>
+            <div class="status-chart" tabindex="0" role="img"
+                 aria-label="{{ card.label }}{% if metrics.span %} over the last {{ metrics.span }}{% endif %}: currently {{ card.value }}. Use left and right arrow keys to step through readings."
+                 data-points='{{ card.tooltip | tojson }}'>
+                <svg viewBox="0 0 {{ metrics.chart_width }} {{ metrics.chart_height }}" preserveAspectRatio="none" aria-hidden="true">
+                    <polygon points="{{ card.points }}" class="status-chart-gateway"></polygon>
                 </svg>
             </div>
         </div>
-        <div class="status-card">
-            <div class="status-card-header">
-                <span class="status-shard-label">User Count</span>
-                <span class="status-latency">{{ metrics.member_count }}</span>
-                <span class="status-checked">Last checked {{ metrics.last_checked }}</span>
-            </div>
-            <div class="status-chart">
-                <svg viewBox="0 0 {{ metrics.chart_width }} {{ metrics.chart_height }}" preserveAspectRatio="none">
-                    <polygon points="{{ metrics.member_chart_points }}" class="status-chart-gateway"></polygon>
-                </svg>
-            </div>
-        </div>
+        {% endfor %}
         <div class="status-card-empty">That's all for now.</div>
     </div>
     {% else %}
@@ -82,7 +89,7 @@
             if you're having issues, please report them to the support server, be sure to read documentation to avoid wasting our, and your own time.
         </p>
         <div class="hero-cta">
-            <a href="https://discord.com/oauth2/authorize?client_id=1468362201197973756" class="btn btn-dark">Support Server</a>
+            <a href="{{ links.invite }}" class="btn btn-dark">Support Server</a>
             <a href="/docs" class="docs-search">
                 <svg class="docs-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
@@ -95,7 +102,7 @@
     </div>
 
     <div class="hero-logo-wrap">
-        <img src="{{ url_for('static', filename='media/MelvinLogo.png') }}" alt="Melvin" class="hero-logo">
+        <img src="{{ url_for('static', filename='media/MelvinLogo.png') }}" alt="" class="hero-logo">
     </div>
 </section>
 
@@ -109,5 +116,130 @@
             window.location.href = "/docs";
         }
     });
+
+    (function () {
+        // one tooltip for the whole page, fixed so card overflow can't clip it
+        var tooltip = document.createElement("div");
+        tooltip.className = "status-tooltip";
+        tooltip.setAttribute("role", "tooltip");
+        tooltip.hidden = true;
+        document.body.appendChild(tooltip);
+        var activeChart = null;
+
+        function pointsFor(chart) {
+            if (!chart.statusPoints) {
+                chart.statusPoints = JSON.parse(chart.getAttribute("data-points") || "[]");
+            }
+            return chart.statusPoints;
+        }
+
+        function show(chart, index) {
+            var points = pointsFor(chart);
+            if (!points.length) return;
+
+            index = Math.max(0, Math.min(points.length - 1, index));
+            var point = points[index];
+            var x = points.length === 1 ? 50 : (index / (points.length - 1)) * 100;
+
+            if (activeChart && activeChart !== chart) hide();
+            activeChart = chart;
+            chart.statusIndex = index;
+
+
+            tooltip.textContent = "";
+            var when = document.createElement("div");
+            when.className = "status-tooltip-when";
+            when.textContent = point.when;
+            tooltip.appendChild(when);
+            point.rows.forEach(function (row) {
+                var line = document.createElement("div");
+                var key = document.createElement("span");
+                var label = document.createElement("span");
+                var value = document.createElement("strong");
+                line.className = "status-tooltip-row";
+                key.className = "status-tooltip-key is-" + row[2];
+                label.className = "status-tooltip-label";
+                label.textContent = row[0];
+                value.textContent = row[1];
+                label.prepend(key);
+                line.append(label, value);
+                tooltip.appendChild(line);
+            });
+            tooltip.hidden = false;
+
+            var rect = chart.getBoundingClientRect();
+            var left = rect.left + (rect.width * x) / 100;
+            tooltip.style.left = left + "px";
+            tooltip.style.top = rect.top + (rect.height * point.y) / 100 + "px";
+
+            // keep it on screen near the card edges, with the arrow still on the point
+            var tipRect = tooltip.getBoundingClientRect();
+            var shift = 0;
+            if (tipRect.left < 8) {
+                shift = 8 - tipRect.left;
+            } else if (tipRect.right > window.innerWidth - 8) {
+                shift = window.innerWidth - 8 - tipRect.right;
+            }
+            tooltip.style.left = left + shift + "px";
+            tooltip.style.setProperty("--arrow-shift", -shift + "px");
+        }
+
+        function hide() {
+            activeChart = null;
+            tooltip.hidden = true;
+        }
+
+        function indexFromPointer(chart, event) {
+            var points = pointsFor(chart);
+            var rect = chart.getBoundingClientRect();
+            var fraction = (event.clientX - rect.left) / rect.width;
+            return Math.round(fraction * (points.length - 1));
+        }
+
+        function onPointer(event) {
+            var chart = event.target.closest && event.target.closest(".status-chart");
+            if (chart) show(chart, indexFromPointer(chart, event));
+        }
+
+        document.addEventListener("pointermove", onPointer);
+        document.addEventListener("pointerdown", onPointer);
+        document.addEventListener("pointerout", function (event) {
+            var chart = event.target.closest && event.target.closest(".status-chart");
+            if (chart && !chart.contains(event.relatedTarget) && document.activeElement !== chart) hide();
+        });
+        window.addEventListener("scroll", hide, { passive: true });
+
+        document.addEventListener("focusin", function (event) {
+            var chart = event.target.closest && event.target.closest(".status-chart");
+            if (chart) show(chart, pointsFor(chart).length - 1);
+        });
+        document.addEventListener("focusout", function (event) {
+            if (event.target === activeChart) hide();
+        });
+        document.addEventListener("keydown", function (event) {
+            var chart = document.activeElement;
+            if (!chart || !chart.classList.contains("status-chart")) return;
+            if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+                event.preventDefault();
+                show(chart, (chart.statusIndex || 0) + (event.key === "ArrowLeft" ? -1 : 1));
+            } else if (event.key === "Escape") {
+                hide();
+            }
+        });
+
+        // swap in fresh numbers every minute, but never while someone is reading a tooltip
+        setInterval(function () {
+            if (document.hidden || activeChart) return;
+            fetch(window.location.href)
+                .then(function (response) { return response.ok ? response.text() : null; })
+                .then(function (html) {
+                    if (!html || activeChart) return;
+                    var next = new DOMParser().parseFromString(html, "text/html").getElementById("status-section");
+                    var current = document.getElementById("status-section");
+                    if (next && current) current.replaceWith(next);
+                })
+                .catch(function () {});
+        }, 60000);
+    })();
 </script>
 {% endblock %}

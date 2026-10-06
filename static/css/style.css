@@ -35,6 +35,21 @@ a {
     color: #252422;
 }
 
+:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
 .section-container {
     max-width: 1200px;
     margin: 0 auto;
@@ -184,7 +199,7 @@ a {
 .footer-tagline {
     font-size: 13px;
     line-height: 1.6;
-    color: #7f7c74;
+    color: #97938b;
 }
 
 .footer-col {
@@ -199,7 +214,7 @@ a {
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #7f7c74;
+    color: #97938b;
     margin-bottom: 4px;
 }
 
@@ -219,7 +234,7 @@ a {
     margin: 0 auto;
     padding: 20px 0;
     font-size: 12px;
-    color: #6b675f;
+    color: #97938b;
 }
 
 .hero {
@@ -251,12 +266,18 @@ a {
     margin-bottom: 32px;
 }
 
-.hero-subtitle a {
-    text-decoration: none;
+.hero-subtitle a,
+.docs-content a {
+    color: #252422;
+    text-decoration: underline;
+    text-decoration-color: var(--primary);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
 }
 
-.hero-subtitle a:hover {
-    text-decoration: underline;
+.hero-subtitle a:hover,
+.docs-content a:hover {
+    text-decoration-color: #252422;
 }
 
 .hero-cta {
@@ -357,7 +378,7 @@ a {
 }
 
 .docs-search-fake-input {
-    color: #a8a49c;
+    color: #726e66;
 }
 
 .btn {
@@ -438,12 +459,12 @@ a {
 }
 
 .docs-search:focus-within {
-    border-color: var(--quaternary);
+    border-color: var(--primary);
 }
 
 .docs-search-icon {
     flex: 0 0 auto;
-    color: #a8a49c;
+    color: #726e66;
 }
 
 .docs-search-input {
@@ -458,14 +479,14 @@ a {
 }
 
 .docs-search-input::placeholder {
-    color: #a8a49c;
+    color: #726e66;
 }
 
 .docs-search-kbd {
     flex: 0 0 auto;
     font-family: inherit;
     font-size: 11px;
-    color: #a8a49c;
+    color: #726e66;
     background: #ffffff;
     border: 1px solid #e5e3df;
     border-radius: 4px;
@@ -474,7 +495,7 @@ a {
 }
 
 .docs-search-empty {
-    color: #a8a49c;
+    color: #726e66;
     font-size: 13px;
     padding: 6px 10px;
 }
@@ -510,8 +531,38 @@ a {
     font-weight: 600;
 }
 
+.docs-list-item.is-highlighted {
+    color: #252422;
+    background: #ece9e4;
+}
+
+.docs-list-item mark {
+    background: color-mix(in srgb, var(--primary) 35%, transparent);
+    color: inherit;
+    border-radius: 2px;
+}
+
+.docs-list-sub {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 2px 0 4px 12px;
+    padding-left: 8px;
+    border-left: 1px solid #e5e3df;
+}
+
+.docs-list-sub[hidden] {
+    display: none;
+}
+
+.docs-list-subitem {
+    font-size: 13px;
+    padding: 4px 8px;
+}
+
 .docs-list-empty {
-    color: #a8a49c;
+    color: #726e66;
     font-size: 14px;
     padding: 6px 10px;
 }
@@ -557,8 +608,59 @@ a {
     line-height: 1.65;
 }
 
+.docs-content h2,
+.docs-content h3 {
+    scroll-margin-top: 16px;
+}
+
+.docs-toc {
+    flex: 0 0 200px;
+    position: sticky;
+    top: 24px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+}
+
+.docs-toc-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b675f;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+}
+
+.docs-toc-list {
+    list-style: none;
+    border-left: 1px solid #e5e3df;
+}
+
+.docs-toc-link {
+    display: block;
+    color: #6b675f;
+    text-decoration: none;
+    font-size: 13px;
+    line-height: 1.4;
+    padding: 4px 0 4px 12px;
+    margin-left: -1px;
+    border-left: 2px solid transparent;
+}
+
+.docs-toc-link.is-sub {
+    padding-left: 24px;
+}
+
+.docs-toc-link:hover {
+    color: #252422;
+}
+
+.docs-toc-link.is-current {
+    color: #252422;
+    border-left-color: var(--primary);
+}
+
 .docs-placeholder {
-    color: #a8a49c;
+    color: #726e66;
 }
 
 .docs-content h1 {
@@ -651,6 +753,12 @@ a {
     gap: 16px;
 }
 
+.status-notice {
+    font-size: 15px;
+    color: #6b675f;
+    margin-bottom: 28px;
+}
+
 .status-card {
     display: flex;
     flex-direction: column;
@@ -685,10 +793,24 @@ a {
     padding: 14px 16px 8px;
 }
 
+.status-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.status-card-row.is-start {
+    justify-content: flex-start;
+}
+
+.status-card-row .status-checked {
+    margin-top: 0;
+}
+
 .status-shard-label {
     font-size: 12px;
     color: #6b675f;
-    margin-bottom: 4px;
 }
 
 .status-latency {
@@ -698,22 +820,86 @@ a {
 }
 
 .status-latency-api {
-    display: block;
     font-size: 12px;
     font-weight: 500;
     color: #6b675f;
-    margin-top: 2px;
 }
 
 .status-checked {
     font-size: 12px;
-    color: #a8a49c;
+    color: #726e66;
     margin-top: 2px;
 }
 
 .status-chart {
+    position: relative;
     flex: 1 1 auto;
     min-height: 0;
+    cursor: crosshair;
+    touch-action: pan-y;
+}
+
+.status-chart:focus-visible {
+    outline-offset: -2px;
+}
+
+.status-tooltip {
+    position: fixed;
+    z-index: 10;
+    transform: translate(-50%, calc(-100% - 12px));
+    min-width: 120px;
+    padding: 8px 10px;
+    background: #252422;
+    color: #ffffff;
+    font-size: 12px;
+    line-height: 1.5;
+    pointer-events: none;
+    box-shadow: 0 4px 16px rgba(37, 36, 34, 0.18);
+}
+
+.status-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: calc(50% + var(--arrow-shift, 0px));
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #252422;
+}
+
+.status-tooltip[hidden] {
+    display: none;
+}
+
+.status-tooltip-when {
+    color: #a8a49c;
+    margin-bottom: 2px;
+}
+
+.status-tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.status-tooltip-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-tooltip-key {
+    width: 8px;
+    height: 8px;
+}
+
+.status-tooltip-key.is-gateway {
+    background: color-mix(in srgb, var(--primary) 55%, white);
+}
+
+.status-tooltip-key.is-api {
+    /* matches the api area as it looks on the white card */
+    background: color-mix(in srgb, var(--primary) 32%, white);
 }
 
 .status-chart svg {
@@ -735,8 +921,14 @@ a {
 }
 
 .status-empty {
-    color: #a8a49c;
+    color: #726e66;
     font-size: 14px;
+}
+
+@media (max-width: 1100px) {
+    .docs-toc {
+        display: none;
+    }
 }
 
 @media (max-width: 900px) {
@@ -768,6 +960,10 @@ a {
     .docs-list-item.is-active {
         background: #252422;
         color: #ffffff;
+    }
+
+    .docs-list-sub {
+        flex-basis: 100%;
     }
 
     .docs-notice {

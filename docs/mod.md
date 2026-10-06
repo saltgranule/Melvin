@@ -18,9 +18,13 @@ The row stores the guild, target user, moderator, action type, reason, and times
 
 **DM notification**
 
-After logging a case, the bot tries to DM the target user a summary of the action, the reason, the case ID, and the guild name.
+The bot tries to DM the target user a summary of the action, the reason, the case ID, and the guild name.
 
-If the DM fails for any reason (DMs closed, blocked, etc.), it is silently ignored, since the action itself has already succeeded.
+For mute, unmute, and unban, the action runs first, and the case is only logged and the DM only sent once it succeeds. Kick and ban send the DM before the action, since the bot usually can't DM someone after they've left the guild. If the kick or ban then fails, the logged case is removed again.
+
+If the DM fails for any reason (DMs closed, blocked, etc.), it is silently ignored.
+
+If Discord rejects the action itself, the command replies with a short error and the details are written to the bot's log.
 
 **Guard clauses**
 
@@ -96,6 +100,30 @@ Also rejects role/hierarchy violations against both the command user and the bot
 
 If all checks pass, logs a case as `role_remove`, removes the role, and confirms with the role, member, and case ID.
 
+### /mod role auto
+
+Set or clear the role automatically given to new members.
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|----------|--------------|
+| role | role | no | The role to give new members when they join. Leave empty to clear the current auto-role. |
+
+**Permissions**
+
+Requires Manage Roles.
+
+**Behavior**
+
+If no role is given, the server's auto-role is cleared and new members stop receiving it.
+
+Otherwise, rejects `@everyone`, roles managed by an app, roles equal to or above the command user's top role (unless they are the guild owner), and roles equal to or above the bot's top role. If all checks pass, the role is saved as the server's auto-role, replacing any previous one.
+
+When a member joins, the bot gives them the auto-role. If the role has since been deleted, or the bot can't assign it, the member is skipped silently.
+
+Auto-roles are not logged as cases.
+
 ## case command group
 
 Path: `/mod case`
@@ -159,7 +187,7 @@ Requires Moderate Members.
 
 **Behavior**
 
-Rejects bot targets, self-warns, and warning the guild owner.
+Rejects bot targets, self-warns, warning the guild owner, and warning someone whose top role is equal to or above the command user's (unless the command user is the guild owner).
 
 Logs a case as `warn`, attempts a DM to the target, and confirms with the member and case ID.
 
@@ -184,7 +212,7 @@ Requires Kick Members.
 
 Runs the shared guard clauses.
 
-Logs a case as `kick`, attempts a DM to the target before the kick happens, then performs the kick with the reason attributed to the command user.
+Logs a case as `kick`, attempts a DM to the target before the kick happens, then performs the kick with the reason attributed to the command user. If the kick fails, the case is removed.
 
 Confirms with the member and case ID.
 
@@ -209,7 +237,7 @@ Requires Ban Members.
 
 Runs the shared guard clauses.
 
-Logs a case as `ban`, attempts a DM to the target before the ban happens, then performs the ban with a 7 day message deletion window and the reason attributed to the command user.
+Logs a case as `ban`, attempts a DM to the target before the ban happens, then performs the ban with a 7 day message deletion window and the reason attributed to the command user. If the ban fails, the case is removed.
 
 Confirms with the member and case ID.
 
@@ -236,7 +264,7 @@ Checks whether the user is actually banned first.
 
 If not banned, replies with an error. If the ban check itself fails for some other reason, replies with that error instead.
 
-Otherwise logs a case as `unban`, unbans the user with the reason attributed to the command user, and confirms with the user and case ID.
+Otherwise unbans the user with the reason attributed to the command user, then logs a case as `unban` and confirms with the user and case ID.
 
 ## mute command
 
@@ -262,7 +290,7 @@ Parses the duration first. If invalid, replies with an error. If the duration ex
 
 Otherwise runs the shared guard clauses.
 
-Logs a case as `mute`, attempts a DM to the target, then applies a timeout until the parsed duration has elapsed, with the reason attributed to the command user.
+Applies a timeout until the parsed duration has elapsed, with the reason attributed to the command user, then logs a case as `mute` and attempts a DM to the target.
 
 Confirms with the member and case ID.
 
@@ -289,7 +317,7 @@ Checks that the member is actually timed out, replying with an error if not.
 
 Checks the role hierarchy between the command user and the target, replying with an error if the target is equal to or above the command user's top role, unless the command user is the guild owner.
 
-Otherwise logs a case as `unmute`, attempts a DM to the target, clears the timeout with the reason attributed to the command user, and confirms with the member and case ID.
+Otherwise clears the timeout with the reason attributed to the command user, then logs a case as `unmute`, attempts a DM to the target, and confirms with the member and case ID.
 
 ## lock command
 

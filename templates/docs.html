@@ -2,13 +2,13 @@
 {% block meta_tags %}
     <meta property="og:title" content="Documentation">
     <meta property="og:description" content="A page dedicated to documentation for melvin.">
-    <meta property="og:image" content="{{ url_for('static', filename='media/DOG.png', _external=True) }}">
+    <meta property="og:image" content="{{ url_for('static', filename='media/MelvinLogo.png', _external=True) }}">
     <meta property="og:url" content="{{ request.url }}">
     <meta name="theme-color" content="{{ theme.primary }}">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Melvin - Status & Latency">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Documentation">
     <meta name="twitter:description" content="A page dedicated to documentation for melvin.">
-    <meta name="twitter:image" content="{{ url_for('static', filename='media/DOG.png', _external=True) }}">
+    <meta name="twitter:image" content="{{ url_for('static', filename='media/MelvinLogo.png', _external=True) }}">
 {% endblock %}
 {% block content %}
 <div class="docs-layout">
@@ -18,17 +18,20 @@
                 <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
                 <path d="M20 20L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
-            <input type="text" id="docs-search-input" class="docs-search-input" placeholder="Search docs..." autocomplete="off">
+            <input type="text" id="docs-search-input" class="docs-search-input" placeholder="Search docs..." autocomplete="off"
+                   role="combobox" aria-label="Search docs" aria-autocomplete="list" aria-controls="docs-list" aria-expanded="false">
             <kbd class="docs-search-kbd">/</kbd>
         </div>
 
-        <ul class="docs-list" id="docs-list">
-            {% for doc in docs %}
-            <li data-title="{{ doc.title | lower }}">
-                <a href="{{ url_for('docs_page', slug=doc.slug) }}"
-                   class="docs-list-item {{ 'is-active' if doc.slug == active_slug else '' }}">
-                    {{ doc.title }}
+        <ul class="docs-list" id="docs-list" role="listbox" aria-label="Docs">
+            {% for item in docs %}
+            <li role="none" data-title="{{ item.title | lower }}" data-headings='{{ item.headings | tojson }}'>
+                <a href="{{ url_for('docs_page', slug=item.slug) }}" id="doc-option-{{ item.slug }}" role="option"
+                   class="docs-list-item {{ 'is-active' if item.slug == active_slug else '' }}"
+                   {% if item.slug == active_slug %}aria-current="page"{% endif %}>
+                    {{ item.title }}
                 </a>
+                <ul class="docs-list-sub" role="none" hidden></ul>
             </li>
             {% else %}
             <li class="docs-list-empty">No docs yet.</li>
@@ -49,32 +52,114 @@
     </aside>
 
     <main class="docs-content">
-        {% if content %}
-            {{ content | safe }}
+        {% if doc %}
+            {{ doc.content | safe }}
         {% else %}
             <p class="docs-placeholder">Select a doc from the list to read it.</p>
         {% endif %}
     </main>
+
+    {% if doc and doc.headings %}
+    <aside class="docs-toc" aria-label="On this page">
+        <p class="docs-toc-title">On this page</p>
+        <ul class="docs-toc-list">
+            {% for heading in doc.headings %}
+            <li>
+                <a href="#{{ heading.id }}" class="docs-toc-link {{ 'is-sub' if heading.level == 3 else '' }}">{{ heading.name }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </aside>
+    {% endif %}
 </div>
 
 <script>
     (function () {
         var input = document.getElementById("docs-search-input");
-        var items = Array.prototype.slice.call(document.querySelectorAll("#docs-list > li[data-title]"));
         var emptyState = document.getElementById("docs-search-empty");
         var emptyTerm = document.getElementById("docs-search-empty-term");
+        var items = Array.prototype.slice.call(document.querySelectorAll("#docs-list > li[data-title]")).map(function (li) {
+            var link = li.querySelector(".docs-list-item");
+            return {
+                li: li,
+                link: link,
+                label: link.textContent.trim(),
+                title: li.getAttribute("data-title"),
+                headings: JSON.parse(li.getAttribute("data-headings") || "[]"),
+                sub: li.querySelector(".docs-list-sub")
+            };
+        });
+        var options = [];
+        var activeIndex = -1;
+
+        // bold the matched part of a label without touching innerHTML
+        function highlight(element, text, query) {
+            var index = query ? text.toLowerCase().indexOf(query) : -1;
+            element.textContent = "";
+            if (index === -1) {
+                element.textContent = text;
+                return;
+            }
+            var mark = document.createElement("mark");
+            mark.textContent = text.slice(index, index + query.length);
+            element.append(text.slice(0, index), mark, text.slice(index + query.length));
+        }
+
+        function setActive(index) {
+            options.forEach(function (option) {
+                option.classList.remove("is-highlighted");
+                option.setAttribute("aria-selected", "false");
+            });
+            activeIndex = index;
+            if (index === -1) {
+                input.removeAttribute("aria-activedescendant");
+                return;
+            }
+            var option = options[index];
+            option.classList.add("is-highlighted");
+            option.setAttribute("aria-selected", "true");
+            input.setAttribute("aria-activedescendant", option.id);
+            option.scrollIntoView({ block: "nearest" });
+        }
 
         function filter() {
             var query = input.value.trim().toLowerCase();
-            var visibleCount = 0;
+            options = [];
 
             items.forEach(function (item) {
-                var match = item.getAttribute("data-title").indexOf(query) !== -1;
-                item.hidden = !match;
-                if (match) visibleCount += 1;
+                var titleMatch = item.title.indexOf(query) !== -1;
+                var headingMatches = !query ? [] : item.headings.filter(function (heading) {
+                    return heading.name.toLowerCase().indexOf(query) !== -1;
+                }).slice(0, 3);
+                var match = titleMatch || headingMatches.length > 0;
+
+                item.li.hidden = !match;
+                highlight(item.link, item.label, titleMatch ? query : "");
+                item.sub.textContent = "";
+                item.sub.hidden = headingMatches.length === 0;
+                if (!match) return;
+
+                options.push(item.link);
+                headingMatches.forEach(function (heading) {
+                    var li = document.createElement("li");
+                    var link = document.createElement("a");
+                    li.setAttribute("role", "none");
+                    link.href = item.link.getAttribute("href") + "#" + heading.id;
+                    link.id = item.link.id + "--" + heading.id;
+                    link.className = "docs-list-item docs-list-subitem";
+                    link.setAttribute("role", "option");
+                    highlight(link, heading.name, query);
+                    li.appendChild(link);
+                    item.sub.appendChild(li);
+                    options.push(link);
+                });
             });
 
-            if (query && visibleCount === 0) {
+            input.setAttribute("aria-expanded", query ? "true" : "false");
+            // with a query, the top result is preselected so Enter opens it
+            setActive(query && options.length ? 0 : -1);
+
+            if (query && options.length === 0) {
                 emptyTerm.textContent = input.value.trim();
                 emptyState.hidden = false;
             } else {
@@ -83,6 +168,20 @@
         }
 
         input.addEventListener("input", filter);
+
+        input.addEventListener("keydown", function (event) {
+            if (!options.length) return;
+            if (event.key === "ArrowDown") {
+                event.preventDefault();
+                setActive((activeIndex + 1) % options.length);
+            } else if (event.key === "ArrowUp") {
+                event.preventDefault();
+                setActive(activeIndex <= 0 ? options.length - 1 : activeIndex - 1);
+            } else if (event.key === "Enter" && activeIndex !== -1) {
+                event.preventDefault();
+                window.location.href = options[activeIndex].href;
+            }
+        });
 
         // "/" to focus, like GitHub/Linear/Slack. Ctrl/Cmd+K as the
         // secondary industry-standard shortcut (Stripe, Algolia, VS Code).
@@ -101,6 +200,26 @@
                 input.blur();
             }
         });
+
+        filter();
+
+        // mark the section currently in view in "On this page"
+        var tocLinks = Array.prototype.slice.call(document.querySelectorAll(".docs-toc-link"));
+        if (tocLinks.length && "IntersectionObserver" in window) {
+            var observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (!entry.isIntersecting) return;
+                    tocLinks.forEach(function (link) {
+                        link.classList.toggle("is-current", link.hash === "#" + entry.target.id);
+                    });
+                });
+            }, { rootMargin: "0px 0px -70% 0px" });
+
+            tocLinks.forEach(function (link) {
+                var target = document.getElementById(decodeURIComponent(link.hash.slice(1)));
+                if (target) observer.observe(target);
+            });
+        }
     })();
 </script>
 {% endblock %}
