@@ -42,15 +42,13 @@ MORSE_REVERSE = {code: char for char, code in MORSE.items()}
 
 
 class CodecError(ValueError):
-    """A decode or encode failure with a message that's safe to show users."""
+    """An encode failure whose message is a full sentence that's safe to show users."""
 
 
 def _binary_decode(text: str) -> bytes:
     chunks = text.split()
     if not all(set(chunk) <= {"0", "1"} and len(chunk) == 8 for chunk in chunks):
-        raise CodecError(
-            "expected space-separated 8-bit groups of **0**s and **1**s",
-        )
+        raise ValueError
     return bytes(int(chunk, 2) for chunk in chunks)
 
 
@@ -67,7 +65,11 @@ def _morse_encode(text: str) -> str:
         {char for char in upper if char not in MORSE and not char.isspace()},
     )
     if unknown:
-        raise CodecError(f"there's no Morse code for **{' '.join(unknown)}**")
+        listed = unknown[0]
+        if len(unknown) > 1:
+            listed = ", ".join(unknown[:-1]) + " and " + unknown[-1]
+        msg = f"{listed} can't be written in Morse."
+        raise CodecError(msg)
     return " / ".join(
         " ".join(MORSE[char] for char in word) for word in upper.split()
     )
@@ -79,7 +81,7 @@ def _morse_decode(text: str) -> str:
         {code for word in words for code in word if code not in MORSE_REVERSE},
     )
     if unknown:
-        raise CodecError(f"**{' '.join(unknown)}** isn't valid Morse code")
+        raise ValueError
     return " ".join(
         "".join(MORSE_REVERSE[code] for code in word) for word in words if word
     )
@@ -95,7 +97,7 @@ def _unicode_decode(text: str) -> str:
             code_point = -1
         # surrogates can't be sent as text, so they're rejected with the invalid ones
         if not 0 <= code_point <= 0x10FFFF or 0xD800 <= code_point <= 0xDFFF:
-            raise CodecError(f"**{token}** isn't a valid code point")
+            raise ValueError
         chars.append(chr(code_point))
     return "".join(chars)
 
@@ -143,6 +145,61 @@ FORMAT_CHOICES = [
 ]
 
 
+def _result_view(result: str, action: str, label: str) -> discord.ui.LayoutView:
+    if not result:
+        return ErrorUI("**There's nothing to show.**")
+    if len(result) > MAX_RESULT_LENGTH:
+        return ErrorUI("**That result is too long to send.**")
+    return ResponseUI(f"**{result}** was the {label} {action} result.")
+
+
+def _encode_view(key: str, text: str) -> discord.ui.LayoutView:
+    label, encoder, _ = FORMATS[key]
+    try:
+        result = encoder(text)
+    except CodecError as e:
+        return ErrorUI(f"**{e}**")
+    return _result_view(result, "encoded", label)
+
+
+def _decode_view(key: str, text: str) -> discord.ui.LayoutView:
+    label, _, decoder = FORMATS[key]
+    try:
+        decoded = decoder(text)
+        result = decoded.decode("utf-8") if isinstance(decoded, bytes) else decoded
+    except UnicodeDecodeError:
+        return ErrorUI("**That decodes to something that isn't text.**")
+    except ValueError:
+        return ErrorUI(f"**That doesn't look like {label}.**")
+    return _result_view(result, "decoded", label)
+
+
+def _decode_menu_view(text: str, selected: str | None = None) -> discord.ui.LayoutView:
+    if selected is None:
+        view = ResponseUI("**Pick a format to decode this message from.**")
+    else:
+        view = _decode_view(selected, text)
+
+    select = discord.ui.Select(
+        placeholder="Decode from...",
+        options=[
+            discord.SelectOption(label=label, value=key, default=key == selected)
+            for key, (label, _, _) in FORMATS.items()
+        ],
+    )
+
+    # each pick rebuilds the reply, keeping the thing so another format can be tried
+    async def _callback(interaction: discord.Interaction) -> None:
+        await interaction.response.edit_message(
+            view=_decode_menu_view(text, select.values[0]),
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
+
+    select.callback = _callback
+    view.container.add_item(discord.ui.ActionRow(select))
+    return view
+
+
 class ToolCog(
     commands.GroupCog,
     name="tool",
@@ -151,24 +208,34 @@ class ToolCog(
     def __init__(self, bot: commands.Bot) -> None:
         super().__init__()
         self.bot = bot
+        # context menus can't be in a group, so this one goes on the tree directly
+        self.decode_menu = app_commands.ContextMenu(
+            name="Decode",
+            callback=self.decode_message,
+        )
+        self.bot.tree.add_command(self.decode_menu)
 
-    async def _send_result(
+    async def cog_unload(self) -> None:
+        self.bot.tree.remove_command(
+            self.decode_menu.name,
+            type=self.decode_menu.type,
+        )
+
+    async def decode_message(
         self,
         interaction: discord.Interaction,
-        result: str,
-        action: str,
-        label: str,
+        message: discord.Message,
     ) -> None:
-        if not result:
-            view = ErrorUI("**That didn't produce any text.**")
-        elif len(result) > MAX_RESULT_LENGTH:
-            view = ErrorUI(
-                f"**The {label} result is too long to send ({len(result):,} characters).**",
+        if not message.content:
+            await interaction.response.send_message(
+                view=ErrorUI("**That message has no text to decode.**"),
+                ephemeral=True,
             )
-        else:
-            view = ResponseUI(f"**{result}** was the {label} {action} result.")
-        await interaction.edit_original_response(
-            view=view,
+            return
+
+        await interaction.response.send_message(
+            view=_decode_menu_view(message.content),
+            ephemeral=True,
             allowed_mentions=discord.AllowedMentions.none(),
         )
 
@@ -186,17 +253,10 @@ class ToolCog(
         text: str,
     ) -> None:
         await interaction.response.defer()
-        label, encoder, _ = FORMATS[fmt.value]
-
-        try:
-            result = encoder(text)
-        except CodecError as e:
-            await interaction.edit_original_response(
-                view=ErrorUI(f"Couldn't encode that as {label}, {e}."),
-            )
-            return
-
-        await self._send_result(interaction, result, "encoded", label)
+        await interaction.edit_original_response(
+            view=_encode_view(fmt.value, text),
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
 
     @app_commands.command(
         name="decode",
@@ -212,31 +272,10 @@ class ToolCog(
         text: str,
     ) -> None:
         await interaction.response.defer()
-        label, _, decoder = FORMATS[fmt.value]
-
-        try:
-            decoded = decoder(text)
-            result = decoded.decode("utf-8") if isinstance(decoded, bytes) else decoded
-        except UnicodeDecodeError:
-            await interaction.edit_original_response(
-                view=ErrorUI(
-                    "**Decoded successfully, but the result is not valid text.**",
-                ),
-            )
-            return
-        except CodecError as e:
-            await interaction.edit_original_response(
-                view=ErrorUI(f"Not valid {label}, {e}."),
-            )
-            return
-        except ValueError:
-            # binascii and bytes.fromhex errors are too cryptic to show as-is
-            await interaction.edit_original_response(
-                view=ErrorUI(f"**That isn't valid {label}.**"),
-            )
-            return
-
-        await self._send_result(interaction, result, "decoded", label)
+        await interaction.edit_original_response(
+            view=_decode_view(fmt.value, text),
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
 
     @app_commands.command(name="speak", description="Speak through Melvin.")
     @app_commands.describe(

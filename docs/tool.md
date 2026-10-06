@@ -30,7 +30,7 @@ Encode text into another format.
 
 **Behavior**
 The command defers its response, then encodes the text into the chosen format.
-For Morse, the command replies with an error message listing any characters that have no Morse code, for example accented letters or emoji.
+For Morse, if the text has characters with no Morse code, for example accented letters or emoji, the command replies with an error message naming them, such as `É and 😀 can't be written in Morse.`
 If encoding passes, the command replies with the encoded text.
 
 **Example**
@@ -50,8 +50,8 @@ Decode text from another format.
 
 **Behavior**
 The command defers its response, then decodes the text from the chosen format.
-If the text isn't valid for that format, the command replies with an error message. For Binary, Morse, and Unicode, the message says what was wrong, such as which Morse codes weren't recognized.
-If the text decodes but the result isn't valid UTF-8 text, the command replies with an error message stating that the result is not valid text.
+If the text isn't valid for that format, the command replies with an error message, such as `That doesn't look like Hex.`
+If the text decodes but the result isn't valid UTF-8 text, the command replies with `That decodes to something that isn't text.`
 If decoding passes, the command replies with the decoded text.
 
 **Example**
@@ -59,9 +59,23 @@ Input: `/tool decode format: Morse text: .... ..`
 Output: `**HI** was the Morse decoded result.`
 
 **Error handling**
-If the result is longer than 3900 characters, the command replies with an error message instead, since the result wouldn't fit in a Discord message. Encoding can make text several times longer, especially Binary and Unicode.
-If the result is empty, for example when decoding only spaces, the command replies with an error message.
+If the result is longer than 3900 characters, the command replies with `That result is too long to send.`, since it wouldn't fit in a Discord message. Encoding can make text several times longer, especially Binary and Unicode.
+If the result is empty, for example when decoding only spaces, the command replies with `There's nothing to show.`
 Mentions in the result are suppressed, so decoded text will not ping users, roles, or everyone.
+
+## Decode message option
+Path: right-click a message, open `Apps`, then choose `Decode`
+Decode a message's text from another format, without copying it into a command.
+
+**Parameters**
+None. The option uses the text of the message it was opened on.
+
+**Behavior**
+If the message has no text, for example when it only contains an image or embed, the bot replies with an error message.
+Otherwise, the bot replies with a select menu listing the same formats as the decode command. The format is never guessed, so nothing is decoded until one is picked.
+Picking a format replaces the reply with the decoded result, or an error message if the text isn't valid for that format, following the same rules as the decode command. The select menu stays underneath, with the picked format selected, so another format can be tried straight away.
+All replies are ephemeral, meaning only the user who opened the option can see them. Mentions in the result are suppressed.
+The select menu stops responding after a few minutes. Opening the option on the message again shows a new one.
 
 ## speak command
 Path: `/tool speak`
