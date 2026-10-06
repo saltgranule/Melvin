@@ -168,7 +168,12 @@ async def update_shard_latency() -> None:
 @bot.tree.command(name="help", description="Take a peek at Melvin's commands.")
 async def help_command(interaction: discord.Interaction) -> None:
     await interaction.response.defer()
-    view = HelpView(bot)
+    hidden = (
+        await module_settings.disabled_modules(interaction.guild_id)
+        if interaction.guild_id is not None
+        else set()
+    )
+    view = HelpView(bot, hidden)
     await interaction.followup.send(view=view)
 
 

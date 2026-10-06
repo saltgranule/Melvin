@@ -94,9 +94,15 @@ class CogSelect(discord.ui.Select):
 
 
 class HelpView(discord.ui.LayoutView):
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(
+        self,
+        bot: commands.Bot,
+        hidden: set[str] | frozenset[str] = frozenset(),
+    ) -> None:
         super().__init__(timeout=None)
         self.bot = bot
+        # cog group names to leave out, like modules a guild has turned off
+        self.hidden = hidden
 
         banner_gallery = GalleryWithItem(MELVIN_HELP_BANNER)
         banner_container = discord.ui.Container(banner_gallery)
@@ -124,7 +130,11 @@ class HelpView(discord.ui.LayoutView):
         self.add_item(content_container)
 
     def get_cogs(self) -> list[commands.Cog]:
-        return [c for c in self.bot.cogs.values() if get_cog_commands(c)]
+        return [
+            c
+            for c in self.bot.cogs.values()
+            if get_cog_commands(c) and c.__cog_group_name__ not in self.hidden
+        ]
 
     async def on_select_cog(self, interaction: discord.Interaction) -> None:
         selected_cog_name = self.cog_select.values[0]

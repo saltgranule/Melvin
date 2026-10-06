@@ -10,7 +10,7 @@ None.
 
 **Behavior**
 The command defers its response, then replies with the help banner and the commands of the first command group, each with its description.
-A select menu underneath switches between command groups. Only groups that have commands are listed.
+A select menu underneath switches between command groups. Only groups that have commands are listed, and in a guild, groups from modules turned off with `/modules` are left out.
 
 ## melvin command
 Path: `/melvin`
