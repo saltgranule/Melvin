@@ -47,3 +47,6 @@ from .views import (
 from .views import (
     ThankUI as ThankUI,
 )
+from .views import (
+    ThinkingText as ThinkingText,
+)
