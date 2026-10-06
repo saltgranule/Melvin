@@ -1,6 +1,7 @@
 import hashlib
 import json
 import logging
+import operator
 import os
 import secrets
 import sqlite3
@@ -332,11 +333,11 @@ def guild_context(guild_id: int, user_id: str, *, fresh: bool = False) -> dict:
         )
     )
 
-    roles = sorted(guild["roles"], key=lambda role: role["position"], reverse=True)
+    roles = sorted(guild["roles"], key=operator.itemgetter("position"), reverse=True)
     return {
         "channels": [
             (channel["id"], f"#{channel['name']}")
-            for channel in sorted(channels, key=lambda channel: channel["position"])
+            for channel in sorted(channels, key=operator.itemgetter("position"))
             if channel["type"] == TEXT_CHANNEL
         ],
         # the same rules as the discord side, so neither can hand out more than the other
@@ -898,7 +899,10 @@ async def server_stats_page(guild_id: int) -> str | Response:
     # members only show change, so their scale fits the counts like the status charts.
     # periods from before the first reading use the first reading
     known = [count for count in series["members"] if count is not None]
-    members = [count if count is not None else (known[0] if known else 0) for count in series["members"]]
+    members = [
+        count if count is not None else (known[0] if known else 0)
+        for count in series["members"]
+    ]
     member_ys = charts.scale(members, min(members), max(members), height)
 
     return render_template(
@@ -937,7 +941,9 @@ async def server_stats_page(guild_id: int) -> str | Response:
             {
                 "label": "Net growth",
                 # joins minus leaves over the range, signed so a drop is clear
-                "value": f"{series['member_change']:+,}" if series["member_change"] else "0",
+                "value": f"{series['member_change']:+,}"
+                if series["member_change"]
+                else "0",
                 "meta": f"In the last {series['label']}",
             },
         ],
@@ -948,12 +954,20 @@ async def server_stats_page(guild_id: int) -> str | Response:
                 whens,
                 total_ys,
                 height,
-                [("Messages", messages, "", "series-1"), ("Voice minutes", voice, "", "series-2")],
+                [
+                    ("Messages", messages, "", "series-1"),
+                    ("Voice minutes", voice, "", "series-2"),
+                ],
             ),
         },
         members={
             "points": charts.area_points(member_ys, width, height),
-            "tooltip": charts.tooltip_points(whens, member_ys, height, [("Members", members, "", "series-1")]),
+            "tooltip": charts.tooltip_points(
+                whens,
+                member_ys,
+                height,
+                [("Members", members, "", "series-1")],
+            ),
         },
         start_label=series["start_label"],
     )

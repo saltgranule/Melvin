@@ -2,13 +2,16 @@ import asyncio
 import re
 import secrets
 import time
-from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import aiosqlite
 
 from module_settings import DATA_DIR, DB_PATH
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 CACHE_SECONDS = 10
 

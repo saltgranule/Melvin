@@ -100,7 +100,10 @@ async def get_series(guild_id: int, range_key: str) -> dict:
 
     async with (
         aiosqlite.connect(DB_PATH) as db,
-        db.execute("SELECT MIN(hour) FROM guild_stats WHERE guild_id = ?", (guild_id,)) as cursor,
+        db.execute(
+            "SELECT MIN(hour) FROM guild_stats WHERE guild_id = ?",
+            (guild_id,),
+        ) as cursor,
     ):
         first_hour = (await cursor.fetchone())[0]
 

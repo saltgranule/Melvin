@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING
 
 import discord
 from discord import app_commands
@@ -8,6 +8,9 @@ from discord.ext import commands
 import module_settings
 from globals import ERROR_MESSAGE, MELVIN_CHECK_EMOJI, MELVIN_CROSS_EMOJI, MELVIN_EMOJI
 from ui import ErrorUI, SmallSeparator
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
 
 log = logging.getLogger(__name__)
 

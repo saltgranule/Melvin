@@ -15,7 +15,10 @@ def scale(
         return [height / 2] * len(values)
 
     usable_height = height - (PADDING * 2)
-    return [height - PADDING - ((value - lo) / (hi - lo)) * usable_height for value in values]
+    return [
+        height - PADDING - ((value - lo) / (hi - lo)) * usable_height
+        for value in values
+    ]
 
 
 def line_points(ys: list[float], width: float) -> str:

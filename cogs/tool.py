@@ -2,13 +2,16 @@ import base64
 import random
 import re
 import urllib.parse
-from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
 from ui import ErrorUI, GalleryWithItem, GatedUI, ResponseUI
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 EIGHTBALL = [
     "It is certain.",
@@ -118,7 +121,7 @@ FORMATS: dict[
     "hex": (
         "Hex",
         lambda text: text.encode("utf-8").hex(" "),
-        lambda text: bytes.fromhex(text),
+        bytes.fromhex,
     ),
     "url": (
         "URL",
