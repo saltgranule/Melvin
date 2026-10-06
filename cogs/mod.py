@@ -6,6 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+import module_settings
 from ui import CasesView, ErrorUI, InfoUI, PositiveUI
 
 log = logging.getLogger(__name__)
@@ -89,6 +90,9 @@ class ModCog(
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
+        if not await module_settings.is_enabled(member.guild.id, "mod"):
+            return
+
         async with (
             aiosqlite.connect(self.db_path) as conn,
             conn.execute(

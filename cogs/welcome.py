@@ -9,6 +9,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+import module_settings
 from globals import CLICK, ERROR_MESSAGE, IMAGE, TEXT
 from ui import ErrorUI, ExceptionUI, GalleryWithItem, PositiveUI, ResponseUI
 
@@ -694,6 +695,9 @@ class WelcomeCog(
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
+        if not await module_settings.is_enabled(member.guild.id, "welcome"):
+            return
+
         config = await self.get_welcome_config(member.guild.id)
         if config is None or config["channel"] is None:
             return

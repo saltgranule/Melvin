@@ -5,6 +5,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+import module_settings
 from globals import ERROR_MESSAGE, PRIMARY, SECONDARY, TERTIARY
 from ui import (
     ErrorUI,
@@ -168,6 +169,10 @@ class AuditCog(
         self,
         guild_id: int,
     ) -> discord.abc.GuildChannel | discord.Thread | discord.abc.PrivateChannel | None:
+        # every audit listener finds its channel through here, so this gates them all
+        if not await module_settings.is_enabled(guild_id, "audit"):
+            return None
+
         try:
             async with (
                 aiosqlite.connect(self.db_path) as conn,

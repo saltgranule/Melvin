@@ -5,6 +5,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+import module_settings
 from globals import (
     ERROR_MESSAGE,
     LOG_CHANNEL,
@@ -53,12 +54,14 @@ class StyleCog(
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild) -> None:
-        await self.bot.set_name_style(
-            guild=guild,
-            font_id=DisplayNameFont.cherry_bomb,
-            effect_id=DisplayNameEffect.gradient,
-            colors=[QUATERNARY.removeprefix("#"), "FFFFFF"],
-        )
+        # only the default style is part of the module, the join log always happens
+        if await module_settings.is_enabled(guild.id, "style"):
+            await self.bot.set_name_style(
+                guild=guild,
+                font_id=DisplayNameFont.cherry_bomb,
+                effect_id=DisplayNameEffect.gradient,
+                colors=[QUATERNARY.removeprefix("#"), "FFFFFF"],
+            )
         log_channel = self.bot.get_channel(LOG_CHANNEL)
         if log_channel is None or not isinstance(log_channel, discord.TextChannel):
             return

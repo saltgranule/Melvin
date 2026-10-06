@@ -6,8 +6,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+import module_settings
 from globals import ERROR_MESSAGE
-from ui import ErrorUI, InfoUI, PositiveUI, ThankUI
+from ui import ErrorUI, InfoUI, ThankUI
 
 rate_int = 1
 rate_time = 60.0
@@ -72,7 +73,6 @@ class ThanksCog(
         self.bot = bot
         self.db_path = "data/thanks.db"
         self._cooldowns: dict[int, list[float]] = {}
-        self._disabled_guilds: set[int] = set()
 
     # db setup
     async def cog_load(self) -> None:
@@ -85,20 +85,25 @@ class ThanksCog(
                 )
                 """,
             )
-            await db.execute(
-                """
-                CREATE TABLE IF NOT EXISTS thanks_settings (
-                    guild_id INTEGER PRIMARY KEY,
-                    disabled INTEGER NOT NULL DEFAULT 0
-                )
-                """,
-            )
             await db.commit()
 
+            # thanks used to have its own on/off setting, move it over to the
+            # shared module settings once, then drop the old table
             async with db.execute(
-                "SELECT guild_id FROM thanks_settings WHERE disabled = 1",
+                "SELECT name FROM sqlite_master "
+                "WHERE type = 'table' AND name = 'thanks_settings'",
             ) as cursor:
-                self._disabled_guilds = {row[0] async for row in cursor}
+                has_old_settings = await cursor.fetchone() is not None
+
+            if has_old_settings:
+                async with db.execute(
+                    "SELECT guild_id FROM thanks_settings WHERE disabled = 1",
+                ) as cursor:
+                    disabled_guilds = [row[0] async for row in cursor]
+                for guild_id in disabled_guilds:
+                    await module_settings.set_enabled(guild_id, "thanks", enabled=False)
+                await db.execute("DROP TABLE thanks_settings")
+                await db.commit()
 
     # cogwide error handling
     async def cog_app_command_error(
@@ -155,23 +160,6 @@ class ThanksCog(
             row = await cursor.fetchone()
             return row[0] if row else 0
 
-    async def _set_disabled(self, guild_id: int, disabled: bool) -> None:
-        async with aiosqlite.connect(self.db_path) as db:
-            await db.execute(
-                """
-                INSERT INTO thanks_settings (guild_id, disabled)
-                VALUES (?, ?)
-                ON CONFLICT(guild_id) DO UPDATE SET disabled = excluded.disabled
-                """,
-                (guild_id, int(disabled)),
-            )
-            await db.commit()
-
-        if disabled:
-            self._disabled_guilds.add(guild_id)
-        else:
-            self._disabled_guilds.discard(guild_id)
-
     async def _credit_thanks(
         self,
         message: discord.Message,
@@ -200,8 +188,10 @@ class ThanksCog(
         if message.author.bot:
             return
 
-        # skip guilds that have disabled thanks tracking
-        if message.guild is not None and message.guild.id in self._disabled_guilds:
+        if message.guild is not None and not await module_settings.is_enabled(
+            message.guild.id,
+            "thanks",
+        ):
             return
 
         content = message.content
@@ -254,38 +244,6 @@ class ThanksCog(
             title=f"{target.display_name}'s thanks",
             subtitle=f"**Thanked {total} times.**",
         )
-        await interaction.response.send_message(view=view)
-
-    @app_commands.command(
-        name="config",
-        description="Configure thanks tracking for this server.",
-    )
-    @app_commands.guild_only
-    @app_commands.checks.has_permissions(manage_guild=True)
-    @app_commands.describe(
-        disable="True to stop tracking thanks in this server, false to resume.",
-    )
-    async def config(
-        self,
-        interaction: discord.Interaction,
-        disable: bool,
-    ) -> None:
-        if interaction.guild is None:
-            return
-
-        await self._set_disabled(interaction.guild.id, disable)
-
-        if disable:
-            view = PositiveUI(
-                title="Thanks Disabled",
-                subtitle="Thanks will no longer be tracked in this server.",
-            )
-        else:
-            view = PositiveUI(
-                title="Thanks Enabled",
-                subtitle="Thanks will now be tracked in this server.",
-            )
-
         await interaction.response.send_message(view=view)
 
 

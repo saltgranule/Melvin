@@ -7,12 +7,14 @@ from pathlib import Path
 
 import aiodns
 import discord
+from discord import app_commands
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
 
+import module_settings
 import status
 from globals import MELVIN_EMOJI, DisplayNameEffect, DisplayNameFont
-from ui import HelpView, ResponseUI
+from ui import ErrorUI, HelpView, ResponseUI
 
 logging.basicConfig(level=logging.INFO)
 intents = discord.Intents.default()
@@ -22,9 +24,38 @@ log = logging.getLogger(__name__)
 STATS_FILE = Path(__file__).parent / "data" / "bot_stats.json"
 
 
+class MelvinTree(app_commands.CommandTree):
+    # blocks commands from modules a guild has turned off, before they run
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        command = interaction.command
+        if command is None:
+            return True
+
+        if isinstance(command, app_commands.ContextMenu):
+            cog = getattr(command.callback, "__self__", None)
+            module = getattr(cog, "__cog_group_name__", "")
+        else:
+            module = (command.root_parent or command).name
+
+        if await module_settings.is_enabled(interaction.guild_id, module):
+            return True
+
+        # autocomplete can't be answered with a message, so it just gets nothing
+        if interaction.type is discord.InteractionType.application_command:
+            label = module_settings.MODULES[module][0]
+            await interaction.response.send_message(
+                view=ErrorUI(
+                    f"**The {label} module is turned off in this server. "
+                    "Someone with Manage Server can turn it back on with /modules.**",
+                ),
+                ephemeral=True,
+            )
+        return False
+
+
 class Melvin(commands.Bot):
     def __init__(self) -> None:
-        super().__init__(command_prefix="-", intents=intents)
+        super().__init__(command_prefix="-", intents=intents, tree_cls=MelvinTree)
 
     async def set_name_style(
         self,
@@ -198,6 +229,7 @@ async def main() -> None:
     if not token:
         raise RuntimeError("Token is not set.")
     STATS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    await module_settings.init_db()
     async with bot:
         await bot.load_extension("cogs.info")
         await bot.load_extension("cogs.agent")
@@ -211,6 +243,7 @@ async def main() -> None:
         await bot.load_extension("cogs.style")
         await bot.load_extension("cogs.stats")
         await bot.load_extension("cogs.thanks")
+        await bot.load_extension("cogs.modules")
         await bot.start(token)
 
 

@@ -61,6 +61,7 @@ If any of these words immediately come before a trigger phrase (like "no thanks"
 * **Cooldown:** Users can only give 1 thank every 60 seconds.
 * **Self-thanking:** You cannot thank yourself.
 * **Bots:** You cannot thank bot accounts, and bot messages will not trigger thanks.
+* **Modules:** If the Thanks module is turned off with `/modules`, thanks aren't counted in that server and `/thanks count` is unavailable there.
 
 ## Potential Failure Points
 
