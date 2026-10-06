@@ -193,7 +193,7 @@ def choice_label(setting: Setting, value: str | None) -> str | None:
 
 
 def clean_value(setting: Setting, raw: str | None) -> str | None:
-    """Check a value typed or picked by a user, returning what to store, None clears it."""
+    # check a value typed or picked by a user, returning what to store, None clears it
     value = (raw or "").strip()
     if not value:
         return None
@@ -274,7 +274,7 @@ async def _stored(guild_id: int, module: str) -> dict[str, str | None]:
 
 
 async def get_all(guild_id: int, module: str) -> dict[str, str | None]:
-    """Every setting for a module, with defaults filled in for anything not set."""
+    # every setting for a module, with defaults filled in for anything not set
     stored = await _stored(guild_id, module)
     return {
         setting.key: stored.get(setting.key) or setting.default
@@ -312,7 +312,7 @@ async def set_values(
 
 
 async def changed_since(module: str, since: float) -> set[int]:
-    """Guilds with a setting in this module changed after a time.time() timestamp."""
+    # guilds with a setting in this module changed after a time.time() timestamp
     async with (
         aiosqlite.connect(DB_PATH) as db,
         db.execute(
@@ -385,10 +385,8 @@ async def migrate_legacy(
     module: str,
     rows_to_values: Callable[[tuple], tuple[int, dict[str, str | None]]],
 ) -> None:
-    """Move a cog's settings from its old table into guild_settings, once.
-
-    The old table is renamed to <table>_migrated rather than dropped, so nothing is lost.
-    """
+    # move a cog's settings from its old table into guild_settings, once. the old table
+    # is renamed to <table>_migrated rather than dropped, so nothing is lost
     async with aiosqlite.connect(db_path) as db:
         async with db.execute(
             "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",

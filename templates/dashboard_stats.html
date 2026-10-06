@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% from "_banner.html" import banner %}
+{% block content %}
+<div class="docs-layout dashboard-layout">
+    {% include "_dashboard_sidebar.html" %}
+
+    <main class="dashboard-main">
+        <h1 class="status-heading">Server Stats</h1>
+        {{ banner("misc", "Melvin counts totals for the whole server each hour, never who sent what or what was said.") }}
+
+        <nav class="dashboard-range" aria-label="Time range">
+            {% for key, label in ranges %}
+            <a href="{{ url_for('dashboard.server_stats_page', guild_id=guild.id, range=key) }}"
+               class="dashboard-range-option {{ 'is-selected' if key == range_key else '' }}"
+               {% if key == range_key %}aria-current="page"{% endif %}>{{ label }}</a>
+            {% endfor %}
+        </nav>
+
+        {% if not has_data %}
+        {{ banner("misc", "No stats yet. Melvin counts messages, voice minutes, and members from now on, so check back in an hour.") }}
+        {% endif %}
+
+        <ul class="dashboard-grid stats-metrics">
+            {% for card in cards %}
+            <li class="dashboard-card stats-metric">
+                <span class="status-shard-label">{{ card.label }}</span>
+                <span class="status-latency">{{ card.value }}</span>
+                <span class="status-checked">{{ card.meta }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <div class="stats-charts">
+        <div class="stats-chart-block">
+        <div class="status-card stats-chart-card">
+            <div class="status-card-header">
+                <div class="status-card-row">
+                    <span class="dashboard-card-name">Messages and voice minutes</span>
+                    <span class="stats-legend">
+                        <span class="stats-legend-item"><span class="status-tooltip-key is-series-1" aria-hidden="true"></span>Messages</span>
+                        <span class="stats-legend-item"><span class="status-tooltip-key is-series-2" aria-hidden="true"></span>Voice minutes</span>
+                    </span>
+                </div>
+            </div>
+            <div class="status-chart stats-chart" tabindex="0" role="img"
+                 aria-label="Messages and voice minutes over the last {{ range_label }}, {{ cards[0].value }} messages and {{ cards[1].value }} voice minutes in total. Use left and right arrow keys to step through readings."
+                 data-points='{{ activity.tooltip | tojson }}'>
+                <svg viewBox="0 0 {{ width }} {{ height }}" preserveAspectRatio="none" aria-hidden="true">
+                    <polygon points="{{ activity.voice }}" class="status-chart-series-2"></polygon>
+                    <polygon points="{{ activity.messages }}" class="status-chart-series-1"></polygon>
+                </svg>
+            </div>
+        </div>
+        <div class="stats-axis" aria-hidden="true">
+            <span>{{ start_label }}</span>
+            <span>Now</span>
+        </div>
+        </div>
+
+        <div class="stats-chart-block">
+        <div class="status-card stats-chart-card">
+            <div class="status-card-header">
+                <div class="status-card-row">
+                    <span class="dashboard-card-name">Members</span>
+                    <span class="stats-legend">
+                        <span class="stats-legend-item"><span class="status-tooltip-key is-series-1" aria-hidden="true"></span>Members</span>
+                    </span>
+                </div>
+            </div>
+            <div class="status-chart stats-chart" tabindex="0" role="img"
+                 aria-label="Member count over the last {{ range_label }}, currently {{ cards[2].value }}, {{ cards[3].value }} over that time. Use left and right arrow keys to step through readings."
+                 data-points='{{ members.tooltip | tojson }}'>
+                <svg viewBox="0 0 {{ width }} {{ height }}" preserveAspectRatio="none" aria-hidden="true">
+                    <polygon points="{{ members.points }}" class="status-chart-series-1"></polygon>
+                </svg>
+            </div>
+        </div>
+        <div class="stats-axis" aria-hidden="true">
+            <span>{{ start_label }}</span>
+            <span>Now</span>
+        </div>
+        </div>
+        </div>
+    </main>
+</div>
+
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+{% endblock %}

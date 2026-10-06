@@ -5,6 +5,8 @@ from pathlib import Path
 
 import aiosqlite
 
+import charts
+
 DATA_DIR = Path("data")
 DB_PATH = DATA_DIR / "uptime.db"
 START_TIME_FILE = DATA_DIR / "start_time.txt"
@@ -189,51 +191,21 @@ def _format_span(rows: list[aiosqlite.Row]) -> str | None:
     return _format_seconds(seconds) if seconds >= 60 else None
 
 
-def _scale_history(history: list[float], lo: float, hi: float) -> list[float]:
-    # flat data sits in the middle instead of hiding under the card border
-    if hi == lo:
-        return [CHART_HEIGHT / 2] * len(history)
-
-    usable_height = CHART_HEIGHT - (CHART_PADDING * 2)
-    return [
-        CHART_HEIGHT - CHART_PADDING - ((value - lo) / (hi - lo)) * usable_height
-        for value in history
-    ]
+def _scale(values: list[float], lo: float, hi: float) -> list[float]:
+    return charts.scale(values, lo, hi, CHART_HEIGHT)
 
 
-def _build_line_points(ys: list[float]) -> str:
-    if not ys:
-        return ""
-    if len(ys) == 1:
-        return f"0,{ys[0]:.2f} {CHART_WIDTH},{ys[0]:.2f}"
-
-    step = CHART_WIDTH / (len(ys) - 1)
-    return " ".join(f"{i * step:.2f},{y:.2f}" for i, y in enumerate(ys))
+def _area(ys: list[float]) -> str:
+    return charts.area_points(ys, CHART_WIDTH, CHART_HEIGHT)
 
 
-def _build_area_points(ys: list[float]) -> str:
-    line = _build_line_points(ys)
-    if not line:
-        return ""
-    return f"0,{CHART_HEIGHT} {line} {CHART_WIDTH},{CHART_HEIGHT}"
-
-
-def _build_tooltip_points(
+def _tooltip(
     rows: list[aiosqlite.Row],
     ys: list[float],
     series: list[tuple[str, list[float], str, str]],
 ) -> list[dict]:
-    return [
-        {
-            "when": _format_relative(row["checked_at"]),
-            "y": round(ys[i] / CHART_HEIGHT * 100, 2),
-            "rows": [
-                [label, f"{round(values[i]):,}{unit}", key]
-                for label, values, unit, key in series
-            ],
-        }
-        for i, row in enumerate(rows)
-    ]
+    whens = [_format_relative(row["checked_at"]) for row in rows]
+    return charts.tooltip_points(whens, ys, CHART_HEIGHT, series)
 
 
 def _shard_state(latency_ms: float, api_latency_ms: float, checked_at: str) -> str:
@@ -286,8 +258,8 @@ async def get_shard_status() -> list[dict]:
             latest = rows[-1]
             combined = gateway_history + api_history
             lo, hi = min(combined), max(combined)
-            gateway_ys = _scale_history(gateway_history, lo, hi)
-            api_ys = _scale_history(api_history, lo, hi)
+            gateway_ys = _scale(gateway_history, lo, hi)
+            api_ys = _scale(api_history, lo, hi)
             latency_ms = round(latest["latency_ms"])
             api_latency_ms = round(latest["api_latency_ms"] or 0.0)
 
@@ -304,14 +276,14 @@ async def get_shard_status() -> list[dict]:
                     "last_checked": _format_relative(latest["checked_at"]),
                     "uptime": uptime,
                     "span": _format_span(rows),
-                    "chart_points": _build_area_points(gateway_ys),
-                    "api_chart_points": _build_area_points(api_ys),
-                    "tooltip_points": _build_tooltip_points(
+                    "chart_points": _area(gateway_ys),
+                    "api_chart_points": _area(api_ys),
+                    "tooltip_points": _tooltip(
                         rows,
                         gateway_ys,
                         [
-                            ("Gateway", gateway_history, "ms", "gateway"),
-                            ("API", api_history, "ms", "api"),
+                            ("Gateway", gateway_history, "ms", "series-1"),
+                            ("API", api_history, "ms", "series-2"),
                         ],
                     ),
                     "chart_width": CHART_WIDTH,
@@ -344,8 +316,8 @@ async def get_metrics_status() -> dict | None:
     member_history = [row["member_count"] for row in rows]
     latest = rows[-1]
 
-    guild_ys = _scale_history(guild_history, min(guild_history), max(guild_history))
-    member_ys = _scale_history(
+    guild_ys = _scale(guild_history, min(guild_history), max(guild_history))
+    member_ys = _scale(
         member_history,
         min(member_history),
         max(member_history),
@@ -356,17 +328,17 @@ async def get_metrics_status() -> dict | None:
         "member_count": latest["member_count"],
         "last_checked": _format_relative(latest["checked_at"]),
         "span": _format_span(rows),
-        "guild_chart_points": _build_area_points(guild_ys),
-        "member_chart_points": _build_area_points(member_ys),
-        "guild_tooltip_points": _build_tooltip_points(
+        "guild_chart_points": _area(guild_ys),
+        "member_chart_points": _area(member_ys),
+        "guild_tooltip_points": _tooltip(
             rows,
             guild_ys,
-            [("Servers", guild_history, "", "gateway")],
+            [("Servers", guild_history, "", "series-1")],
         ),
-        "member_tooltip_points": _build_tooltip_points(
+        "member_tooltip_points": _tooltip(
             rows,
             member_ys,
-            [("Users", member_history, "", "gateway")],
+            [("Users", member_history, "", "series-1")],
         ),
         "chart_width": CHART_WIDTH,
         "chart_height": CHART_HEIGHT,

@@ -43,7 +43,7 @@ async def _reply_error(interaction: discord.Interaction, message: str) -> None:
 
 
 class ConfigView(discord.ui.LayoutView):
-    """The settings card for one module, rebuilt after every change."""
+    # the settings card for one module, rebuilt after every change
 
     def __init__(
         self,
@@ -205,7 +205,7 @@ class ConfigView(discord.ui.LayoutView):
 
 
 class SettingModal(discord.ui.Modal):
-    """Edits a text, link, color, or image setting."""
+    # edits a text, link, color, or image setting
 
     def __init__(
         self,
@@ -301,7 +301,7 @@ async def open_config(
     *,
     on_change: OnChange | None = None,
 ) -> None:
-    """Every /<module> config command replies through here."""
+    # every /<module> config command replies through here
     if interaction.guild is None:
         await _reply_error(interaction, "This command can only be used in a server.")
         return

@@ -25,8 +25,10 @@ from flask import (
 )
 from werkzeug.wrappers import Response
 
+import charts
 import module_config
 import module_settings
+import server_stats
 from globals import ADD_BOT_URL
 
 log = logging.getLogger(__name__)
@@ -55,13 +57,21 @@ GUILDS_CACHE_SECONDS = 120
 WRITE_CHECK_SECONDS = 15
 
 # sections in the server sidebar, as (endpoint, label)
-GUILD_SECTIONS = [("dashboard.modules", "Modules")]
+GUILD_SECTIONS = [
+    ("dashboard.modules", "Modules"),
+    ("dashboard.server_stats_page", "Server Stats"),
+]
+
+# the server stats charts are drawn at this size, then stretched to fit the page
+STATS_CHART_WIDTH = 600
+STATS_CHART_HEIGHT = 200
 
 bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 
 
 class DiscordError(Exception):
-    """Discord couldn't be reached or refused the request."""
+    # discord couldn't be reached or refused the request
+    pass
 
 
 def _config() -> dict[str, str | None]:
@@ -218,11 +228,9 @@ def manageable_guilds(
     max_age: float = GUILDS_CACHE_SECONDS,
     strict: bool = False,
 ) -> list[dict] | None:
-    """The servers the logged in user can manage, or None if they need to log in again.
-
-    strict never falls back to an older list when discord can't be reached, for
-    anything that changes settings.
-    """
+    # the servers the logged in user can manage, or None if they need to log in again.
+    # strict never falls back to an older list when discord can't be reached, for
+    # anything that changes settings
     row = current_session()
     if row is None:
         return None
@@ -291,7 +299,7 @@ def _bot_request(path: str, *, fresh: bool = False) -> dict | list:
 
 
 def guild_context(guild_id: int, user_id: str, *, fresh: bool = False) -> dict:
-    """The channels and roles melvin can use in a guild, as the dashboard's config pages need them."""
+    # the channels and roles melvin can use in a guild, as the dashboard's config pages need them
     bot_user = _bot_request("/users/@me")
 
     # these don't depend on each other, so they're fetched together instead of one by one
@@ -645,7 +653,7 @@ def _check_value(
     guild: dict,
     context: dict,
 ) -> None:
-    """Checks that only the dashboard can do, raising ConfigError like clean_value."""
+    # checks that only the dashboard can do, raising ConfigError like clean_value
     if not has_permission(guild, setting.permission):
         needed = (setting.permission or "").replace("_", " ").title()
         msg = f"You need {needed} to change this."
@@ -847,3 +855,104 @@ async def config_image(guild_id: int, module: str, key: str) -> Response:
     if not file.is_file() or DATA_DIR.resolve() not in file.parents:
         abort(404)
     return send_file(file)
+
+
+def _time_ago(start: int) -> str:
+    # how long ago a point began, for its tooltip
+    seconds = max(0, int(time.time()) - start)
+    for unit, length in (("day", 86400), ("hour", 3600), ("minute", 60)):
+        if seconds >= length:
+            amount = seconds // length
+            return f"{amount} {unit}{'' if amount == 1 else 's'} ago"
+    return "Just now"
+
+
+@bp.route("/<int:guild_id>/stats")
+async def server_stats_page(guild_id: int) -> str | Response:
+    try:
+        guilds = manageable_guilds()
+    except DiscordError:
+        return redirect(url_for("dashboard.index"))
+    if guilds is None:
+        return redirect(url_for("dashboard.index"))
+    match = _find_guild(guilds, guild_id)
+    if match is None:
+        abort(404)
+
+    range_key = request.args.get("range", server_stats.DEFAULT_RANGE)
+    if range_key not in server_stats.RANGES:
+        range_key = server_stats.DEFAULT_RANGE
+
+    await server_stats.init_db()
+    series = await server_stats.get_series(guild_id, range_key)
+    width, height = STATS_CHART_WIDTH, STATS_CHART_HEIGHT
+    whens = [_time_ago(start) for start in series["starts"]]
+
+    # messages and voice minutes are stacked, so their scale starts at zero
+    messages, voice = series["messages"], series["voice"]
+    totals = [m + v for m, v in zip(messages, voice, strict=True)]
+    top = max(totals) or 1
+    total_ys = charts.scale(totals, 0, top, height)
+    message_ys = charts.scale(messages, 0, top, height)
+
+    # members only show change, so their scale fits the counts like the status charts.
+    # periods from before the first reading use the first reading
+    known = [count for count in series["members"] if count is not None]
+    members = [count if count is not None else (known[0] if known else 0) for count in series["members"]]
+    member_ys = charts.scale(members, min(members), max(members), height)
+
+    return render_template(
+        "dashboard_stats.html",
+        active="dashboard",
+        guild={
+            "id": match["id"],
+            "name": match["name"],
+            "icon_url": guild_icon_url(match),
+            "initials": initials(match["name"]),
+        },
+        sections=_sidebar(guild_id, "dashboard.server_stats_page"),
+        ranges=[(key, label) for key, (label, _, _) in server_stats.RANGES.items()],
+        range_key=range_key,
+        range_label=series["label"],
+        has_data=series["has_data"],
+        width=width,
+        height=height,
+        cards=[
+            {
+                "label": "Total messages",
+                "value": f"{series['total_messages']:,}",
+                "meta": f"In the last {series['label']}",
+            },
+            {
+                "label": "Total voice minutes",
+                "value": f"{series['total_voice']:,}",
+                "meta": f"In the last {series['label']}",
+            },
+            {
+                "label": "Member count",
+                "value": f"{series['member_count'] or 0:,}",
+                "meta": "Right now",
+            },
+            {
+                "label": "Net growth",
+                # joins minus leaves over the range, signed so a drop is clear
+                "value": f"{series['member_change']:+,}" if series["member_change"] else "0",
+                "meta": f"In the last {series['label']}",
+            },
+        ],
+        activity={
+            "messages": charts.area_points(message_ys, width, height),
+            "voice": charts.band_points(total_ys, message_ys, width),
+            "tooltip": charts.tooltip_points(
+                whens,
+                total_ys,
+                height,
+                [("Messages", messages, "", "series-1"), ("Voice minutes", voice, "", "series-2")],
+            ),
+        },
+        members={
+            "points": charts.area_points(member_ys, width, height),
+            "tooltip": charts.tooltip_points(whens, member_ys, height, [("Members", members, "", "series-1")]),
+        },
+        start_label=series["start_label"],
+    )

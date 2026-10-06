@@ -298,6 +298,7 @@ async def main() -> None:
         await bot.load_extension("cogs.stats")
         await bot.load_extension("cogs.thanks")
         await bot.load_extension("cogs.modules")
+        await bot.load_extension("cogs.serverstats")
         await bot.start(token)
 
 
