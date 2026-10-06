@@ -22,6 +22,7 @@ intents.message_content = True
 intents.members = True
 log = logging.getLogger(__name__)
 STATS_FILE = Path(__file__).parent / "data" / "bot_stats.json"
+GUILDS_FILE = Path(__file__).parent / "data" / "bot_guilds.json"
 
 
 class MelvinTree(app_commands.CommandTree):
@@ -117,8 +118,21 @@ class Melvin(commands.Bot):
         status.set_start_time()
         log.info("Logging started.")
 
+    # the dashboard reads this to know which servers melvin is in
+    def write_guild_ids(self) -> None:
+        temp = GUILDS_FILE.with_suffix(".tmp")
+        temp.write_text(json.dumps([str(guild.id) for guild in self.guilds]))
+        temp.replace(GUILDS_FILE)
+
+    async def on_guild_join(self, _guild: discord.Guild) -> None:
+        self.write_guild_ids()
+
+    async def on_guild_remove(self, _guild: discord.Guild) -> None:
+        self.write_guild_ids()
+
     async def on_ready(self) -> None:
         log.info("Logged in as %s.", self.user)
+        self.write_guild_ids()
         await self.tree.sync()
 
         try:

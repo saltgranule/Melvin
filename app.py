@@ -1,7 +1,10 @@
+import datetime
 import functools
 import html
 import json
+import logging
 import os
+import secrets
 import subprocess  # ruff: ignore[suspicious-subprocess-import]
 import sys
 import time
@@ -10,8 +13,10 @@ import urllib.request
 from pathlib import Path
 
 import markdown
+from dotenv import load_dotenv
 from flask import Flask, abort, render_template
 
+import dashboard
 from globals import (
     ADD_BOT_URL,
     INVITE_URL,
@@ -23,7 +28,24 @@ from globals import (
 )
 from status import get_metrics_status, get_shard_status, summarize_status
 
+load_dotenv()
+log = logging.getLogger(__name__)
+
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY")
+if not app.secret_key:
+    # still works, but everyone gets logged out of the dashboard on every restart
+    log.warning("SECRET_KEY isn't set, using a temporary one")
+    app.secret_key = secrets.token_hex(32)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    # browsers still accept secure cookies on http://localhost
+    SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", "true").lower()
+    == "true",
+    PERMANENT_SESSION_LIFETIME=datetime.timedelta(days=7),
+)
+app.register_blueprint(dashboard.bp)
 
 DOCS_DIR = Path(app.root_path) / "docs"
 bot_process = None
@@ -45,6 +67,18 @@ LINKS = {
     "invite": INVITE_URL,
     "github": MELVIN_GITHUB_URL,
 }
+
+
+@app.context_processor
+def inject_globals() -> dict:
+    user = dashboard.current_user()
+    return {
+        "theme": THEME,
+        "links": LINKS,
+        "dashboard_user": user,
+        "dashboard_avatar": dashboard.user_avatar_url(user) if user else None,
+        "csrf_token": dashboard.csrf_token,
+    }
 
 GITHUB_REPO = "saltgranule/Melvin"
 GITHUB_API = f"https://api.github.com/repos/{GITHUB_REPO}"

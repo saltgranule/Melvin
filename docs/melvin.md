@@ -28,3 +28,10 @@ The status page on the website shows each shard's gateway and API latency, the b
 Latency is checked every minute, and the guild and user counts every 30 minutes. Each chart shows the 14 most recent checks.
 Hovering over or tapping a chart shows the reading at that point. Charts can also be focused with Tab and stepped through with the left and right arrow keys.
 The notice at the top of the page states whether everything appears normal, slow, or unresponsive. It's considered slow when gateway latency is over 400ms or API latency is over 800ms, and unresponsive when there hasn't been a check in the last 5 minutes.
+
+## Dashboard
+The dashboard on the website lets you manage Melvin in your servers after logging in with Discord.
+Logging in only asks Discord for your name, avatar, and server list. Your Discord login is kept on Melvin's server, and your browser only holds a random session id. Logging out ends the session straight away, and sessions end on their own after 7 days.
+After logging in, the dashboard lists every server where you're the owner, an Administrator, or have Manage Server. Servers that already have Melvin come first and open that server's page. The rest link to adding Melvin.
+A server's page shows which modules are on or off there. Use `/modules` in Discord to change them.
+Your server list is refreshed from Discord every couple of minutes, so losing Manage Server in a server removes it from your list shortly after.
