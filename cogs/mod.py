@@ -223,7 +223,7 @@ class ModCog(
     ) -> None:
         await interaction.response.defer()
 
-        if not interaction.guild:
+        if not interaction.guild or not isinstance(interaction.user, discord.Member):
             return
 
         # guard clause
@@ -240,6 +240,14 @@ class ModCog(
         if member.id == interaction.guild.owner_id:
             await interaction.followup.send(
                 view=ErrorUI("**You tried to warn the guild owner.**"),
+            )
+            return
+        if (
+            member.top_role >= interaction.user.top_role
+            and interaction.user.id != interaction.guild.owner_id
+        ):
+            await interaction.followup.send(
+                view=ErrorUI("**You tried to warn someone equal to or above you.**"),
             )
             return
 
@@ -444,7 +452,7 @@ class ModCog(
         try:
             await member.ban(
                 reason=f"Banned by Melvin using {interaction.user.name} with the reason: {reason}",
-                delete_message_days=7,
+                delete_message_seconds=7 * 86400,
             )
         except discord.HTTPException:
             log.exception("Moderation action failed")
