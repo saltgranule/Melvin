@@ -261,7 +261,11 @@ class SettingModal(discord.ui.Modal):
             await self.config_view.save(interaction, self.setting, str(self.text.value))
             return
 
-        guild_id, module, key = self.config_view.guild.id, self.config_view.module, self.setting.key
+        guild_id, module, key = (
+            self.config_view.guild.id,
+            self.config_view.module,
+            self.setting.key,
+        )
         try:
             if self.upload.values:
                 attachment = self.upload.values[0]

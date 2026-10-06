@@ -100,13 +100,15 @@ CONFIG = {
 A setting that needs more than Manage Server says so with `permission`, like the moderation auto-role.
 
 ```python
-Setting(
-    "auto_role",
-    "Auto-role",
-    "Given to members when they join. Leave empty for none.",
-    "role",
-    permission="manage_roles",
-),
+(
+    Setting(
+        "auto_role",
+        "Auto-role",
+        "Given to members when they join. Leave empty for none.",
+        "role",
+        permission="manage_roles",
+    ),
+)
 ```
 
 These are the fields a setting can have.
@@ -142,6 +144,7 @@ Every config command looks the same. Keep the name `config`, keep the Manage Ser
 
 ```python
 from ui import open_config
+
 
 @app_commands.command(
     name="config",

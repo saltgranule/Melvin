@@ -59,6 +59,7 @@ def add_security_headers(response: Response) -> Response:
     response.headers.setdefault("Referrer-Policy", "same-origin")
     return response
 
+
 DOCS_DIR = Path(app.root_path) / "docs"
 bot_process = None
 
@@ -91,6 +92,7 @@ def inject_globals() -> dict:
         "dashboard_avatar": dashboard.user_avatar_url(user) if user else None,
         "csrf_token": dashboard.csrf_token,
     }
+
 
 GITHUB_REPO = "saltgranule/Melvin"
 GITHUB_API = f"https://api.github.com/repos/{GITHUB_REPO}"

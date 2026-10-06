@@ -70,9 +70,7 @@ def _morse_encode(text: str) -> str:
             listed = ", ".join(unknown[:-1]) + " and " + unknown[-1]
         msg = f"{listed} can't be written in Morse."
         raise CodecError(msg)
-    return " / ".join(
-        " ".join(MORSE[char] for char in word) for word in upper.split()
-    )
+    return " / ".join(" ".join(MORSE[char] for char in word) for word in upper.split())
 
 
 def _morse_decode(text: str) -> str:
@@ -140,8 +138,7 @@ FORMATS: dict[
     ),
 }
 FORMAT_CHOICES = [
-    app_commands.Choice(name=label, value=key)
-    for key, (label, _, _) in FORMATS.items()
+    app_commands.Choice(name=label, value=key) for key, (label, _, _) in FORMATS.items()
 ]
 
 

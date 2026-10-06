@@ -192,7 +192,11 @@ def _discord_request(
         data = urllib.parse.urlencode(form).encode()
         headers["Content-Type"] = "application/x-www-form-urlencoded"
 
-    request_ = urllib.request.Request(f"{DISCORD_API}{path}", data=data, headers=headers)  # ruff: ignore[suspicious-url-open-usage]
+    request_ = urllib.request.Request(
+        f"{DISCORD_API}{path}",
+        data=data,
+        headers=headers,
+    )
     try:
         with urllib.request.urlopen(request_, timeout=10) as response:  # ruff: ignore[suspicious-url-open-usage]
             return json.load(response)
@@ -205,9 +209,7 @@ def _discord_request(
 def _can_manage(guild: dict) -> bool:
     permissions = int(guild.get("permissions", 0))
     return bool(
-        guild.get("owner")
-        or permissions & ADMINISTRATOR
-        or permissions & MANAGE_GUILD,
+        guild.get("owner") or permissions & ADMINISTRATOR or permissions & MANAGE_GUILD,
     )
 
 
@@ -266,7 +268,9 @@ def has_permission(guild: dict, permission: str | None) -> bool:
     if permission is None or guild.get("owner"):
         return True
     permissions = guild.get("permissions", 0)
-    return bool(permissions & ADMINISTRATOR or permissions & PERMISSION_BITS[permission])
+    return bool(
+        permissions & ADMINISTRATOR or permissions & PERMISSION_BITS[permission],
+    )
 
 
 _bot_cache: dict[str, tuple[float, dict | list]] = {}
@@ -311,9 +315,13 @@ def guild_context(guild_id: int, user_id: str, *, fresh: bool = False) -> dict:
         (positions.get(role, 0) for role in results["bot_member"]["roles"]),
         default=0,
     )
-    user_top = None if is_owner else max(
-        (positions.get(role, 0) for role in results["member"]["roles"]),
-        default=0,
+    user_top = (
+        None
+        if is_owner
+        else max(
+            (positions.get(role, 0) for role in results["member"]["roles"]),
+            default=0,
+        )
     )
 
     roles = sorted(guild["roles"], key=lambda role: role["position"], reverse=True)
@@ -339,7 +347,7 @@ def guild_context(guild_id: int, user_id: str, *, fresh: bool = False) -> dict:
 def bot_guild_ids() -> set[str]:
     try:
         return {str(guild_id) for guild_id in json.loads(BOT_GUILDS_FILE.read_text())}
-    except (FileNotFoundError, ValueError, OSError):
+    except FileNotFoundError, ValueError, OSError:
         return set()
 
 
@@ -460,7 +468,7 @@ def callback() -> str | Response:
             },
         )
         user = _discord_request("/users/@me", token=token["access_token"])
-    except (DiscordError, KeyError):
+    except DiscordError, KeyError:
         log.exception("Dashboard login failed")
         return render_template(
             "dashboard_login.html",
@@ -696,7 +704,10 @@ def _config_fields(
 
 
 @bp.route("/<int:guild_id>/modules/<module>/config", methods=["GET", "POST"])
-async def module_config_page(guild_id: int, module: str) -> str | Response | tuple[str, int]:
+async def module_config_page(
+    guild_id: int,
+    module: str,
+) -> str | Response | tuple[str, int]:
     if not module_config.is_configurable(module):
         abort(404)
 
@@ -719,7 +730,7 @@ async def module_config_page(guild_id: int, module: str) -> str | Response | tup
     user = current_user()
     try:
         context = guild_context(guild_id, user["id"], fresh=posting)
-    except (DiscordError, KeyError):
+    except DiscordError, KeyError:
         log.exception("Couldn't load channels and roles for guild %s", guild_id)
         context = None
 
@@ -762,7 +773,13 @@ async def module_config_page(guild_id: int, module: str) -> str | Response | tup
                     await module_config.remove_image(guild_id, module, key)
                 else:
                     data = upload.read(module_config.MAX_IMAGE_BYTES + 1)
-                    await module_config.replace_image(guild_id, module, key, upload.filename, data)
+                    await module_config.replace_image(
+                        guild_id,
+                        module,
+                        key,
+                        upload.filename,
+                        data,
+                    )
             except module_config.ConfigError as e:
                 errors[key] = str(e)
 
@@ -770,7 +787,12 @@ async def module_config_page(guild_id: int, module: str) -> str | Response | tup
             if updates:
                 await module_config.set_values(guild_id, module, updates)
             return redirect(
-                url_for("dashboard.module_config_page", guild_id=guild_id, module=module, saved=1),
+                url_for(
+                    "dashboard.module_config_page",
+                    guild_id=guild_id,
+                    module=module,
+                    saved=1,
+                ),
             )
         values = submitted
 
@@ -791,7 +813,9 @@ async def module_config_page(guild_id: int, module: str) -> str | Response | tup
             "description": description,
             "enabled": module not in await module_settings.disabled_modules(guild_id),
         },
-        fields=_config_fields(module, values, errors, match, context) if context else [],
+        fields=_config_fields(module, values, errors, match, context)
+        if context
+        else [],
         unavailable=context is None,
         saved=request.args.get("saved") == "1" and not posting,
         errors=errors,
@@ -806,9 +830,13 @@ async def config_image(guild_id: int, module: str, key: str) -> Response:
     try:
         setting = module_config.get_setting(module, key)
         guilds = manageable_guilds()
-    except (KeyError, DiscordError):
+    except KeyError, DiscordError:
         abort(404)
-    if setting.kind != "image" or guilds is None or _find_guild(guilds, guild_id) is None:
+    if (
+        setting.kind != "image"
+        or guilds is None
+        or _find_guild(guilds, guild_id) is None
+    ):
         abort(404)
 
     path = await module_config.get(guild_id, module, key)

@@ -269,7 +269,7 @@ async def _stored(guild_id: int, module: str) -> dict[str, str | None]:
     ):
         stored = {key: value async for key, value in cursor}
 
-    _cache[(guild_id, module)] = (time.monotonic(), stored)
+    _cache[guild_id, module] = (time.monotonic(), stored)
     return stored
 
 
@@ -408,5 +408,5 @@ async def migrate_legacy(
             if cleaned:
                 await set_values(guild_id, module, cleaned)
 
-        await db.execute(f"ALTER TABLE {table} RENAME TO {table}_migrated")  # ruff: ignore[hardcoded-sql-expression]
+        await db.execute(f"ALTER TABLE {table} RENAME TO {table}_migrated")
         await db.commit()
