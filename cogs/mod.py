@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 import aiosqlite
 import discord
@@ -6,6 +7,8 @@ from discord import app_commands
 from discord.ext import commands
 
 from ui import CasesView, ErrorUI, InfoUI, PositiveUI
+
+log = logging.getLogger(__name__)
 
 
 @app_commands.guild_only()
@@ -78,9 +81,8 @@ class ModCog(
                 view=view,
                 allowed_mentions=discord.AllowedMentions(users=False, roles=False),
             )
-        except discord.Forbidden, discord.HTTPException:
+        except discord.HTTPException:
             pass
-            # only failing silently here because idk where to put the EH for it
 
     async def cog_load(self) -> None:
         await self._ensure_db()
@@ -341,10 +343,23 @@ class ModCog(
             reason=reason,
         )
 
-        # the actual kick part
-        await member.kick(
-            reason=f"Kicked by Melvin using {interaction.user.name} with the reason: {reason}",
-        )
+        # the actual kick part, roll back the case if it fails
+        try:
+            await member.kick(
+                reason=f"Kicked by Melvin using {interaction.user.name} with the reason: {reason}",
+            )
+        except discord.HTTPException:
+            log.exception("Moderation action failed")
+            async with aiosqlite.connect(self.db_path) as conn:
+                await conn.execute(
+                    "DELETE FROM mod_cases WHERE case_id = ?",
+                    (case_id,),
+                )
+                await conn.commit()
+            await interaction.followup.send(
+                view=ErrorUI("**Failed to kick that member.**"),
+            )
+            return
 
         # kick msg
         view = PositiveUI(
@@ -425,11 +440,24 @@ class ModCog(
             reason=reason,
         )
 
-        # the actual ban part
-        await member.ban(
-            reason=f"Banned by Melvin using {interaction.user.name} with the reason: {reason}",
-            delete_message_days=7,
-        )
+        # the actual ban part, roll back the case if it fails
+        try:
+            await member.ban(
+                reason=f"Banned by Melvin using {interaction.user.name} with the reason: {reason}",
+                delete_message_days=7,
+            )
+        except discord.HTTPException:
+            log.exception("Moderation action failed")
+            async with aiosqlite.connect(self.db_path) as conn:
+                await conn.execute(
+                    "DELETE FROM mod_cases WHERE case_id = ?",
+                    (case_id,),
+                )
+                await conn.commit()
+            await interaction.followup.send(
+                view=ErrorUI("**Failed to ban that member.**"),
+            )
+            return
 
         # ban msg
         view = PositiveUI(
@@ -466,9 +494,23 @@ class ModCog(
                 view=ErrorUI("**That user is not banned.**"),
             )
             return
-        except discord.HTTPException as e:
+        except discord.HTTPException:
+            log.exception("Moderation action failed")
             await interaction.followup.send(
-                view=ErrorUI(f"**Failed to check ban status: {e!s}.**"),
+                view=ErrorUI("**Failed to check ban status.**"),
+            )
+            return
+
+        # the actual unban part
+        try:
+            await interaction.guild.unban(
+                user,
+                reason=f"Unbanned using Melvin by {interaction.user.name} with the reason: {reason}",
+            )
+        except discord.HTTPException:
+            log.exception("Moderation action failed")
+            await interaction.followup.send(
+                view=ErrorUI("**Failed to unban that user.**"),
             )
             return
 
@@ -483,12 +525,6 @@ class ModCog(
             )
             case_id = cursor.lastrowid
             await conn.commit()
-
-        # the actual unban part
-        await interaction.guild.unban(
-            user,
-            reason=f"Unbanned using Melvin by {interaction.user.name} with the reason: {reason}",
-        )
 
         # unban msg
         view = PositiveUI(
@@ -561,6 +597,20 @@ class ModCog(
             )
             return
 
+        # the actual mute part
+        until = discord.utils.utcnow() + datetime.timedelta(seconds=seconds)
+        try:
+            await member.timeout(
+                until,
+                reason=f"Muted by Melvin using {interaction.user.name} with the reason: {reason}",
+            )
+        except discord.HTTPException:
+            log.exception("Moderation action failed")
+            await interaction.followup.send(
+                view=ErrorUI("**Failed to mute that member.**"),
+            )
+            return
+
         # mute db call
         async with aiosqlite.connect(self.db_path) as conn:
             cursor = await conn.execute(
@@ -580,13 +630,6 @@ class ModCog(
             case_id=case_id,
             guild_name=interaction.guild.name,
             reason=reason,
-        )
-
-        # the actual mute part
-        until = discord.utils.utcnow() + datetime.timedelta(seconds=seconds)
-        await member.timeout(
-            until,
-            reason=f"Muted by Melvin using {interaction.user.name} with the reason: {reason}",
         )
 
         # mute msg
@@ -632,6 +675,19 @@ class ModCog(
             )
             return
 
+        # the actual unmute part
+        try:
+            await member.timeout(
+                None,
+                reason=f"Unmuted by Melvin using {interaction.user.name} with the reason: {reason}",
+            )
+        except discord.HTTPException:
+            log.exception("Moderation action failed")
+            await interaction.followup.send(
+                view=ErrorUI("**Failed to unmute that member.**"),
+            )
+            return
+
         # unmute db call
         async with aiosqlite.connect(self.db_path) as conn:
             cursor = await conn.execute(
@@ -651,12 +707,6 @@ class ModCog(
             case_id=case_id,
             guild_name=interaction.guild.name,
             reason=reason,
-        )
-
-        # the actual unmute part
-        await member.timeout(
-            None,
-            reason=f"Unmuted by Melvin using {interaction.user.name} with the reason: {reason}",
         )
 
         # unmute msg
