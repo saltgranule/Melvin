@@ -1233,8 +1233,8 @@ textarea.dashboard-input {
     gap: 12px;
 }
 
-/* two joined buttons, the selected half is filled like .btn-primary (on)
-   or .btn-dark (off), and the other half stays light */
+/* two joined buttons, the selected half is filled with the banner colors,
+   success green for on and error red for off, and the other half stays light */
 .dashboard-switch {
     display: inline-flex;
     flex: 0 0 auto;
@@ -1265,15 +1265,15 @@ textarea.dashboard-input {
 }
 
 .dashboard-switch[aria-checked="true"] .is-on {
-    background: var(--primary);
-    color: #252422;
-    border-bottom-color: #b9762c;
+    background: var(--secondary);
+    color: #ffffff;
+    border-bottom-color: color-mix(in srgb, var(--secondary) 75%, black);
 }
 
 .dashboard-switch[aria-checked="false"] .is-off {
-    background: #252422;
+    background: var(--tertiary);
     color: #ffffff;
-    border-bottom-color: #4a473f;
+    border-bottom-color: color-mix(in srgb, var(--tertiary) 75%, black);
 }
 
 .dashboard-switch:hover {

@@ -21,6 +21,7 @@ SNOWFLAKE_PATTERN = re.compile(r"^\d{15,21}$")
 
 
 class ConfigError(ValueError):
+    pass
 
 
 @dataclass(frozen=True)
