@@ -2,92 +2,66 @@
 Utility tools and helper commands.
 Command group name: `tool`
 
-## base64 command group
-Path: `/tool base64`
+## Formats
+The encode and decode commands share the same list of formats.
 
-### /tool base64 decode
-Decode a Base64 encoded string.
+| Format | Encoded looks like | Notes |
+|------|------|------|
+| Base64 | `SGk=` | Decoding requires valid Base64, including padding. |
+| Binary | `01001000 01101001` | One 8 bit group per byte, separated by spaces. |
+| Hex | `48 69` | One pair of hex digits per byte. Decoding accepts the pairs with or without spaces. |
+| URL | `Hi%20there` | Percent encoding, as used in links. Every character that isn't a letter, digit, or one of `_.-~` is encoded. |
+| Base32 | `JBUQ====` | Decoding ignores case and spaces, and adds missing padding. |
+| Morse | `.... ..` | Letters are separated by spaces and words by ` / `. Supports letters, digits, and common punctuation. Decoded text is uppercase. |
+| Unicode | `U+0048 U+0069` | One code point per character. Decoding also accepts plain hex like `48 69`, separated by spaces or commas. |
 
-**Parameters**
+Text is converted to and from UTF-8 for every format except Morse and Unicode, which work on characters directly.
 
-| Name | Type | Required | Description |
-|------|------|----------|--------------|
-| text | string | yes | The Base64 string to decode. |
-
-**Behavior**
-
-The command attempts to decode the text argument as Base64.
-If the text is not valid Base64, the command replies with an error message showing the decoding error.
-If the text decodes successfully but the resulting bytes are not valid UTF-8 text, the command replies with an error message stating that the result is not valid text.
-If decoding passes, the command replies with the decoded string.
-
-**Example**
-
-Input: `SGVsbG8=`
-Output: `**Hello** was the decoded result.`
-
-### /tool base64 encode
-
-Encode a string as Base64.
+## encode command
+Path: `/tool encode`
+Encode text into another format.
 
 **Parameters**
 
 | Name | Type | Required | Description |
 |------|------|----------|--------------|
-| text | string | yes | The string to encode. |
+| format | choice | yes | The format to encode into. |
+| text | string | yes | The text to encode. |
 
 **Behavior**
-
-The command encodes the text arg as UTF-8 bytes and converts those bytes to Base64.
-If encoding fails for any reason, the command replies with an error message showing the exception.
-If encoding passes, the command replies with the encoded string.
+The command defers its response, then encodes the text into the chosen format.
+For Morse, the command replies with an error message listing any characters that have no Morse code, for example accented letters or emoji.
+If encoding passes, the command replies with the encoded text.
 
 **Example**
-Input: `Hello`
-Output: `**SGVsbG8=** was the encoded result.`
+Input: `/tool encode format: Hex text: Hi`
+Output: `**48 69** was the Hex encoded result.`
 
-## binary command group
-Path: `/tool binary`
-
-### /tool binary decode
-Decode a binary string to text.
+## decode command
+Path: `/tool decode`
+Decode text from another format.
 
 **Parameters**
 
 | Name | Type | Required | Description |
 |------|------|----------|--------------|
-| text | string | yes | The binary string to decode, space separated bytes. |
+| format | choice | yes | The format to decode from. |
+| text | string | yes | The text to decode. |
 
 **Behavior**
-
-The command splits the input text on whitespace into chunks.
-Each chunk must contain only the characters 0 and 1, and must be exactly 8 characters long. If any chunk fails this check, the command replies with an error message stating that the string is not a valid binary string.
-If all chunks are valid, each chunk is converted to a byte, and the resulting bytes are decoded as UTF-8 text.
-If the bytes are not valid UTF-8 text, the command replies with an error message stating that the result is not valid text.
-If decoding passes, the command replies with the decoded string.
+The command defers its response, then decodes the text from the chosen format.
+If the text isn't valid for that format, the command replies with an error message. For Binary, Morse, and Unicode, the message says what was wrong, such as which Morse codes weren't recognized.
+If the text decodes but the result isn't valid UTF-8 text, the command replies with an error message stating that the result is not valid text.
+If decoding passes, the command replies with the decoded text.
 
 **Example**
-Input: `01001000 01101001`
-Output: `**Hi** was the decoded result.`
+Input: `/tool decode format: Morse text: .... ..`
+Output: `**HI** was the Morse decoded result.`
 
-### /tool binary encode
-Encode a string as binary.
-
-**Parameters**
-
-| Name | Type | Required | Description |
-|------|------|----------|--------------|
-| text | string | yes | The string to encode. |
-
-**Behavior**
-
-The command encodes the text arg as UTF-8 bytes and converts each byte to an 8 bit binary string, joined by spaces.
-If encoding fails for any reason, the command replies with an error message showing the exception.
-If encoding passes, the command replies with the encoded string.
-
-**Example**
-Input: `Hi`
-Output: `**01001000 01101001** was the encoded result.`
+**Error handling**
+If the result is longer than 3900 characters, the command replies with an error message instead, since the result wouldn't fit in a Discord message. Encoding can make text several times longer, especially Binary and Unicode.
+If the result is empty, for example when decoding only spaces, the command replies with an error message.
+Mentions in the result are suppressed, so decoded text will not ping users, roles, or everyone.
 
 ## speak command
 Path: `/tool speak`
