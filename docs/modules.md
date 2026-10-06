@@ -35,6 +35,7 @@ If the command user lacks Manage Server, or the command is used outside a guild,
 | Timezones | The `/timezone` commands. |
 | Info | The `/info` commands. |
 | Style | The `/style` commands, and applying Melvin's default style when it joins. |
+| Server Stats | Counting messages, voice minutes, and members for the dashboard's Server Stats page. |
 
 `/help`, `/latency`, `/melvin`, `/stats`, and `/modules` itself can't be turned off.
 

@@ -21,6 +21,10 @@ MODULES = {
     "timezone": ("Timezones", "Set and compare member timezones."),
     "info": ("Info", "View avatars and banners."),
     "style": ("Style", "Melvin's display name style."),
+    "serverstats": (
+        "Server Stats",
+        "Counts messages, voice minutes, and members for the dashboard.",
+    ),
 }
 
 # guild id -> (when it was loaded, the modules it has turned off)

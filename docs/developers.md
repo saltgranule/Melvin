@@ -59,6 +59,8 @@ If every listener goes through the same lookup, put the check there once instead
 
 Listeners that clean up after the bot leaves a guild, like `on_guild_remove`, should run whether the module is on or not.
 
+A module with no commands, like Server Stats, uses a plain `commands.Cog` instead, named after its module key. A GroupCog with no commands would show up in Discord as a command that does nothing. Its listeners still check `is_enabled` like any other module.
+
 **What isn't a module**
 Commands outside a group, like `/help`, `/latency`, and `/melvin`, can't be turned off. Neither can the stats, private, and debug cogs, since they aren't listed in `MODULES`.
 
@@ -238,6 +240,36 @@ Status messages use the banner macro in `templates/_banner.html`, so they look t
 
 Banners are only for what just happened or needs attention. Descriptions of how a page works use the plain `dashboard-notice` style instead.
 To fill in a banner from a script, render it hidden with an id, like `banner("error", "", id="dashboard-error", hidden=True)`, then set its text and unhide it.
+
+## Charts
+The status page and the dashboard's Server Stats page share their charts. The shapes are worked out in Python by `charts.py`, and the tooltips are added by `static/js/charts.js`, so a new chart only needs its data and some markup.
+
+**Drawing a chart**
+Charts are SVG polygons drawn in a fixed size, which the page stretches to fit its card. `scale` turns values into heights, then `area_points` gives the filled shape. Server Stats scales its counts from zero, while the status page fits the scale to its values so small changes still show.
+
+```python
+member_ys = charts.scale(members, min(members), max(members), height)
+points = charts.area_points(member_ys, width, height)
+```
+
+For a stacked chart, draw the bottom series with `area_points`, and the series above it with `band_points`, which fills the space between the two lines. The messages and voice minutes chart is drawn this way.
+
+**Tooltips**
+`charts.tooltip_points` builds each point's tooltip, from a label for when it was, the height it sits at, and its values. Each series is a label, its values, a unit, and a key, where `series-1` is the main orange and `series-2` the lighter one.
+
+```python
+charts.tooltip_points(whens, member_ys, height, [("Members", members, "", "series-1")])
+```
+
+In the template, give the chart's element the `status-chart` class and pass the tooltip points as `data-points`, then load `charts.js` once on the page. Hovering, tapping, and keyboard stepping all work from there. Pages that refresh themselves can check `window.melvinCharts.isActive()` first, so they don't replace a chart while someone is reading its tooltip.
+
+```jinja
+<div class="status-chart" tabindex="0" role="img" aria-label="..." data-points='{{ members.tooltip | tojson }}'>
+    <svg viewBox="0 0 {{ width }} {{ height }}" preserveAspectRatio="none" aria-hidden="true">
+        <polygon points="{{ members.points }}" class="status-chart-series-1"></polygon>
+    </svg>
+</div>
+```
 
 ## Checklist
 - The cog is a GroupCog, and its group name is in `MODULES`.

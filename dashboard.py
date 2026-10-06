@@ -915,6 +915,7 @@ async def server_stats_page(guild_id: int) -> str | Response:
         range_key=range_key,
         range_label=series["label"],
         has_data=series["has_data"],
+        counting=await module_settings.is_enabled(guild_id, "serverstats"),
         width=width,
         height=height,
         cards=[

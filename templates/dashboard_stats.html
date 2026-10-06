@@ -6,7 +6,6 @@
 
     <main class="dashboard-main">
         <h1 class="status-heading">Server Stats</h1>
-        {{ banner("misc", "Melvin counts totals for the whole server each hour, never who sent what or what was said.") }}
 
         <nav class="dashboard-range" aria-label="Time range">
             {% for key, label in ranges %}
@@ -16,8 +15,13 @@
             {% endfor %}
         </nav>
 
-        {% if not has_data %}
-        {{ banner("misc", "No stats yet. Melvin counts messages, voice minutes, and members from now on, so check back in an hour.") }}
+        {# only ever one banner, the most important one #}
+        {% if not counting %}
+        {{ banner("error", "The Server Stats module is turned off in this server, so nothing new is being counted. Turn it back on in Modules.") }}
+        {% elif not has_data %}
+        {{ banner("misc", "No stats yet, check back in an hour. Melvin counts totals for the whole server each hour, never who sent what or what was said.") }}
+        {% else %}
+        {{ banner("misc", "Melvin counts totals for the whole server each hour, never who sent what or what was said.") }}
         {% endif %}
 
         <ul class="dashboard-grid stats-metrics">
