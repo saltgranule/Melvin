@@ -70,7 +70,7 @@ Requires Manage Roles.
 
 **Behavior**
 
-Rejects `@everyone` as a target role, bot targets, and members who already have the role.
+Rejects `@everyone` and the server booster role as target roles, bot targets, and members who already have the role. The booster role is given out by Discord to members who boost the server, so it can't be added by hand.
 
 Also rejects role/hierarchy violations against both the command user and the bot, using the shared guard clause logic.
 

@@ -899,6 +899,13 @@ class ModCog(
                 view=ErrorUI("**You cannot modify the @everyone role.**"),
             )
             return
+        if role.is_premium_subscriber():
+            await interaction.followup.send(
+                view=ErrorUI(
+                    "**You cannot add the server booster role; Discord gives it to boosters.**",
+                ),
+            )
+            return
         if member.bot:
             await interaction.followup.send(
                 view=ErrorUI("**You tried to add a role to an app.**"),
