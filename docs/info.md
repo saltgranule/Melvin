@@ -1,20 +1,6 @@
 # Info Cog Documentation
-Commands for viewing user information and bot stats.
+Commands for viewing user information.
 Command group name: `info`
-
-## latency command
-Path: `/info latency`
-View the bot's latency.
-
-**Parameters**
-None.
-
-**Behavior**
-The gathers the bot's latency in ms, rounded to the nearest whole number. The reply shows this value in an info view, with the title "Latency" and a subtitle stating the bot's latency.
-
-**Example**
-Input: `/info latency`
-Output: `**Latency**`, subtitle: `The bot's latency is **42**ms.`
 
 ## avatar command
 Path: `/info avatar`

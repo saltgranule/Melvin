@@ -36,7 +36,7 @@ If the command user lacks Manage Server, or the command is used outside a guild,
 | Info | The `/info` commands. |
 | Style | The `/style` commands, and applying Melvin's default style when it joins. |
 
-`/help`, `/melvin`, `/stats`, and `/modules` itself can't be turned off.
+`/help`, `/latency`, `/melvin`, `/stats`, and `/modules` itself can't be turned off.
 
 ## When a module is off
 Its commands reply with an ephemeral error message saying the module is turned off, and that someone with Manage Server can turn it back on with `/modules`.

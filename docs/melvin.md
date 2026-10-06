@@ -1,6 +1,21 @@
 # Melvin Core Documentation
 Commands that aren't part of a cog group, and the status page.
 
+## latency command
+Path: `/latency`
+View the bot's latency.
+
+**Parameters**
+None.
+
+**Behavior**
+The command defers its response, then replies with each shard's gateway latency and the time taken by a request to Discord's API, in milliseconds rounded to the nearest whole number.
+If a shard isn't connected yet, its latency shows as N/A. If the API request fails, the API line says it's unavailable.
+
+**Example**
+Input: `/latency`
+Output: `**Latency**`, followed by `Shard 0, 42ms` and `API, 120ms`.
+
 ## help command
 Path: `/help`
 Take a peek at Melvin's commands.

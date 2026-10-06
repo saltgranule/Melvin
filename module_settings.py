@@ -19,7 +19,7 @@ MODULES = {
     "ai": ("AI", "Ask a free AI model questions."),
     "tool": ("Tools", "Encoding, decoding, speak, and 8ball."),
     "timezone": ("Timezones", "Set and compare member timezones."),
-    "info": ("Info", "Latency, avatars, and banners."),
+    "info": ("Info", "View avatars and banners."),
     "style": ("Style", "Melvin's display name style."),
 }
 

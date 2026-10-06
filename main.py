@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import math
 import os
 import time
 from pathlib import Path
@@ -13,8 +14,14 @@ from dotenv import load_dotenv
 
 import module_settings
 import status
-from globals import MELVIN_EMOJI, DisplayNameEffect, DisplayNameFont
-from ui import ErrorUI, HelpView, ResponseUI
+from globals import (
+    API_ICON,
+    MELVIN_EMOJI,
+    SHARD_ICON,
+    DisplayNameEffect,
+    DisplayNameFont,
+)
+from ui import ErrorUI, HelpView, InfoUI, ResponseUI
 
 logging.basicConfig(level=logging.INFO)
 intents = discord.Intents.default()
@@ -161,22 +168,50 @@ async def update_stats() -> None:
     await status.record_metrics(guild_count, member_count)
 
 
-async def _measure_api_latency() -> float:
+async def _measure_api_latency() -> float | None:
     start = time.perf_counter()
     try:
         await bot.http.request(discord.http.Route("GET", "/users/@me"))
     except Exception:
         log.exception("Failed to measure API latency")
-        return 0.0
+        return None
     return (time.perf_counter() - start) * 1000
+
+
+def _format_ms(value: float) -> str:
+    # bot.latency is nan/inf when the gateway isn't connected yet
+    if not math.isfinite(value):
+        return "N/A"
+    return f"{round(value)}ms"
 
 
 @tasks.loop(minutes=1)
 async def update_shard_latency() -> None:
-    api_latency_ms = await _measure_api_latency()
+    api_latency_ms = await _measure_api_latency() or 0.0
     latencies = getattr(bot, "latencies", None) or [(0, bot.latency)]
     for shard_id, latency in latencies:
         await status.record_latency(shard_id, latency * 1000, api_latency_ms)
+
+
+@bot.tree.command(name="latency", description="View the bot's latency.")
+async def latency_command(interaction: discord.Interaction) -> None:
+    await interaction.response.defer()
+
+    latencies = getattr(bot, "latencies", None) or [(0, bot.latency)]
+    shard_lines = [
+        f"**{SHARD_ICON} Shard {shard_id}, {_format_ms(latency * 1000)}**"
+        for shard_id, latency in latencies
+    ]
+
+    api_latency = await _measure_api_latency()
+    api_line = (
+        f"**{API_ICON} API, {_format_ms(api_latency)}**"
+        if api_latency is not None
+        else "**API, unavailable**"
+    )
+
+    view = InfoUI(title="Latency", subtitle="\n".join([*shard_lines, api_line]))
+    await interaction.followup.send(view=view)
 
 
 @bot.tree.command(name="help", description="Take a peek at Melvin's commands.")

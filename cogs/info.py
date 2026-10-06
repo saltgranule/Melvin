@@ -1,12 +1,8 @@
-import math
-import time
-
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-from globals import API_ICON, SHARD_ICON
-from ui import ErrorUI, GalleryWithItem, InfoUI, SmallSeparator
+from ui import ErrorUI, GalleryWithItem, SmallSeparator
 
 
 # UI Classes
@@ -120,48 +116,11 @@ class BannerView(discord.ui.LayoutView):
 class InfoCog(
     commands.GroupCog,
     name="info",
-    description="Commands for viewing user information and bot stats.",
+    description="Commands for viewing user information.",
 ):
     def __init__(self, bot: commands.Bot) -> None:
         super().__init__()
         self.bot = bot
-
-    @app_commands.command(name="latency", description="View the bot's latency.")
-    async def latency(self, interaction: discord.Interaction) -> None:
-        await interaction.response.defer()
-
-        latencies = getattr(self.bot, "latencies", None) or [(0, self.bot.latency)]
-        shard_lines = [
-            f"**{SHARD_ICON} Shard {shard_id}, {self._format_ms(latency * 1000)}**"
-            for shard_id, latency in latencies
-        ]
-
-        api_latency = await self._measure_api_latency()
-        api_line = (
-            f"**{API_ICON} API, {self._format_ms(api_latency)}**"
-            if api_latency is not None
-            else "**API, unavailable**"
-        )
-
-        subtitle = "\n".join([*shard_lines, api_line])
-
-        view = InfoUI(title="Latency", subtitle=subtitle)
-        await interaction.followup.send(view=view)
-
-    @staticmethod
-    def _format_ms(value: float) -> str:
-        # bot.latency is nan/inf when the gateway isn't connected yet
-        if not math.isfinite(value):
-            return "N/A"
-        return f"{round(value)}ms"
-
-    async def _measure_api_latency(self) -> float | None:
-        start = time.perf_counter()
-        try:
-            await self.bot.http.request(discord.http.Route("GET", "/users/@me"))
-        except Exception:
-            return None
-        return (time.perf_counter() - start) * 1000
 
     @app_commands.command(name="avatar", description="View a user's avatar.")
     @app_commands.describe(user="The user whose avatar you want to view.")
