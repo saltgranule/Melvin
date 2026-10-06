@@ -33,5 +33,6 @@ The notice at the top of the page states whether everything appears normal, slow
 The dashboard on the website lets you manage Melvin in your servers after logging in with Discord.
 Logging in only asks Discord for your name, avatar, and server list. Your Discord login is kept on Melvin's server, and your browser only holds a random session id. Logging out ends the session straight away, and sessions end on their own after 7 days.
 After logging in, the dashboard lists every server where you're the owner, an Administrator, or have Manage Server. Servers that already have Melvin come first and open that server's page. The rest link to adding Melvin.
-A server's page shows which modules are on or off there. Use `/modules` in Discord to change them.
+A server's page has a sidebar for its settings. The Modules section has a switch for each module, which turns it on or off for that server. Changes save straight away and apply in Discord within a few seconds.
+Before saving a change, the dashboard checks with Discord that you still have Manage Server in that server. If you've lost it, or Discord can't be reached, nothing is saved and the page says why.
 Your server list is refreshed from Discord every couple of minutes, so losing Manage Server in a server removes it from your list shortly after.

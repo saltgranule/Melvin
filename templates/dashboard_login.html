@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero section-container">
+    <div class="hero-text">
+        <h1 class="hero-title">Dashboard</h1>
+        <p class="hero-subtitle">
+            Log in with Discord to manage Melvin in your servers. You'll see every server where you have
+            Manage Server, and Melvin only ever asks to see your name, avatar, and server list.
+        </p>
+        {% if error %}
+        <p class="dashboard-notice" role="alert">{{ error }}</p>
+        {% endif %}
+        <div class="hero-cta">
+            <a href="{{ url_for('dashboard.login') }}" class="btn btn-primary">Log in with Discord</a>
+            <a href="/docs/modules" class="btn btn-dark">What can I change?</a>
+        </div>
+    </div>
+
+    <div class="hero-logo-wrap">
+        <img src="{{ url_for('static', filename='media/MelvinLogo.png') }}" alt="" class="hero-logo">
+    </div>
+</section>
+{% endblock %}

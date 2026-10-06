@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section-container dashboard-section">
+    <div class="dashboard-header">
+        <h1 class="status-heading">your servers</h1>
+        <div class="dashboard-user">
+            <img src="{{ dashboard_avatar }}" alt="" class="dashboard-user-avatar">
+            <span class="dashboard-user-name">{{ dashboard_user.name }}</span>
+            <form method="post" action="{{ url_for('dashboard.logout') }}">
+                <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-dark btn-small">Log out</button>
+            </form>
+        </div>
+    </div>
+
+    {% if guilds %}
+    <ul class="dashboard-grid">
+        {% for guild in guilds %}
+        <li>
+            <div class="dashboard-card dashboard-server">
+                {% if guild.icon_url %}
+                <img src="{{ guild.icon_url }}" alt="" class="dashboard-card-icon" loading="lazy">
+                {% else %}
+                <span class="dashboard-card-icon is-initials" aria-hidden="true">{{ guild.initials }}</span>
+                {% endif %}
+                <span class="status-card-row">
+                    <span class="dashboard-card-name" title="{{ guild.name }}">{{ guild.name }}</span>
+                    {% if guild.has_bot %}
+                    <a href="{{ url_for('dashboard.modules', guild_id=guild.id) }}" class="btn btn-primary btn-small">Manage</a>
+                    {% else %}
+                    <a href="{{ add_bot_url }}" class="btn btn-dark btn-small">Add Melvin</a>
+                    {% endif %}
+                </span>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="status-card-empty dashboard-empty">You don't have Manage Server in any servers yet.</div>
+    {% endif %}
+</section>
+{% endblock %}

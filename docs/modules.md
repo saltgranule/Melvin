@@ -1,5 +1,5 @@
 # Modules Documentation
-Turn Melvin's features on or off for a guild. Every module is on by default.
+Turn Melvin's features on or off for a guild, with `/modules` in Discord or from the dashboard on the website. Every module is on by default.
 
 ## Storage
 Module settings are stored in a SQLite database at `data/modules.db`, in a table called `guild_modules`. Each row holds a guild id, a module name, and whether it's enabled. A guild only has rows for modules it has changed. The table is created automatically when the bot starts, if it does not already exist.

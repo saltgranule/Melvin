@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="docs-layout dashboard-layout">
+    <aside class="docs-sidebar dashboard-sidebar">
+        <a href="{{ url_for('dashboard.index') }}" class="dashboard-back">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            All servers
+        </a>
+
+        <div class="dashboard-sidebar-guild">
+            {% if guild.icon_url %}
+            <img src="{{ guild.icon_url }}" alt="" class="dashboard-card-icon">
+            {% else %}
+            <span class="dashboard-card-icon is-initials" aria-hidden="true">{{ guild.initials }}</span>
+            {% endif %}
+            <span class="dashboard-card-name" title="{{ guild.name }}">{{ guild.name }}</span>
+        </div>
+
+        <nav aria-label="Server settings">
+            <ul class="docs-list">
+                {% for section in sections %}
+                <li>
+                    <a href="{{ section.url }}" class="docs-list-item {{ 'is-active' if section.active else '' }}"
+                       {% if section.active %}aria-current="page"{% endif %}>{{ section.label }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="dashboard-main">
+        <h1 class="status-heading">modules</h1>
+        <p class="dashboard-notice">Changes apply in Discord within a few seconds.</p>
+        <p class="dashboard-notice dashboard-error" id="dashboard-error" role="alert" hidden></p>
+
+        <ul class="dashboard-grid">
+            {% for module in modules %}
+            <li class="dashboard-card dashboard-module">
+                <div class="status-card-row">
+                    <span class="dashboard-card-name" id="module-{{ module.key }}">{{ module.label }}</span>
+                    <form method="post" action="{{ url_for('dashboard.toggle_module', guild_id=guild.id, module=module.key) }}" class="dashboard-toggle">
+                        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+                        <input type="hidden" name="enabled" value="{{ 'false' if module.enabled else 'true' }}">
+                        <button type="submit" class="dashboard-switch" role="switch"
+                                aria-checked="{{ 'true' if module.enabled else 'false' }}"
+                                aria-labelledby="module-{{ module.key }}">
+                            <span class="dashboard-switch-knob" aria-hidden="true"></span>
+                        </button>
+                    </form>
+                </div>
+                <p class="dashboard-module-description">{{ module.description }}</p>
+            </li>
+            {% endfor %}
+        </ul>
+    </main>
+</div>
+
+<script>
+    (function () {
+        var errorBox = document.getElementById("dashboard-error");
+
+        function showError(message) {
+            errorBox.textContent = message;
+            errorBox.hidden = false;
+        }
+
+        // save in place instead of reloading, the form still works without this
+        document.querySelectorAll(".dashboard-toggle").forEach(function (form) {
+            var button = form.querySelector(".dashboard-switch");
+            var wanted = form.querySelector("input[name=enabled]");
+
+            function setState(enabled) {
+                button.setAttribute("aria-checked", enabled ? "true" : "false");
+                wanted.value = enabled ? "false" : "true";
+            }
+
+            form.addEventListener("submit", function (event) {
+                event.preventDefault();
+                if (button.disabled) return;
+
+                var enabling = wanted.value === "true";
+                var body = new FormData(form);
+                setState(enabling);
+                button.disabled = true;
+                errorBox.hidden = true;
+
+                fetch(form.action, { method: "POST", body: body, headers: { "X-Requested-With": "fetch" } })
+                    .then(function (response) {
+                        return response.json().then(function (data) {
+                            return { ok: response.ok, data: data };
+                        });
+                    })
+                    .then(function (result) {
+                        if (result.ok) {
+                            setState(result.data.enabled);
+                        } else {
+                            setState(!enabling);
+                            showError(result.data.error);
+                        }
+                    })
+                    .catch(function () {
+                        setState(!enabling);
+                        showError("Couldn't save that, please check your connection and try again.");
+                    })
+                    .finally(function () {
+                        button.disabled = false;
+                    });
+            });
+        });
+    })();
+</script>
+{% endblock %}
