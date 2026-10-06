@@ -1,75 +1,93 @@
 {% extends "base.html" %}
+{% from "_banner.html" import banner %}
 {% block content %}
 <div class="docs-layout dashboard-layout">
-    <aside class="docs-sidebar dashboard-sidebar">
-        <a href="{{ url_for('dashboard.index') }}" class="dashboard-back">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            All servers
-        </a>
-
-        <div class="dashboard-sidebar-guild">
-            {% if guild.icon_url %}
-            <img src="{{ guild.icon_url }}" alt="" class="dashboard-card-icon">
-            {% else %}
-            <span class="dashboard-card-icon is-initials" aria-hidden="true">{{ guild.initials }}</span>
-            {% endif %}
-            <span class="dashboard-card-name" title="{{ guild.name }}">{{ guild.name }}</span>
-        </div>
-
-        <nav aria-label="Server settings">
-            <ul class="docs-list">
-                {% for section in sections %}
-                <li>
-                    <a href="{{ section.url }}" class="docs-list-item {{ 'is-active' if section.active else '' }}"
-                       {% if section.active %}aria-current="page"{% endif %}>{{ section.label }}</a>
-                </li>
-                {% endfor %}
-            </ul>
-        </nav>
-    </aside>
+    {% include "_dashboard_sidebar.html" %}
 
     <main class="dashboard-main">
-        <h1 class="status-heading">modules</h1>
+        <h1 class="status-heading">Modules</h1>
         <p class="dashboard-notice">Changes apply in Discord within a few seconds.</p>
-        <p class="dashboard-notice dashboard-error" id="dashboard-error" role="alert" hidden></p>
 
-        <ul class="dashboard-grid">
+        <div class="docs-search dashboard-search">
+            <svg class="docs-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+                <path d="M20 20L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <input type="text" id="module-search-input" class="docs-search-input" placeholder="Search modules..."
+                   autocomplete="off" aria-label="Search modules" aria-controls="module-list">
+            <kbd class="docs-search-kbd">/</kbd>
+        </div>
+        <p class="docs-search-empty" id="module-search-empty" hidden>No modules match "<span id="module-search-empty-term"></span>".</p>
+        {{ banner("success", saved_message or "", id="dashboard-success", hidden=not saved_message) }}
+        {{ banner("error", "", id="dashboard-error", hidden=True) }}
+
+        <ul class="dashboard-grid" id="module-list">
             {% for module in modules %}
-            <li class="dashboard-card dashboard-module">
-                <div class="status-card-row">
-                    <span class="dashboard-card-name" id="module-{{ module.key }}">{{ module.label }}</span>
+            <li class="dashboard-card dashboard-module" data-search="{{ (module.label ~ ' ' ~ module.description) | lower }}">
+                <span class="dashboard-card-name" id="module-{{ module.key }}">{{ module.label }}</span>
+                <p class="dashboard-module-description">{{ module.description }}</p>
+                <div class="dashboard-module-actions">
                     <form method="post" action="{{ url_for('dashboard.toggle_module', guild_id=guild.id, module=module.key) }}" class="dashboard-toggle">
                         <input type="hidden" name="csrf" value="{{ csrf_token() }}">
                         <input type="hidden" name="enabled" value="{{ 'false' if module.enabled else 'true' }}">
                         <button type="submit" class="dashboard-switch" role="switch"
                                 aria-checked="{{ 'true' if module.enabled else 'false' }}"
                                 aria-labelledby="module-{{ module.key }}">
-                            <span class="dashboard-switch-knob" aria-hidden="true"></span>
+                            <span class="dashboard-switch-option is-on" aria-hidden="true">On</span>
+                            <span class="dashboard-switch-option is-off" aria-hidden="true">Off</span>
                         </button>
                     </form>
+                    {% if module.configurable %}
+                    <a href="{{ url_for('dashboard.module_config_page', guild_id=guild.id, module=module.key) }}" class="btn btn-dark btn-small">Config</a>
+                    {% endif %}
                 </div>
-                <p class="dashboard-module-description">{{ module.description }}</p>
             </li>
             {% endfor %}
         </ul>
     </main>
 </div>
 
+<section class="hero section-container">
+    <div class="hero-text">
+        <h1 class="hero-title">Have an idea for a module?</h1>
+        <p class="hero-subtitle">
+            Melvin is open to ideas for new modules and settings. Share yours on the support server, and it might end up on this page.
+        </p>
+        <div class="hero-cta">
+            <a href="{{ links.invite }}" class="btn btn-dark">Support Server</a>
+        </div>
+    </div>
+
+    <div class="hero-logo-wrap">
+        <img src="{{ url_for('static', filename='media/MelvinLogo.png') }}" alt="" class="hero-logo">
+    </div>
+</section>
+
 <script>
     (function () {
         var errorBox = document.getElementById("dashboard-error");
 
+        var successBox = document.getElementById("dashboard-success");
+
+        // only one banner shows at a time, the latest save's result
         function showError(message) {
+            successBox.hidden = true;
             errorBox.textContent = message;
             errorBox.hidden = false;
+        }
+
+        function showSaved(label, enabled) {
+            errorBox.hidden = true;
+            successBox.textContent = label + " turned " + (enabled ? "on" : "off") +
+                ". Changes apply in Discord within a few seconds.";
+            successBox.hidden = false;
         }
 
         // save in place instead of reloading, the form still works without this
         document.querySelectorAll(".dashboard-toggle").forEach(function (form) {
             var button = form.querySelector(".dashboard-switch");
             var wanted = form.querySelector("input[name=enabled]");
+            var label = document.getElementById(button.getAttribute("aria-labelledby")).textContent.trim();
 
             function setState(enabled) {
                 button.setAttribute("aria-checked", enabled ? "true" : "false");
@@ -84,7 +102,6 @@
                 var body = new FormData(form);
                 setState(enabling);
                 button.disabled = true;
-                errorBox.hidden = true;
 
                 fetch(form.action, { method: "POST", body: body, headers: { "X-Requested-With": "fetch" } })
                     .then(function (response) {
@@ -95,6 +112,7 @@
                     .then(function (result) {
                         if (result.ok) {
                             setState(result.data.enabled);
+                            showSaved(label, result.data.enabled);
                         } else {
                             setState(!enabling);
                             showError(result.data.error);
@@ -108,6 +126,85 @@
                         button.disabled = false;
                     });
             });
+        });
+
+        // same search as the docs sidebar, filtering module cards instead of links
+        var input = document.getElementById("module-search-input");
+        var emptyState = document.getElementById("module-search-empty");
+        var emptyTerm = document.getElementById("module-search-empty-term");
+        var cards = Array.prototype.slice.call(document.querySelectorAll("#module-list > li[data-search]")).map(function (li) {
+            var name = li.querySelector(".dashboard-card-name");
+            var description = li.querySelector(".dashboard-module-description");
+            return {
+                li: li,
+                name: name,
+                label: name.textContent.trim(),
+                description: description,
+                descriptionText: description.textContent.trim(),
+                text: li.getAttribute("data-search")
+            };
+        });
+
+        // bold the matched part of a label without touching innerHTML
+        function highlight(element, text, query) {
+            var index = query ? text.toLowerCase().indexOf(query) : -1;
+            element.textContent = "";
+            if (index === -1) {
+                element.textContent = text;
+                return;
+            }
+            var mark = document.createElement("mark");
+            mark.textContent = text.slice(index, index + query.length);
+            element.append(text.slice(0, index), mark, text.slice(index + query.length));
+        }
+
+        function filter() {
+            var query = input.value.trim().toLowerCase();
+            var visible = 0;
+            cards.forEach(function (card) {
+                var match = card.text.indexOf(query) !== -1;
+                card.li.hidden = !match;
+                highlight(card.name, card.label, query);
+                highlight(card.description, card.descriptionText, query);
+                if (match) visible += 1;
+            });
+
+            if (query && visible === 0) {
+                emptyTerm.textContent = input.value.trim();
+                emptyState.hidden = false;
+            } else {
+                emptyState.hidden = true;
+            }
+        }
+
+        input.addEventListener("input", filter);
+
+        // enter moves to the first match's switch rather than flipping it, space then toggles
+        input.addEventListener("keydown", function (event) {
+            if (event.key !== "Enter") return;
+            var first = cards.filter(function (card) { return !card.li.hidden; })[0];
+            if (first) {
+                event.preventDefault();
+                first.li.querySelector(".dashboard-switch").focus();
+            }
+        });
+
+        // "/" to focus, like GitHub/Linear/Slack. Ctrl/Cmd+K as the
+        // secondary industry-standard shortcut (Stripe, Algolia, VS Code).
+        document.addEventListener("keydown", function (event) {
+            var isTypingElsewhere = ["INPUT", "TEXTAREA"].indexOf(document.activeElement.tagName) !== -1;
+            var isCmdK = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
+            var isSlash = event.key === "/" && !isTypingElsewhere;
+
+            if (isCmdK || isSlash) {
+                event.preventDefault();
+                input.focus();
+                input.select();
+            } else if (event.key === "Escape" && document.activeElement === input) {
+                input.value = "";
+                filter();
+                input.blur();
+            }
         });
     })();
 </script>

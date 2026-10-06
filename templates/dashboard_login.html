@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_banner.html" import banner %}
 {% block content %}
 <section class="hero section-container">
     <div class="hero-text">
@@ -8,7 +9,7 @@
             Manage Server, and Melvin only ever asks to see your name, avatar, and server list.
         </p>
         {% if error %}
-        <p class="dashboard-notice" role="alert">{{ error }}</p>
+        {{ banner("error", error) }}
         {% endif %}
         <div class="hero-cta">
             <a href="{{ url_for('dashboard.login') }}" class="btn btn-primary">Log in with Discord</a>

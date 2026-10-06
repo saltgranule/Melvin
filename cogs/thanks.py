@@ -6,13 +6,15 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+import module_config
 import module_settings
 from globals import ERROR_MESSAGE
-from ui import ErrorUI, InfoUI, ThankUI
+from ui import ErrorUI, InfoUI, ThankUI, open_config
 
 rate_int = 1
 rate_time = 60.0
-# rate_int - how many times a user can trigger the count event, rate_time - the time before the rate_int limit resets, so 1 thank every 60 seconds.
+# rate_int - how many times a user can trigger the count event, rate_time - the time before the rate_int limit resets.
+# in a server, rate_time comes from the cooldown setting in /thanks config, this is only the fallback.
 
 trigger = [
     "thanks",
@@ -124,11 +126,11 @@ class ThanksCog(
         else:
             await interaction.response.send_message(view=view, ephemeral=False)
 
-    def _is_rate_limited(self, user_id: int) -> bool:
+    def _is_rate_limited(self, user_id: int, window: float) -> bool:
         now = time.monotonic()
         timestamps = self._cooldowns.setdefault(user_id, [])
-        # drop timestamps outside the rate_time window
-        timestamps[:] = [t for t in timestamps if now - t < rate_time]
+        # drop timestamps outside the cooldown window
+        timestamps[:] = [t for t in timestamps if now - t < window]
         if len(timestamps) >= rate_int:
             return True
         timestamps.append(now)
@@ -169,10 +171,19 @@ class ThanksCog(
         if thanked.bot or thanked.id == thanker.id:
             return
 
-        if self._is_rate_limited(thanker.id):
+        if message.guild is not None:
+            settings = await module_config.get_all(message.guild.id, "thanks")
+            cooldown = float(settings["cooldown"] or rate_time)
+            announce = settings["announce"] != "off"
+        else:
+            cooldown, announce = rate_time, True
+
+        if self._is_rate_limited(thanker.id, cooldown):
             return
 
         new_total = await self._add_thanks(thanked.id)
+        if not announce:
+            return
 
         view = ThankUI(
             title=f"Thanks {thanked.mention}!",
@@ -245,6 +256,14 @@ class ThanksCog(
             subtitle=f"**Thanked {total} times.**",
         )
         await interaction.response.send_message(view=view)
+
+    @app_commands.command(
+        name="config",
+        description="Change thanks settings for this server.",
+    )
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def config(self, interaction: discord.Interaction) -> None:
+        await open_config(interaction, "thanks")
 
 
 async def setup(bot: commands.Bot) -> None:

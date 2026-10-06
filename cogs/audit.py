@@ -1,17 +1,16 @@
 import logging
 
-import aiosqlite
 import discord
 from discord import app_commands
 from discord.ext import commands
 
+import module_config
 import module_settings
 from globals import ERROR_MESSAGE, PRIMARY, SECONDARY, TERTIARY
 from ui import (
     ErrorUI,
-    ExceptionUI,
-    InfoUI,
     LargeSeparator,
+    open_config,
 )
 
 log = logging.getLogger(__name__)
@@ -73,81 +72,15 @@ class AuditCog(
         return "Unknown Channel"
 
     async def cog_load(self) -> None:
-        async with aiosqlite.connect(self.db_path) as conn:
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS log_channels (
-                    guild_id TEXT PRIMARY KEY,
-                    channel_id TEXT NOT NULL
-                )
-            """)
-            await conn.commit()
-
-    @app_commands.command(
-        name="channel",
-        description="Set the channel for server logs.",
-    )
-    @app_commands.describe(channel="The channel to send logs to.")
-    @app_commands.checks.has_permissions(manage_guild=True)
-    @app_commands.guild_only()
-    async def channel(
-        self,
-        interaction: discord.Interaction,
-        channel: discord.TextChannel | None = None,
-    ) -> None:
-        if not interaction.guild:
-            return
-
-        await interaction.response.defer()
-
-        if channel is None:
-            try:
-                async with aiosqlite.connect(self.db_path) as conn:
-                    await conn.execute(
-                        "DELETE FROM log_channels WHERE guild_id = ?",
-                        (str(interaction.guild.id),),
-                    )
-                    await conn.commit()
-            except Exception:
-                log.exception(
-                    "failed to reset logging channel in guild %s",
-                    interaction.guild.id,
-                )
-                await interaction.followup.send(view=ExceptionUI())
-                return
-            view = InfoUI(
-                title="Logging Channel Reset",
-                subtitle="**Logging channel settings have been reset.**",
-            )
-            await interaction.followup.send(view=view)
-            return
-
-        try:
-            async with aiosqlite.connect(self.db_path) as conn:
-                await conn.execute(
-                    """
-                    INSERT OR REPLACE INTO log_channels (guild_id, channel_id)
-                    VALUES (?, ?)
-                    """,
-                    (str(interaction.guild.id), str(channel.id)),
-                )
-                await conn.commit()
-        except Exception:
-            log.exception(
-                "Failed to set log channel for guild %s.",
-                interaction.guild.id,
-            )
-            view = ErrorUI(message="**Something went wrong saving that.**")
-            await interaction.followup.send(view=view)
-            return
-
-        view = InfoUI(
-            title="Logging",
-            subtitle=f"**Logging channel set to {channel.mention}.**",
+        await module_config.migrate_legacy(
+            self.db_path,
+            "log_channels",
+            "audit",
+            lambda row: (int(row[0]), {"log_channel": row[1]}),
         )
-        await interaction.followup.send(view=view)
 
-    @channel.error
-    async def channel_error(
+    # cogwide error handling
+    async def cog_app_command_error(
         self,
         interaction: discord.Interaction,
         error: app_commands.AppCommandError,
@@ -159,11 +92,19 @@ class AuditCog(
         else:
             msg = ERROR_MESSAGE
 
-        error_ui = ErrorUI(msg)
+        view = ErrorUI(msg)
         if interaction.response.is_done():
-            await interaction.edit_original_response(view=error_ui)
+            await interaction.followup.send(view=view, ephemeral=True)
         else:
-            await interaction.response.send_message(view=error_ui, ephemeral=False)
+            await interaction.response.send_message(view=view, ephemeral=True)
+
+    @app_commands.command(
+        name="config",
+        description="Change audit log settings for this server.",
+    )
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def config(self, interaction: discord.Interaction) -> None:
+        await open_config(interaction, "audit")
 
     async def get_log_channel(
         self,
@@ -173,22 +114,8 @@ class AuditCog(
         if not await module_settings.is_enabled(guild_id, "audit"):
             return None
 
-        try:
-            async with (
-                aiosqlite.connect(self.db_path) as conn,
-                conn.execute(
-                    "SELECT channel_id FROM log_channels WHERE guild_id = ?",
-                    (str(guild_id),),
-                ) as cursor,
-            ):
-                row = await cursor.fetchone()
-        except Exception:
-            return None
-
-        if row is None:
-            return None
-
-        return self.bot.get_channel(int(row[0]))
+        channel_id = await module_config.get(guild_id, "audit", "log_channel")
+        return self.bot.get_channel(int(channel_id)) if channel_id else None
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:

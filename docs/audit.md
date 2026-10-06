@@ -3,34 +3,32 @@ Guild audit logging. Once a log channel is set, the bot posts a log message ther
 Command group name: `audit`
 
 ## Storage
-Log channels are stored in a SQLite database at `data/logging.db`, in a table called `log_channels`. Each row holds a guild id and the id of its log channel. The table is created automatically when the cog loads, if it does not already exist.
-Setting a log channel for a guild that already has one will overwrite the old value.
+Settings are stored with the rest of Melvin's module settings, in `data/modules.db`. See the modules documentation for details.
 
-## channel command
-Path: `/audit channel`
-Set or reset the channel for guild logs.
+## config command
+Path: `/audit config`
+Change audit log settings for this server.
 
 **Parameters**
-
-| Name | Type | Required | Description |
-|------|------|----------|--------------|
-| channel | text channel | no | The channel to send logs to. Leave empty to turn logging off. |
+None.
 
 **Permissions**
 Requires Manage Server. Guild only.
 
 **Behavior**
-The command defers its response.
-If a channel is given, it is saved as the guild's log channel and the command replies confirming the new channel.
-If no channel is given, the guild's logging settings are deleted and the command replies confirming the reset. Nothing is logged until a channel is set again.
+The command replies with a settings card listing each setting, what it does, and its current value. Channels and roles are picked from a select menu, and deselecting clears them. Other settings have an Edit button that opens a form, and leaving the form empty resets the setting to its default.
+Each change saves straight away and the card updates in place. Only members with Manage Server can use the card, and it stops responding after 5 minutes.
+The same settings can be changed from the dashboard on the website, under Config on the module's card.
+
+**Settings**
+
+| Setting | Description |
+|------|--------------|
+| Log channel | The channel audit logs are posted in. Nothing is logged until one is set. |
 
 **Example**
-Input: `/audit channel channel: #mod-logs`
-Output: `**Logging**`, subtitle: `Logging channel set to #mod-logs.`
-
-**Error handling**
-If the command user lacks Manage Server, or the command is used outside a guild, the command replies with an error message.
-If saving or resetting the channel fails, the command replies with a generic error message and the details are written to the bot's log.
+Input: `/audit config`, then pick `#mod-logs` as the log channel.
+Output: The card updates to show `Set to #mod-logs`.
 
 ## Logged events
 Every log message includes a timestamp and an accent color. Green is used for things being created or joining, red for things being deleted or leaving, and orange for changes.

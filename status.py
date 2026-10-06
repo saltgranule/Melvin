@@ -64,6 +64,8 @@ def _format_seconds(seconds: int) -> str:
 async def init_db() -> None:
     await asyncio.to_thread(DATA_DIR.mkdir, parents=True, exist_ok=True)
     async with aiosqlite.connect(DB_PATH) as db:
+        # the bot writes while the status page reads, WAL keeps them from blocking each other
+        await db.execute("PRAGMA journal_mode=WAL")
         await db.execute(
             """
             CREATE TABLE IF NOT EXISTS shard_latency (

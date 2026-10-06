@@ -8,6 +8,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from flask import (
@@ -18,11 +19,13 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_file,
     session,
     url_for,
 )
 from werkzeug.wrappers import Response
 
+import module_config
 import module_settings
 from globals import ADD_BOT_URL
 
@@ -39,6 +42,12 @@ SCOPES = "identify guilds"
 
 ADMINISTRATOR = 1 << 3
 MANAGE_GUILD = 1 << 5
+MANAGE_ROLES = 1 << 28
+PERMISSION_BITS = {"manage_guild": MANAGE_GUILD, "manage_roles": MANAGE_ROLES}
+
+TEXT_CHANNEL = 0
+# channels and roles fetched with the bot's token are reused for this long
+BOT_CACHE_SECONDS = 30
 
 # how long a user's server list is trusted before asking discord again, saving a
 # setting uses a much shorter window so lost permissions take effect quickly
@@ -68,24 +77,41 @@ def is_configured() -> bool:
     return bool(config["client_secret"] and config["redirect_uri"])
 
 
+# expired sessions are cleared at most this often, on any dashboard request
+SESSION_CLEANUP_SECONDS = 3600
+_state = {"db_ready": False, "cleaned_at": 0.0}
+
+
 # session storage, the cookie only holds a random id and this keeps its hash
 def _connect() -> sqlite3.Connection:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(SESSIONS_DB)
     conn.row_factory = sqlite3.Row
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS sessions (
-            sid_hash TEXT PRIMARY KEY,
-            user TEXT NOT NULL,
-            access_token TEXT NOT NULL,
-            guilds TEXT,
-            guilds_fetched_at REAL NOT NULL DEFAULT 0,
-            expires_at REAL NOT NULL
+    if not _state["db_ready"]:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sessions (
+                sid_hash TEXT PRIMARY KEY,
+                user TEXT NOT NULL,
+                access_token TEXT NOT NULL,
+                guilds TEXT,
+                guilds_fetched_at REAL NOT NULL DEFAULT 0,
+                expires_at REAL NOT NULL
+            )
+            """,
         )
-        """,
-    )
+        _state["db_ready"] = True
     return conn
+
+
+def _cleanup_sessions(*, force: bool = False) -> None:
+    now = time.time()
+    if not force and now - _state["cleaned_at"] < SESSION_CLEANUP_SECONDS:
+        return
+    _state["cleaned_at"] = now
+    with _connect() as conn:
+        conn.execute("DELETE FROM sessions WHERE expires_at <= ?", (now,))
 
 
 def _hash_sid(sid: str) -> str:
@@ -94,9 +120,8 @@ def _hash_sid(sid: str) -> str:
 
 def _create_session(user: dict, access_token: str, expires_in: int) -> str:
     sid = secrets.token_urlsafe(32)
+    _cleanup_sessions(force=True)
     with _connect() as conn:
-        # clear out expired sessions while we're here
-        conn.execute("DELETE FROM sessions WHERE expires_at <= ?", (time.time(),))
         conn.execute(
             """
             INSERT INTO sessions (sid_hash, user, access_token, expires_at)
@@ -116,6 +141,7 @@ def current_session() -> sqlite3.Row | None:
     if "dashboard_session" in g:
         return g.dashboard_session
 
+    _cleanup_sessions()
     row = None
     sid = session.get("sid")
     if sid:
@@ -154,11 +180,12 @@ def _discord_request(
     path: str,
     *,
     token: str | None = None,
+    bot: bool = False,
     form: dict[str, str] | None = None,
 ) -> dict | list:
     headers = {"Accept": "application/json", "User-Agent": "Melvin-Dashboard"}
     if token:
-        headers["Authorization"] = f"Bearer {token}"
+        headers["Authorization"] = f"{'Bot' if bot else 'Bearer'} {token}"
 
     data = None
     if form is not None:
@@ -217,7 +244,13 @@ def manageable_guilds(
         return cached
 
     guilds = [
-        {"id": guild["id"], "name": guild["name"], "icon": guild.get("icon")}
+        {
+            "id": guild["id"],
+            "name": guild["name"],
+            "icon": guild.get("icon"),
+            "owner": bool(guild.get("owner")),
+            "permissions": int(guild.get("permissions", 0)),
+        }
         for guild in raw
         if _can_manage(guild)
     ]
@@ -227,6 +260,80 @@ def manageable_guilds(
             (json.dumps(guilds), time.time(), row["sid_hash"]),
         )
     return guilds
+
+
+def has_permission(guild: dict, permission: str | None) -> bool:
+    if permission is None or guild.get("owner"):
+        return True
+    permissions = guild.get("permissions", 0)
+    return bool(permissions & ADMINISTRATOR or permissions & PERMISSION_BITS[permission])
+
+
+_bot_cache: dict[str, tuple[float, dict | list]] = {}
+
+
+def _bot_request(path: str, *, fresh: bool = False) -> dict | list:
+    token = os.environ.get("TOKEN")
+    if not token:
+        raise DiscordError(0)
+
+    cached = _bot_cache.get(path)
+    if cached and not fresh and time.time() - cached[0] < BOT_CACHE_SECONDS:
+        return cached[1]
+
+    data = _discord_request(path, token=token, bot=True)
+    _bot_cache[path] = (time.time(), data)
+    return data
+
+
+def guild_context(guild_id: int, user_id: str, *, fresh: bool = False) -> dict:
+    """The channels and roles melvin can use in a guild, as the dashboard's config pages need them."""
+    bot_user = _bot_request("/users/@me")
+
+    # these don't depend on each other, so they're fetched together instead of one by one
+    paths = {
+        "guild": f"/guilds/{guild_id}",
+        "channels": f"/guilds/{guild_id}/channels",
+        "bot_member": f"/guilds/{guild_id}/members/{bot_user['id']}",
+        "member": f"/guilds/{guild_id}/members/{user_id}",
+    }
+    with ThreadPoolExecutor(max_workers=len(paths)) as pool:
+        futures = {
+            name: pool.submit(_bot_request, path, fresh=fresh)
+            for name, path in paths.items()
+        }
+        results = {name: future.result() for name, future in futures.items()}
+    guild, channels = results["guild"], results["channels"]
+
+    positions = {role["id"]: role["position"] for role in guild["roles"]}
+    is_owner = guild["owner_id"] == user_id
+    bot_top = max(
+        (positions.get(role, 0) for role in results["bot_member"]["roles"]),
+        default=0,
+    )
+    user_top = None if is_owner else max(
+        (positions.get(role, 0) for role in results["member"]["roles"]),
+        default=0,
+    )
+
+    roles = sorted(guild["roles"], key=lambda role: role["position"], reverse=True)
+    return {
+        "channels": [
+            (channel["id"], f"#{channel['name']}")
+            for channel in sorted(channels, key=lambda channel: channel["position"])
+            if channel["type"] == TEXT_CHANNEL
+        ],
+        # the same rules as the discord side, so neither can hand out more than the other
+        "roles": [
+            (role["id"], role["name"])
+            for role in roles
+            if role["id"] != str(guild_id)
+            and not role.get("managed")
+            and role["position"] < bot_top
+            and (user_top is None or role["position"] < user_top)
+        ],
+        "role_names": {role["id"]: role["name"] for role in roles},
+    }
 
 
 def bot_guild_ids() -> set[str]:
@@ -383,6 +490,7 @@ def logout() -> Response:
     sid = session.get("sid")
     if sid:
         _delete_session(sid)
+    _cleanup_sessions(force=True)
     session.clear()
     return redirect(url_for("home"))
 
@@ -427,8 +535,20 @@ async def modules(guild_id: int) -> str | Response:
 
     await module_settings.init_db()
     disabled = await module_settings.disabled_modules(guild_id)
+
+    # set after a save without the page's script, see _toggle_reply
+    toggled = request.args.get("toggled")
+    saved_message = (
+        f"{module_settings.MODULES[toggled][0]} turned "
+        f"{'off' if toggled in disabled else 'on'}. "
+        "Changes apply in Discord within a few seconds."
+        if toggled in module_settings.MODULES
+        else None
+    )
+
     return render_template(
         "dashboard_guild.html",
+        saved_message=saved_message,
         active="dashboard",
         guild={
             "id": match["id"],
@@ -443,6 +563,7 @@ async def modules(guild_id: int) -> str | Response:
                 "label": label,
                 "description": description,
                 "enabled": key not in disabled,
+                "configurable": module_config.is_configurable(key),
             }
             for key, (label, description) in module_settings.MODULES.items()
         ],
@@ -464,7 +585,14 @@ def _toggle_reply(
         return redirect(url_for("dashboard.index"))
     if message is not None:
         abort(status)
-    return redirect(url_for("dashboard.modules", guild_id=guild_id))
+    # tells the page which module changed, so it can confirm the save
+    return redirect(
+        url_for(
+            "dashboard.modules",
+            guild_id=guild_id,
+            toggled=request.view_args["module"],
+        ),
+    )
 
 
 @bp.route("/<int:guild_id>/modules/<module>", methods=["POST"])
@@ -501,3 +629,193 @@ async def toggle_module(guild_id: int, module: str) -> Response | tuple[Response
         return _toggle_reply(guild_id, "Couldn't save that, please try again.", 500)
 
     return _toggle_reply(guild_id, None, 200, enabled)
+
+
+def _check_value(
+    setting: module_config.Setting,
+    value: str | None,
+    guild: dict,
+    context: dict,
+) -> None:
+    """Checks that only the dashboard can do, raising ConfigError like clean_value."""
+    if not has_permission(guild, setting.permission):
+        needed = (setting.permission or "").replace("_", " ").title()
+        msg = f"You need {needed} to change this."
+        raise module_config.ConfigError(msg)
+    if value is None:
+        return
+    if setting.kind == "channel" and value not in dict(context["channels"]):
+        msg = "That channel isn't available, Melvin can only use text channels."
+        raise module_config.ConfigError(msg)
+    if setting.kind == "role" and value not in dict(context["roles"]):
+        msg = "That role is above Melvin's or your top role, or can't be given out."
+        raise module_config.ConfigError(msg)
+
+
+def _config_fields(
+    module: str,
+    values: dict[str, str | None],
+    errors: dict[str, str],
+    guild: dict,
+    context: dict,
+) -> list[dict]:
+    fields = []
+    for setting in module_config.CONFIG[module]:
+        value = values.get(setting.key)
+        options: list[tuple[str, str]] = []
+        if setting.kind == "channel":
+            options = list(context["channels"])
+        elif setting.kind == "role":
+            options = list(context["roles"])
+        elif setting.kind == "choice":
+            options = list(setting.choices)
+
+        # keep showing a saved channel or role that's since gone or out of reach
+        if value and setting.kind in {"channel", "role"} and value not in dict(options):
+            name = context["role_names"].get(value) if setting.kind == "role" else None
+            options.insert(0, (value, name or f"Unknown {setting.kind}"))
+
+        fields.append(
+            {
+                "setting": setting,
+                "value": value,
+                "options": options,
+                "error": errors.get(setting.key),
+                "locked": not has_permission(guild, setting.permission),
+                # only swatch real hex codes, values typed into a failed save aren't checked yet
+                "colors": (
+                    value.split("-")
+                    if setting.kind == "color"
+                    and value
+                    and module_config.COLOR_PATTERN.match(value)
+                    else []
+                ),
+            },
+        )
+    return fields
+
+
+@bp.route("/<int:guild_id>/modules/<module>/config", methods=["GET", "POST"])
+async def module_config_page(guild_id: int, module: str) -> str | Response | tuple[str, int]:
+    if not module_config.is_configurable(module):
+        abort(404)
+
+    posting = request.method == "POST"
+    if posting:
+        _check_csrf()
+
+    try:
+        guilds = manageable_guilds(
+            **({"max_age": WRITE_CHECK_SECONDS, "strict": True} if posting else {}),
+        )
+    except DiscordError:
+        return redirect(url_for("dashboard.index"))
+    if guilds is None:
+        return redirect(url_for("dashboard.index"))
+    match = _find_guild(guilds, guild_id)
+    if match is None:
+        abort(404)
+
+    user = current_user()
+    try:
+        context = guild_context(guild_id, user["id"], fresh=posting)
+    except (DiscordError, KeyError):
+        log.exception("Couldn't load channels and roles for guild %s", guild_id)
+        context = None
+
+    await module_config.init_db()
+    values = await module_config.get_all(guild_id, module)
+    errors: dict[str, str] = {}
+
+    if posting and context is not None:
+        updates: dict[str, str | None] = {}
+        images: dict[str, object] = {}
+        submitted = dict(values)
+
+        for setting in module_config.CONFIG[module]:
+            key = setting.key
+            if setting.kind == "image":
+                upload = request.files.get(key)
+                if upload and upload.filename:
+                    images[key] = upload
+                elif request.form.get(f"{key}__remove") == "on" and values[key]:
+                    images[key] = None
+                continue
+
+            raw = request.form.get(key, "")
+            submitted[key] = raw or None
+            try:
+                value = module_config.clean_value(setting, raw)
+                # an empty field resets to the default, which counts as unchanged
+                if (value or setting.default) == values[key]:
+                    continue
+                _check_value(setting, value, match, context)
+                updates[key] = value
+            except module_config.ConfigError as e:
+                errors[key] = str(e)
+
+        for key, upload in images.items():
+            setting = module_config.get_setting(module, key)
+            try:
+                _check_value(setting, None, match, context)
+                if upload is None:
+                    await module_config.remove_image(guild_id, module, key)
+                else:
+                    data = upload.read(module_config.MAX_IMAGE_BYTES + 1)
+                    await module_config.replace_image(guild_id, module, key, upload.filename, data)
+            except module_config.ConfigError as e:
+                errors[key] = str(e)
+
+        if not errors:
+            if updates:
+                await module_config.set_values(guild_id, module, updates)
+            return redirect(
+                url_for("dashboard.module_config_page", guild_id=guild_id, module=module, saved=1),
+            )
+        values = submitted
+
+    label, description = module_settings.MODULES[module]
+    page = render_template(
+        "dashboard_config.html",
+        active="dashboard",
+        guild={
+            "id": match["id"],
+            "name": match["name"],
+            "icon_url": guild_icon_url(match),
+            "initials": initials(match["name"]),
+        },
+        sections=_sidebar(guild_id, "dashboard.modules"),
+        module={
+            "key": module,
+            "label": label,
+            "description": description,
+            "enabled": module not in await module_settings.disabled_modules(guild_id),
+        },
+        fields=_config_fields(module, values, errors, match, context) if context else [],
+        unavailable=context is None,
+        saved=request.args.get("saved") == "1" and not posting,
+        errors=errors,
+    )
+    return (page, 400) if errors else page
+
+
+@bp.route("/<int:guild_id>/modules/<module>/config/<key>.image")
+async def config_image(guild_id: int, module: str, key: str) -> Response:
+    if not module_config.is_configurable(module):
+        abort(404)
+    try:
+        setting = module_config.get_setting(module, key)
+        guilds = manageable_guilds()
+    except (KeyError, DiscordError):
+        abort(404)
+    if setting.kind != "image" or guilds is None or _find_guild(guilds, guild_id) is None:
+        abort(404)
+
+    path = await module_config.get(guild_id, module, key)
+    if not path:
+        abort(404)
+    file = Path(path).resolve()
+    # only ever serve files from the data folder
+    if not file.is_file() or DATA_DIR.resolve() not in file.parents:
+        abort(404)
+    return send_file(file)

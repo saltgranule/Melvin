@@ -6,8 +6,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+import module_config
 import module_settings
-from ui import CasesView, ErrorUI, InfoUI, PositiveUI
+from ui import CasesView, ErrorUI, InfoUI, PositiveUI, open_config
 
 log = logging.getLogger(__name__)
 
@@ -55,14 +56,6 @@ class ModCog(
                 );
                 """,
             )
-            await conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS auto_roles (
-                    guild_id INTEGER PRIMARY KEY,
-                    role_id INTEGER NOT NULL
-                );
-                """,
-            )
             await conn.commit()
 
     async def handle_dm(
@@ -87,32 +80,25 @@ class ModCog(
 
     async def cog_load(self) -> None:
         await self._ensure_db()
+        await module_config.migrate_legacy(
+            self.db_path,
+            "auto_roles",
+            "mod",
+            lambda row: (int(row[0]), {"auto_role": str(row[1])}),
+        )
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
         if not await module_settings.is_enabled(member.guild.id, "mod"):
             return
 
-        async with (
-            aiosqlite.connect(self.db_path) as conn,
-            conn.execute(
-                "SELECT role_id FROM auto_roles WHERE guild_id = ?",
-                (member.guild.id,),
-            ) as cursor,
-        ):
-            row = await cursor.fetchone()
-
-        if not row:
-            return
-
-        role_id = row[0]
-        role = member.guild.get_role(role_id)
-
+        role_id = await module_config.get(member.guild.id, "mod", "auto_role")
+        role = member.guild.get_role(int(role_id)) if role_id else None
         if role is None:
             return
 
         try:
-            await member.add_roles(role, reason="/role auto configuration")
+            await member.add_roles(role, reason="/mod config auto-role")
         except discord.HTTPException:
             pass
 
@@ -1054,92 +1040,14 @@ class ModCog(
             allowed_mentions=discord.AllowedMentions(users=False, roles=False),
         )
 
-    # role auto cmd
-    @role.command(
-        name="auto",
-        description="Set or clear the role automatically given to new members.",
+    # config cmd
+    @app_commands.command(
+        name="config",
+        description="Change moderation settings for this server.",
     )
-    @app_commands.describe(
-        role="The role to auto-assign on join. blank this to clear the current auto-role.",
-    )
-    @app_commands.checks.has_permissions(manage_roles=True)
-    async def role_auto(
-        self,
-        interaction: discord.Interaction,
-        role: discord.Role | None = None,
-    ) -> None:
-        await interaction.response.defer()
-
-        if not interaction.guild or not isinstance(interaction.user, discord.Member):
-            return
-
-        # clear case
-        if role is None:
-            async with aiosqlite.connect(self.db_path) as conn:
-                await conn.execute(
-                    "DELETE FROM auto_roles WHERE guild_id = ?",
-                    (interaction.guild_id,),
-                )
-                await conn.commit()
-
-            view = PositiveUI(
-                title="Auto-Role Reset",
-                subtitle="**New members will no longer be given the role automatically.**",
-            )
-            await interaction.followup.send(view=view)
-            return
-
-        # guard clause
-        if role.is_default():
-            await interaction.followup.send(
-                view=ErrorUI("**You cannot set that as an auto-role.**"),
-            )
-            return
-        if role.managed:
-            await interaction.followup.send(
-                view=ErrorUI(
-                    "**That role is managed by an app and can't be assigned.**",
-                ),
-            )
-            return
-        if (
-            role.position >= interaction.user.top_role.position
-            and interaction.user.id != interaction.guild.owner_id
-        ):
-            await interaction.followup.send(
-                view=ErrorUI(
-                    "**You tried to set a role equal to or above your top role.**",
-                ),
-            )
-            return
-        if role.position >= interaction.guild.me.top_role.position:
-            await interaction.followup.send(
-                view=ErrorUI(
-                    "**I tried to set a role equal to or above my top role.**",
-                ),
-            )
-            return
-
-        # upsert
-        async with aiosqlite.connect(self.db_path) as conn:
-            await conn.execute(
-                """
-                INSERT INTO auto_roles (guild_id, role_id)
-                VALUES (?, ?)
-                ON CONFLICT(guild_id) DO UPDATE SET role_id = excluded.role_id
-                """,
-                (interaction.guild_id, role.id),
-            )
-            await conn.commit()
-
-        view = PositiveUI(
-            title="Auto-Role Set",
-            subtitle=f"**New members will automatically receive {role.mention}.**",
-        )
-        await interaction.followup.send(
-            view=view,
-            allowed_mentions=discord.AllowedMentions(roles=False),
-        )
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def config(self, interaction: discord.Interaction) -> None:
+        await open_config(interaction, "mod")
 
 
 async def setup(bot: commands.Bot) -> None:

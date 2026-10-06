@@ -1,25 +1,26 @@
-import re
+import logging
+import time
 from typing import TYPE_CHECKING
 
 import discord
 from discord import app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 
+import module_config
 import module_settings
 from globals import (
     ERROR_MESSAGE,
     LOG_CHANNEL,
     MELVIN_BANNER,
-    QUATERNARY,
     DisplayNameEffect,
     DisplayNameFont,
 )
-from ui import ErrorUI, GalleryWithItem, PositiveUI
+from ui import ErrorUI, GalleryWithItem, open_config
 
 if TYPE_CHECKING:
     from main import Melvin
 
-COLOR_PATTERN = re.compile(r"^[0-9a-fA-F]{6}(?:-[0-9a-fA-F]{6})?$")
+log = logging.getLogger(__name__)
 
 
 @app_commands.guild_only
@@ -32,6 +33,15 @@ class StyleCog(
     def __init__(self, bot: Melvin) -> None:
         super().__init__()
         self.bot = bot
+        # what was last sent to discord per guild, so unchanged styles aren't resent
+        self._applied: dict[int, tuple[str | None, ...]] = {}
+        self._synced_at = time.time()
+
+    async def cog_load(self) -> None:
+        self.sync_styles.start()
+
+    async def cog_unload(self) -> None:
+        self.sync_styles.cancel()
 
     # cogwide error handling
     async def cog_app_command_error(
@@ -48,20 +58,64 @@ class StyleCog(
 
         view = ErrorUI(msg)
         if interaction.response.is_done():
-            await interaction.edit_original_response(view=view)
+            await interaction.followup.send(view=view, ephemeral=True)
         else:
-            await interaction.response.send_message(view=view, ephemeral=False)
+            await interaction.response.send_message(view=view, ephemeral=True)
+
+    async def apply_style(self, guild: discord.Guild) -> None:
+        values = await module_config.get_all(guild.id, "style")
+        key = (values["font"], values["effect"], values["colors"])
+        if self._applied.get(guild.id) == key:
+            return
+
+        colors = (values["colors"] or "FFFFFF").split("-")
+        effect = DisplayNameEffect[values["effect"]]
+        # gradients need two colors and everything else uses one
+        if effect is DisplayNameEffect.gradient:
+            colors = [colors[0], colors[-1]]
+        else:
+            colors = colors[:1]
+
+        await self.bot.set_name_style(
+            guild=guild,
+            font_id=DisplayNameFont[values["font"]],
+            effect_id=effect,
+            colors=colors,
+        )
+        self._applied[guild.id] = key
+
+    # picks up changes made on the dashboard, which can't reach the bot directly
+    @tasks.loop(seconds=15)
+    async def sync_styles(self) -> None:
+        since = self._synced_at
+        started = time.time()
+        changed = await module_config.changed_since("style", since)
+        self._synced_at = started
+
+        for guild_id in changed:
+            guild = self.bot.get_guild(guild_id)
+            if guild is None or not await module_settings.is_enabled(guild_id, "style"):
+                continue
+            try:
+                await self.apply_style(guild)
+            except discord.HTTPException:
+                log.exception("Failed to apply the name style in guild %s", guild_id)
+                # look from the same point next time, so this guild is retried
+                self._synced_at = since
+
+    @sync_styles.before_loop
+    async def before_sync_styles(self) -> None:
+        await self.bot.wait_until_ready()
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild) -> None:
-        # only the default style is part of the module, the join log always happens
+        # only the style is part of the module, the join log always happens
         if await module_settings.is_enabled(guild.id, "style"):
-            await self.bot.set_name_style(
-                guild=guild,
-                font_id=DisplayNameFont.cherry_bomb,
-                effect_id=DisplayNameEffect.gradient,
-                colors=[QUATERNARY.removeprefix("#"), "FFFFFF"],
-            )
+            try:
+                await self.apply_style(guild)
+            except discord.HTTPException:
+                log.exception("Failed to apply the name style in guild %s", guild.id)
+
         log_channel = self.bot.get_channel(LOG_CHANNEL)
         if log_channel is None or not isinstance(log_channel, discord.TextChannel):
             return
@@ -84,92 +138,12 @@ class StyleCog(
             pass
 
     @app_commands.command(
-        name="set",
-        description="Set Melvin's name style for this guild. Omit all three arguments to reset.",
+        name="config",
+        description="Change Melvin's name style for this server.",
     )
     @app_commands.checks.has_permissions(manage_guild=True)
-    @app_commands.describe(
-        font="The display name's font. Leave Empty for no change.",
-        effect="The display name's effect. Leave Empty for no change.",
-        colors="The display name's colors. Leave Empty for no change.",
-    )
-    @app_commands.choices(
-        font=[
-            app_commands.Choice(name="Sakura", value="cherry_bomb"),
-            app_commands.Choice(name="Jellybean", value="chicle"),
-            app_commands.Choice(name="Modern", value="museo_moderno"),
-            app_commands.Choice(name="Medieval", value="neo_castel"),
-            app_commands.Choice(name="8Bit", value="pixelify"),
-            app_commands.Choice(name="Vampyre", value="sinistre"),
-            app_commands.Choice(name="GG Sans (Default)", value="default"),
-            app_commands.Choice(name="Tempo", value="zilla_slab"),
-        ],
-        effect=[
-            app_commands.Choice(name="Solid", value="solid"),
-            app_commands.Choice(name="Gradient", value="gradient"),
-            app_commands.Choice(name="Neon", value="neon"),
-            app_commands.Choice(name="Toon", value="toon"),
-            app_commands.Choice(name="Pop", value="pop"),
-        ],
-    )
-    async def set(
-        self,
-        interaction: discord.Interaction,
-        font: str | None = None,
-        effect: str | None = None,
-        colors: str | None = None,
-    ) -> None:
-        if interaction.guild is None:
-            return
-
-        style = await self.bot.get_name_style(interaction.guild)
-
-        selected_font = DisplayNameFont[font] if font is not None else style["font_id"]
-        selected_effect = (
-            DisplayNameEffect[effect] if effect is not None else style["effect_id"]
-        )
-
-        if colors is not None:
-            valid = bool(COLOR_PATTERN.match(colors))
-            dashed = "-" in colors
-            effect_name = effect if effect is not None else selected_effect.name
-
-            if (
-                not valid
-                or (effect_name == "gradient" and not dashed)
-                or (effect_name != "gradient" and dashed)
-            ):
-                msg = (
-                    "Gradient must be of the form `ABCDEF-123456`."
-                    if effect_name == "gradient"
-                    else "Color must be of the form `ABCDEF`."
-                )
-                await interaction.response.send_message(view=ErrorUI(msg))
-                return
-
-            color_list = colors.split("-")
-        else:
-            color_list = style["colors"]
-
-        if font is None and effect is None and colors is None:
-            await self.bot.reset_name_style(guild=interaction.guild)
-            view = PositiveUI(
-                title="Style Reset",
-                subtitle="Melvin's display name style has been reset for this server.",
-            )
-        else:
-            await self.bot.set_name_style(
-                guild=interaction.guild,
-                font_id=selected_font,
-                effect_id=selected_effect,
-                colors=color_list,
-            )
-            view = PositiveUI(
-                title="Style Set",
-                subtitle="Melvin's display name style has been set for this server.",
-            )
-
-        await interaction.response.send_message(view=view)
+    async def config(self, interaction: discord.Interaction) -> None:
+        await open_config(interaction, "style", on_change=self.apply_style)
 
 
 async def setup(bot: Melvin) -> None:

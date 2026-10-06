@@ -35,6 +35,34 @@ a {
     color: #252422;
 }
 
+/* status banners, the colors come from globals.py through the theme variables in base.html */
+.banner {
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.5;
+    color: #ffffff;
+}
+
+.banner[hidden] {
+    display: none;
+}
+
+.banner-success {
+    background: var(--secondary);
+}
+
+.banner-error {
+    background: var(--tertiary);
+}
+
+/* dark text, since white on the primary orange is too hard to read */
+.banner-misc {
+    background: var(--primary);
+    color: #252422;
+}
+
 :focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
@@ -753,12 +781,6 @@ a {
     gap: 16px;
 }
 
-.status-notice {
-    font-size: 15px;
-    color: #6b675f;
-    margin-bottom: 28px;
-}
-
 .status-card {
     display: flex;
     flex-direction: column;
@@ -1087,50 +1109,183 @@ a {
     min-width: 0;
 }
 
-.dashboard-error {
-    color: #252422;
-    font-weight: 600;
+.dashboard-search {
+    max-width: 320px;
 }
 
-.dashboard-error[hidden] {
+.dashboard-module[hidden] {
     display: none;
 }
 
-/* flat like the chart tooltip, orange when on */
-.dashboard-switch {
-    position: relative;
+.dashboard-card-name mark,
+.dashboard-module-description mark {
+    background: color-mix(in srgb, var(--primary) 35%, transparent);
+    color: inherit;
+    border-radius: 2px;
+}
+
+/* the switch and config button sit together at the bottom of the card */
+.dashboard-module-actions {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    margin-top: auto;
+}
+
+.dashboard-toggle {
+    display: flex;
+}
+
+.dashboard-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 560px;
+}
+
+.dashboard-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.dashboard-field-label {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.dashboard-field-description {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #6b675f;
+}
+
+.dashboard-field-error {
+    font-size: 13px;
+    font-weight: 600;
+    color: #252422;
+}
+
+.dashboard-input {
+    width: 100%;
+    font-family: inherit;
+    font-size: 14px;
+    color: #252422;
+    background: #f4f3f0;
+    border: 1px solid #e5e3df;
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
+.dashboard-input:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 1px;
+    border-radius: 8px;
+}
+
+.dashboard-input:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+textarea.dashboard-input {
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.dashboard-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* square like the tooltip's key */
+.dashboard-swatch {
     flex: 0 0 auto;
-    width: 36px;
+    width: 20px;
     height: 20px;
+    border: 1px solid #e5e3df;
+}
+
+.dashboard-image-preview {
+    display: block;
+    max-width: 320px;
+    max-height: 180px;
+    border: 1px solid #e5e3df;
+    border-radius: 8px;
+    object-fit: contain;
+}
+
+.dashboard-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #252422;
+}
+
+.dashboard-checkbox input {
+    accent-color: var(--primary);
+}
+
+.dashboard-form-actions {
+    display: flex;
+    gap: 12px;
+}
+
+/* two joined buttons, the selected half is filled like .btn-primary (on)
+   or .btn-dark (off), and the other half stays light */
+.dashboard-switch {
+    display: inline-flex;
+    flex: 0 0 auto;
     padding: 0;
     border: none;
-    border-radius: 6px;
-    background: #e5e3df;
+    border-radius: 8px;
+    overflow: hidden;
+    background: none;
+    font-family: inherit;
     cursor: pointer;
-    transition: background 150ms ease;
+    transition: transform 100ms ease;
 }
 
 .dashboard-switch:focus-visible {
-    border-radius: 6px;
+    border-radius: 8px;
 }
 
-.dashboard-switch-knob {
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    width: 12px;
-    height: 12px;
-    border-radius: 3px;
-    background: #ffffff;
-    transition: transform 150ms ease;
+.dashboard-switch-option {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    background: #f4f3f0;
+    color: #726e66;
+    border-bottom: 3px solid #e5e3df;
+    transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
 }
 
-.dashboard-switch[aria-checked="true"] {
+.dashboard-switch[aria-checked="true"] .is-on {
     background: var(--primary);
+    color: #252422;
+    border-bottom-color: #b9762c;
 }
 
-.dashboard-switch[aria-checked="true"] .dashboard-switch-knob {
-    transform: translateX(16px);
+.dashboard-switch[aria-checked="false"] .is-off {
+    background: #252422;
+    color: #ffffff;
+    border-bottom-color: #4a473f;
+}
+
+.dashboard-switch:hover {
+    opacity: 0.9;
+}
+
+.dashboard-switch:active {
+    transform: translateY(2px);
+}
+
+.dashboard-switch:active .dashboard-switch-option {
+    border-bottom-width: 1px;
 }
 
 .dashboard-switch:disabled {

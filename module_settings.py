@@ -23,12 +23,15 @@ MODULES = {
     "style": ("Style", "Melvin's display name style."),
 }
 
-_cache: dict = {"disabled": {}, "loaded_at": 0.0}
+# guild id -> (when it was loaded, the modules it has turned off)
+_cache: dict[int, tuple[float, set[str]]] = {}
 
 
 async def init_db() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     async with aiosqlite.connect(DB_PATH) as db:
+        # lets the bot and the website read and write at the same time without locking each other out
+        await db.execute("PRAGMA journal_mode=WAL")
         await db.execute(
             """
             CREATE TABLE IF NOT EXISTS guild_modules (
@@ -42,25 +45,22 @@ async def init_db() -> None:
         await db.commit()
 
 
-async def _refresh() -> None:
-    disabled: dict[int, set[str]] = {}
+async def disabled_modules(guild_id: int) -> set[str]:
+    cached = _cache.get(guild_id)
+    if cached and time.monotonic() - cached[0] < CACHE_SECONDS:
+        return cached[1]
+
     async with (
         aiosqlite.connect(DB_PATH) as db,
         db.execute(
-            "SELECT guild_id, module FROM guild_modules WHERE enabled = 0",
+            "SELECT module FROM guild_modules WHERE guild_id = ? AND enabled = 0",
+            (guild_id,),
         ) as cursor,
     ):
-        async for guild_id, module in cursor:
-            disabled.setdefault(guild_id, set()).add(module)
+        disabled = {row[0] async for row in cursor}
 
-    _cache["disabled"] = disabled
-    _cache["loaded_at"] = time.monotonic()
-
-
-async def disabled_modules(guild_id: int) -> set[str]:
-    if time.monotonic() - _cache["loaded_at"] > CACHE_SECONDS:
-        await _refresh()
-    return _cache["disabled"].get(guild_id, set())
+    _cache[guild_id] = (time.monotonic(), disabled)
+    return disabled
 
 
 async def is_enabled(guild_id: int | None, module: str) -> bool:
@@ -86,4 +86,4 @@ async def set_enabled(guild_id: int, module: str, *, enabled: bool) -> None:
         )
         await db.commit()
 
-    await _refresh()
+    _cache.pop(guild_id, None)

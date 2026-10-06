@@ -14,7 +14,7 @@ from pathlib import Path
 
 import markdown
 from dotenv import load_dotenv
-from flask import Flask, abort, render_template
+from flask import Flask, Response, abort, render_template
 
 import dashboard
 from globals import (
@@ -44,8 +44,20 @@ app.config.update(
     SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", "true").lower()
     == "true",
     PERMANENT_SESSION_LIFETIME=datetime.timedelta(days=7),
+    # a little over the 8 MB image limit, so flask turns away anything bigger
+    # before reading it, instead of the dashboard finding out afterwards
+    MAX_CONTENT_LENGTH=9 * 1024 * 1024,
 )
 app.register_blueprint(dashboard.bp)
+
+
+@app.after_request
+def add_security_headers(response: Response) -> Response:
+    # no framing the site, no guessing file types, and no full urls sent to other sites
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Referrer-Policy", "same-origin")
+    return response
 
 DOCS_DIR = Path(app.root_path) / "docs"
 bot_process = None

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% from "_banner.html" import banner %}
+{% block content %}
+<div class="docs-layout dashboard-layout">
+    {% include "_dashboard_sidebar.html" %}
+
+    <main class="dashboard-main">
+        <a href="{{ url_for('dashboard.modules', guild_id=guild.id) }}" class="dashboard-back">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Modules
+        </a>
+        <h1 class="status-heading">{{ module.label}} settings</h1>
+        <p class="dashboard-notice">{{ module.description }} You can also change these with /{{ module.key }} config in Discord.</p>
+
+        {% if saved %}
+        {{ banner("success", "Saved. Changes apply in Discord within a few seconds.") }}
+        {% endif %}
+        {% if errors %}
+        {{ banner("error", "Nothing was saved, please fix the settings marked below.") }}
+        {% endif %}
+        {% if not module.enabled %}
+        {{ banner("misc", "The " ~ module.label ~ " module is turned off in this server, so these settings won't do anything until it's turned back on.") }}
+        {% endif %}
+
+        {% if unavailable %}
+        {{ banner("error", "Couldn't load this server's channels and roles from Discord, please try again in a moment.") }}
+        {% else %}
+        <form method="post" enctype="multipart/form-data" class="dashboard-form">
+            <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+
+            {% for field in fields %}
+            {% set setting = field.setting %}
+            {% set id = "setting-" ~ setting.key %}
+            <div class="dashboard-field">
+                <label for="{{ id }}" class="dashboard-field-label">{{ setting.label }}</label>
+                <p class="dashboard-field-description" id="{{ id }}-description">{{ setting.description }}</p>
+
+                {% if setting.kind in ["channel", "role", "choice"] %}
+                <select name="{{ setting.key }}" id="{{ id }}" class="dashboard-input"
+                        aria-describedby="{{ id }}-description" {% if field.locked %}disabled{% endif %}>
+                    {% if setting.kind != "choice" %}
+                    <option value="">None</option>
+                    {% endif %}
+                    {% for value, label in field.options %}
+                    <option value="{{ value }}" {% if value == field.value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+
+                {% elif setting.kind == "image" %}
+                {% if field.value %}
+                <img src="{{ url_for('dashboard.config_image', guild_id=guild.id, module=module.key, key=setting.key) }}"
+                     alt="The current {{ setting.label | lower }}" class="dashboard-image-preview">
+                <label class="dashboard-checkbox">
+                    <input type="checkbox" name="{{ setting.key }}__remove" {% if field.locked %}disabled{% endif %}>
+                    Remove the current image
+                </label>
+                {% endif %}
+                <input type="file" name="{{ setting.key }}" id="{{ id }}" class="dashboard-input"
+                       accept="image/png,image/jpeg,image/gif,image/webp" aria-describedby="{{ id }}-description"
+                       {% if field.locked %}disabled{% endif %}>
+
+                {% elif setting.max_length > 100 %}
+                <textarea name="{{ setting.key }}" id="{{ id }}" class="dashboard-input" rows="4"
+                          maxlength="{{ setting.max_length }}" placeholder="{{ setting.placeholder }}"
+                          aria-describedby="{{ id }}-description" {% if field.locked %}disabled{% endif %}>{{ field.value or "" }}</textarea>
+
+                {% else %}
+                <div class="dashboard-input-row">
+                    {% for color in field.colors %}
+                    <span class="dashboard-swatch" style="background: #{{ color }}" aria-hidden="true"></span>
+                    {% endfor %}
+                    <input type="{{ 'url' if setting.kind == 'url' else 'text' }}" name="{{ setting.key }}" id="{{ id }}"
+                           class="dashboard-input" value="{{ field.value or '' }}" placeholder="{{ setting.placeholder }}"
+                           maxlength="{{ 512 if setting.kind == 'url' else setting.max_length }}"
+                           aria-describedby="{{ id }}-description" {% if field.locked %}disabled{% endif %}>
+                </div>
+                {% endif %}
+
+                {% if field.locked %}
+                <p class="dashboard-field-description">You need {{ setting.permission.replace("_", " ").title() }} to change this.</p>
+                {% endif %}
+                {% if field.error %}
+                <p class="dashboard-field-error" role="alert">{{ field.error }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <div class="dashboard-form-actions">
+                <button type="submit" class="btn btn-primary">Save changes</button>
+                <a href="{{ url_for('dashboard.modules', guild_id=guild.id) }}" class="btn btn-light">Cancel</a>
+            </div>
+        </form>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}

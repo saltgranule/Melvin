@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_banner.html" import banner %}
 {% block meta_tags %}
     <meta property="og:title" content="Status">
     <meta property="og:description" content="A page dedicated to latency information regarding melvin.">
@@ -12,7 +13,8 @@
 {% endblock %}
 {% block content %}
 <section class="section-container status-section" id="status-section">
-    <p class="status-notice" role="status">{{ overall.label }}</p>
+    {% set banner_kinds = {"ok": "success", "degraded": "misc", "down": "error", "unknown": "misc"} %}
+    {{ banner(banner_kinds[overall.state], overall.label) }}
 
     <h1 class="status-heading">latency statistics</h1>
 

@@ -38,6 +38,10 @@ If the command user lacks Manage Server, or the command is used outside a guild,
 
 `/help`, `/latency`, `/melvin`, `/stats`, and `/modules` itself can't be turned off.
 
+## Settings
+Modules with settings have a `config` command, `/audit config`, `/mod config`, `/style config`, `/thanks config`, and `/welcome config`. They all work the same way, and the same settings can be changed from the dashboard under Config on the module's card.
+Settings are stored in the same database, in a table called `guild_settings`. Each row holds a guild id, module, setting, value, and when it was last changed. A guild only has rows for settings it has changed, everything else uses its default.
+
 ## When a module is off
 Its commands reply with an ephemeral error message saying the module is turned off, and that someone with Manage Server can turn it back on with `/modules`.
 Its commands are also left out of `/help` in that guild.

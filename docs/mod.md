@@ -100,30 +100,6 @@ Also rejects role/hierarchy violations against both the command user and the bot
 
 If all checks pass, logs a case as `role_remove`, removes the role, and confirms with the role, member, and case ID.
 
-### /mod role auto
-
-Set or clear the role automatically given to new members.
-
-**Parameters**
-
-| Name | Type | Required | Description |
-|------|------|----------|--------------|
-| role | role | no | The role to give new members when they join. Leave empty to clear the current auto-role. |
-
-**Permissions**
-
-Requires Manage Roles.
-
-**Behavior**
-
-If no role is given, the server's auto-role is cleared and new members stop receiving it.
-
-Otherwise, rejects `@everyone`, roles managed by an app, roles equal to or above the command user's top role (unless they are the guild owner), and roles equal to or above the bot's top role. If all checks pass, the role is saved as the server's auto-role, replacing any previous one.
-
-When a member joins, the bot gives them the auto-role. If the role has since been deleted, or the bot can't assign it, the member is skipped silently.
-
-Auto-roles are not logged as cases.
-
 ## case command group
 
 Path: `/mod case`
@@ -372,3 +348,27 @@ For threads: checks if already unlocked and replies with an error if so, otherwi
 For channels: checks the `@everyone` role's `send_messages` overwrite, replying with an error if it isn't currently set to deny, otherwise resets the overwrite to neutral (inherited).
 
 Confirms with the channel or thread that was unlocked. No case is logged for this command.
+
+## config command
+Path: `/mod config`
+Change moderation settings for this server.
+
+**Parameters**
+None.
+
+**Permissions**
+Requires Manage Server. Guild only.
+
+**Behavior**
+The command replies with a settings card listing each setting, what it does, and its current value. Channels and roles are picked from a select menu, and deselecting clears them. Other settings have an Edit button that opens a form, and leaving the form empty resets the setting to its default.
+Each change saves straight away and the card updates in place. Only members with Manage Server can use the card, and it stops responding after 5 minutes.
+The same settings can be changed from the dashboard on the website, under Config on the module's card.
+
+**Settings**
+
+| Setting | Description |
+|------|--------------|
+| Auto-role | Given to members when they join. Leave empty for none. Changing it also requires Manage Roles. |
+
+The auto-role can't be `@everyone`, a role managed by an app, a role equal to or above Melvin's top role, or a role equal to or above the command user's top role unless they are the guild owner. The dashboard only lists roles that pass these checks.
+When a member joins, the bot gives them the auto-role. If the role has since been deleted, or the bot can't assign it, the member is skipped silently. Auto-roles are not logged as cases.

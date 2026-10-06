@@ -1,3 +1,5 @@
+from .config import ConfigView as ConfigView
+from .config import open_config as open_config
 from .paginator import Paginator as Paginator
 from .views import (
     ActionUI as ActionUI,
