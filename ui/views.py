@@ -18,7 +18,7 @@ from globals import (
 )
 
 
-# HelpView functions to grasp command group details
+# HelpView's helpers, for digging the commands out of a cog's group
 def get_cog_commands(cog: commands.Cog) -> list:
     group = getattr(cog, "__cog_app_commands_group__", None)
     if group is not None:
@@ -52,7 +52,6 @@ def help_page(cog: commands.Cog) -> str:
     return "\n".join(lines)
 
 
-# select menu
 class CogSelect(discord.ui.Select):
     def __init__(self, cogs: list[commands.Cog]) -> None:
         self.cogs_map = {cog.__cog_group_name__: cog for cog in cogs}
@@ -152,7 +151,6 @@ class HelpView(discord.ui.LayoutView):
             await interaction.response.defer()
 
 
-# case ui
 class CaseRemoveButton(discord.ui.Button):
     def __init__(
         self,
@@ -182,7 +180,6 @@ class CaseRemoveButton(discord.ui.Button):
 
         await interaction.response.defer()
 
-        # remove the case
         async with aiosqlite.connect(self.db_path) as conn:
             await conn.execute(
                 "DELETE FROM mod_cases WHERE guild_id = ? AND case_id = ?",
@@ -388,7 +385,6 @@ class GalleryWithItem(discord.ui.MediaGallery):
         super().__init__(discord.MediaGalleryItem(media))
 
 
-# GatedUI
 class GatedUI(discord.ui.LayoutView):
     def __init__(self) -> None:
         super().__init__()
@@ -406,7 +402,6 @@ class GatedUI(discord.ui.LayoutView):
         self.add_item(container)
 
 
-# ResponseUI
 class ResponseUI(discord.ui.LayoutView):
     def __init__(self, subtitle: str, /) -> None:
         super().__init__()
@@ -420,7 +415,6 @@ class ResponseUI(discord.ui.LayoutView):
         self.add_item(container)
 
 
-# InfoUI
 class InfoUI(discord.ui.LayoutView):
     def __init__(self, *, title: str, subtitle: str) -> None:
         super().__init__()
@@ -432,7 +426,6 @@ class InfoUI(discord.ui.LayoutView):
         self.add_item(container)
 
 
-# PositiveUI
 class PositiveUI(discord.ui.LayoutView):
     def __init__(self, *, title: str, subtitle: str) -> None:
         super().__init__()
@@ -445,7 +438,7 @@ class PositiveUI(discord.ui.LayoutView):
         self.add_item(container)
 
 
-# ThankUI, duplicated because im too lazy to deal with the hardcoded positiveUI emoji value
+# PositiveUI with a different emoji. PositiveUI's is hardcoded, and a copy was easier
 class ThankUI(discord.ui.LayoutView):
     def __init__(self, *, title: str, subtitle: str) -> None:
         super().__init__()
@@ -458,7 +451,6 @@ class ThankUI(discord.ui.LayoutView):
         self.add_item(container)
 
 
-# ErrorUI
 class ErrorUI(discord.ui.LayoutView):
     def __init__(self, message: str) -> None:
         super().__init__()
@@ -477,13 +469,11 @@ class ErrorUI(discord.ui.LayoutView):
         self.add_item(container)
 
 
-# ExceptionUI
 class ExceptionUI(ErrorUI):
     def __init__(self) -> None:
         super().__init__(ERROR_MESSAGE)
 
 
-# ActionUI
 class ActionUI(discord.ui.LayoutView):
     def __init__(self) -> None:
         super().__init__()
@@ -503,7 +493,6 @@ class ActionUI(discord.ui.LayoutView):
         self.text_display.content = new_content
 
 
-# LoggingClassUI
 class MiscLoggingClass(discord.ui.LayoutView):
     def __init__(self) -> None:
         super().__init__()

@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 HOLOGRAPHIC_VALUES = (11127295, 16759788, 16761760)
 
 
-# gradient role func
+# discord only has one holographic style, and it's a fixed set of three colors
 def _describe_style(role: discord.Role) -> str:
     if (
         role.colour.value,
@@ -81,7 +81,6 @@ class AuditCog(
             lambda row: (int(row[0]), {"log_channel": row[1]}),
         )
 
-    # cogwide error handling
     async def cog_app_command_error(
         self,
         interaction: discord.Interaction,

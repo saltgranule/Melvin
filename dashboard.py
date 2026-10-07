@@ -52,12 +52,12 @@ TEXT_CHANNEL = 0
 # channels and roles fetched with the bot's token are reused for this long
 BOT_CACHE_SECONDS = 30
 
-# how long a user's server list is trusted before asking discord again, saving a
-# setting uses a much shorter window so lost permissions take effect quickly
+# how long a user's server list is trusted before asking discord again. saving a setting
+# uses a much shorter window, so lost permissions bite fast
 GUILDS_CACHE_SECONDS = 120
 WRITE_CHECK_SECONDS = 15
 
-# sections in the server sidebar, as (endpoint, label)
+# the server sidebar, as (endpoint, label)
 GUILD_SECTIONS = [
     ("dashboard.modules", "Modules"),
     ("dashboard.server_stats_page", "Server Stats"),
@@ -71,7 +71,7 @@ bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 
 
 class DiscordError(Exception):
-    # discord couldn't be reached or refused the request
+    # discord couldn't be reached, or said no
     pass
 
 
@@ -230,8 +230,8 @@ def manageable_guilds(
     strict: bool = False,
 ) -> list[dict] | None:
     # the servers the logged in user can manage, or None if they need to log in again.
-    # strict never falls back to an older list when discord can't be reached, for
-    # anything that changes settings
+    # strict never falls back to an older list when discord is down. anything that
+    # changes settings wants that
     row = current_session()
     if row is None:
         return None
@@ -245,7 +245,7 @@ def manageable_guilds(
         raw = _discord_request("/users/@me/guilds", token=row["access_token"])
     except DiscordError as e:
         if e.args[0] == 401:
-            # the token was revoked or expired, so the session is no good
+            # revoked or expired, either way the session is dead
             _delete_session(session.pop("sid"))
             g.dashboard_session = None
             return None
@@ -310,7 +310,7 @@ def guild_context(
 ) -> dict:
     bot_user = _bot_request("/users/@me")
 
-    # these don't depend on each other, so they're fetched together instead of one by one
+    # none of these depend on each other, so they all go out at once
     paths = {
         "guild": f"/guilds/{guild_id}",
         "channels": f"/guilds/{guild_id}/channels",
@@ -613,7 +613,7 @@ async def modules(guild_id: int) -> str | Response:
     await module_settings.init_db()
     disabled = await module_settings.disabled_modules(guild_id)
 
-    # set after a save without the page's script, see _toggle_reply
+    # set after a save made without the page's script, see _toggle_reply
     toggled = request.args.get("toggled")
     saved_message = (
         f"{module_settings.MODULES[toggled][0]} turned "
@@ -678,7 +678,7 @@ async def toggle_module(guild_id: int, module: str) -> Response | tuple[Response
     if module not in module_settings.MODULES:
         abort(404)
 
-    # permissions are checked against discord again before anything is saved
+    # permissions are checked with discord again before anything is saved
     try:
         guilds = manageable_guilds(max_age=WRITE_CHECK_SECONDS, strict=True)
     except DiscordError as e:
@@ -759,7 +759,7 @@ def _config_fields(
                 "options": options,
                 "error": errors.get(setting.key),
                 "locked": not has_permission(guild, setting.permission),
-                # only swatch real hex codes, values typed into a failed save aren't checked yet
+                # only real hex codes get a swatch. values from a failed save haven't been checked yet
                 "colors": (
                     value.split("-")
                     if setting.kind == "color"
@@ -961,8 +961,8 @@ async def server_stats_page(guild_id: int) -> str | Response:
     total_ys = charts.scale(totals, 0, top, height)
     message_ys = charts.scale(messages, 0, top, height)
 
-    # members only show change, so their scale fits the counts like the status charts.
-    # periods from before the first reading use the first reading
+    # members only show change, so the scale hugs the counts, like the status charts.
+    # periods before the first reading borrow it
     known = [count for count in series["members"] if count is not None]
     members = [
         count if count is not None else (known[0] if known else 0)

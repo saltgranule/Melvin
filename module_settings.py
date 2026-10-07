@@ -34,7 +34,7 @@ _cache: dict[int, tuple[float, set[str]]] = {}
 async def init_db() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     async with aiosqlite.connect(DB_PATH) as db:
-        # lets the bot and the website read and write at the same time without locking each other out
+        # the bot and the website both read and write here, WAL stops them locking each other out
         await db.execute("PRAGMA journal_mode=WAL")
         await db.execute(
             """

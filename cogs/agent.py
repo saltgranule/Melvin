@@ -20,7 +20,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 log = logging.getLogger(__name__)
 
 RATE_LIMIT = 10
-RATE_PERIOD = 60 * 60  # 1 hour, in seconds
+RATE_PERIOD = 60 * 60
 GROQ_MODEL = "openai/gpt-oss-20b"
 PAGE_SIZE = 2000
 
@@ -53,7 +53,6 @@ class AgentCog(
         self.client = AsyncGroq(api_key=self.api_key)
         self.db_path = "data/ai_usage.db"
 
-    # db setup
     async def cog_load(self) -> None:
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
@@ -122,7 +121,6 @@ class AgentCog(
             )
             await db.commit()
 
-    # cogwide error logging
     async def cog_app_command_error(
         self,
         interaction: discord.Interaction,

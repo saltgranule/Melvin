@@ -74,7 +74,6 @@ class WelcomeCog(
             ),
         )
 
-    # cogwide error handling
     async def cog_app_command_error(
         self,
         interaction: discord.Interaction,

@@ -121,7 +121,7 @@ class TimezoneCog(
         target_user = user or interaction.user
         target_tz_str = await self._get_user_timezone(target_user.id)
 
-        # easter eggs
+        # easter eggs. melvin has no timezone, so it gets a quote instead
         if target_user == interaction.client.user:
             view = ResponseUI(random.choice(time_quotes))
             await interaction.response.send_message(view=view)

@@ -5,7 +5,6 @@ from discord.ext import commands
 from ui import ErrorUI, GalleryWithItem, SmallSeparator
 
 
-# UI Classes
 class AvatarView(discord.ui.LayoutView):
     def __init__(
         self,

@@ -11,10 +11,10 @@ import module_settings
 from globals import ERROR_MESSAGE
 from ui import ErrorUI, InfoUI, ThankUI, open_config
 
+# rate_int thanks per rate_time seconds. servers pick their own rate_time with the
+# cooldown in /thanks config, this one's only the fallback
 rate_int = 1
 rate_time = 60.0
-# rate_int - how many times a user can trigger the count event, rate_time - the time before the rate_int limit resets.
-# in a server, rate_time comes from the cooldown setting in /thanks config, this is only the fallback.
 
 trigger = [
     "thanks",
@@ -29,7 +29,6 @@ trigger = [
     "kudos",
     "props",
 ]
-# trigger phrases, pretty self-explanitory
 
 negations = [
     "no",
@@ -49,15 +48,14 @@ negations = [
     "definitely not",
     "certainly not",
 ]
-# words that, if immediately preceding a trigger, cancel it out (e.g. "no thanks")
 
-# avoid false flags with regex
+# word boundaries, so "ty" doesn't go off inside "pretty"
 TRIGGER_PATTERN = re.compile(
     r"\b(" + "|".join(re.escape(t) for t in trigger) + r")\b",
     re.IGNORECASE,
 )
 
-# matches a negation word immediately followed by a trigger word/phrase
+# a negation right before a trigger cancels it. "no thanks" isn't a thank you
 NEGATION_PATTERN = re.compile(
     r"\b(" + "|".join(re.escape(n) for n in negations) + r")\s+"
     r"(" + "|".join(re.escape(t) for t in trigger) + r")\b",
@@ -76,7 +74,6 @@ class ThanksCog(
         self.db_path = "data/thanks.db"
         self._cooldowns: dict[int, list[float]] = {}
 
-    # db setup
     async def cog_load(self) -> None:
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
@@ -107,7 +104,6 @@ class ThanksCog(
                 await db.execute("DROP TABLE thanks_settings")
                 await db.commit()
 
-    # cogwide error handling
     async def cog_app_command_error(
         self,
         interaction: discord.Interaction,
@@ -129,7 +125,6 @@ class ThanksCog(
     def _is_rate_limited(self, user_id: int, window: float) -> bool:
         now = time.monotonic()
         timestamps = self._cooldowns.setdefault(user_id, [])
-        # drop timestamps outside the cooldown window
         timestamps[:] = [t for t in timestamps if now - t < window]
         if len(timestamps) >= rate_int:
             return True
@@ -207,7 +202,6 @@ class ThanksCog(
 
         content = message.content
 
-        # skip if it's a negated trigger
         if NEGATION_PATTERN.search(content):
             return
 
@@ -216,7 +210,7 @@ class ThanksCog(
 
         thanker = message.author
 
-        # reply based handling
+        # a reply thanks whoever was replied to
         if message.reference is not None and message.reference.message_id is not None:
             replied_message = message.reference.resolved
             if replied_message is None:
@@ -232,9 +226,9 @@ class ThanksCog(
                 discord.Message,
             ):
                 await self._credit_thanks(message, thanker, replied_message.author)
-                return  # don't also process mentions in the same message
+                return  # and only them, mentions in a reply don't count on top
 
-        # mention based handling
+        # no reply, so everyone mentioned gets one
         if message.mentions:
             for mentioned in message.mentions:
                 await self._credit_thanks(message, thanker, mentioned)

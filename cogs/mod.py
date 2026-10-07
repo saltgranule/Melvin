@@ -29,7 +29,6 @@ class ModCog(
     role = app_commands.Group(name="role", description="Moderation role commands.")
     cases = app_commands.Group(name="case", description="Moderation case commands.")
 
-    # duration parsing
     def parse_duration(self, durationstr: str) -> int | None:
         unit = durationstr[-1].lower()
         if unit not in {"s", "m", "h", "d"}:
@@ -104,7 +103,6 @@ class ModCog(
         except discord.HTTPException:
             pass
 
-    # newer cogwide EH
     async def cog_app_command_error(
         self,
         interaction: discord.Interaction,
@@ -124,7 +122,6 @@ class ModCog(
         else:
             await interaction.response.send_message(view=view, ephemeral=True)
 
-    # cases view cmd
     @cases.command(
         name="view",
         description="View moderation cases for a user.",
@@ -141,7 +138,6 @@ class ModCog(
             return
         if not interaction.guild:
             return
-        # guard clause
         if target.bot:
             await interaction.followup.send(
                 view=ErrorUI("**You tried to view the cases of an app.**"),
@@ -158,7 +154,6 @@ class ModCog(
             allowed_mentions=discord.AllowedMentions(users=False, roles=False),
         )
 
-    # cases remove cmd
     @cases.command(
         name="remove",
         description="Remove a mod action from a users account, takes the ID.",
@@ -190,7 +185,6 @@ class ModCog(
             )
             await conn.commit()
 
-        # case remove UI
         view = PositiveUI(
             title="Case Removed",
             subtitle=f"**Removed case #{case_id} ({action_type.upper()}) for <@{user_id}>.**",
@@ -200,7 +194,6 @@ class ModCog(
             allowed_mentions=discord.AllowedMentions.none(),
         )
 
-    # warn cmd
     @app_commands.command(name="warn", description="Warn someone.")
     @app_commands.describe(
         member="The member to warn.",
@@ -218,7 +211,6 @@ class ModCog(
         if not interaction.guild or not isinstance(interaction.user, discord.Member):
             return
 
-        # guard clause
         if member.bot:
             await interaction.followup.send(
                 view=ErrorUI("**You tried to warn an app.**"),
@@ -243,7 +235,6 @@ class ModCog(
             )
             return
 
-        # warn db call
         async with aiosqlite.connect(self.db_path) as conn:
             cursor = await conn.execute(
                 """
@@ -255,7 +246,6 @@ class ModCog(
             case_id = cursor.lastrowid
             await conn.commit()
 
-        # try dm
         await self.handle_dm(
             user=member,
             action_type="warning",
@@ -264,7 +254,6 @@ class ModCog(
             reason=reason,
         )
 
-        # warn msg
         view = PositiveUI(
             title="Warning",
             subtitle=f"**{member.mention}, you have been warned. Case {case_id}.**",
@@ -274,7 +263,6 @@ class ModCog(
             allowed_mentions=discord.AllowedMentions(users=False, roles=False),
         )
 
-    # kick cmd
     @app_commands.command(name="kick", description="Kick a member.")
     @app_commands.describe(
         member="The member to kick.",
@@ -292,7 +280,6 @@ class ModCog(
         if not interaction.guild or not isinstance(interaction.user, discord.Member):
             return
 
-        # guard clause
         if member.bot:
             await interaction.followup.send(
                 view=ErrorUI("**You tried to kick an app.**"),
@@ -322,7 +309,6 @@ class ModCog(
             )
             return
 
-        # kick db call
         async with aiosqlite.connect(self.db_path) as conn:
             cursor = await conn.execute(
                 """
@@ -334,7 +320,6 @@ class ModCog(
             case_id = cursor.lastrowid
             await conn.commit()
 
-        # try dm
         await self.handle_dm(
             user=member,
             action_type="kick",
@@ -343,7 +328,7 @@ class ModCog(
             reason=reason,
         )
 
-        # the actual kick part, roll back the case if it fails
+        # if the kick fails, the case goes too. a case for a kick that never happened is worse than no case
         try:
             await member.kick(
                 reason=f"Kicked by Melvin using {interaction.user.name} with the reason: {reason}",
@@ -361,7 +346,6 @@ class ModCog(
             )
             return
 
-        # kick msg
         view = PositiveUI(
             title="Kicked",
             subtitle=f"**{member.mention} has been kicked. Case {case_id}.**",
@@ -371,7 +355,6 @@ class ModCog(
             allowed_mentions=discord.AllowedMentions(users=False, roles=False),
         )
 
-    # ban cmd
     @app_commands.command(name="ban", description="Ban a member.")
     @app_commands.describe(
         member="The member to ban.",
@@ -389,7 +372,6 @@ class ModCog(
         if not interaction.guild or not isinstance(interaction.user, discord.Member):
             return
 
-        # guard clause
         if member.bot:
             await interaction.followup.send(
                 view=ErrorUI("**You tried to ban an app.**"),
@@ -419,7 +401,6 @@ class ModCog(
             )
             return
 
-        # ban db call
         async with aiosqlite.connect(self.db_path) as conn:
             cursor = await conn.execute(
                 """
@@ -431,7 +412,6 @@ class ModCog(
             case_id = cursor.lastrowid
             await conn.commit()
 
-        # try dm
         await self.handle_dm(
             user=member,
             action_type="ban",
@@ -440,7 +420,7 @@ class ModCog(
             reason=reason,
         )
 
-        # the actual ban part, roll back the case if it fails
+        # same as kick, no ban means no case
         try:
             await member.ban(
                 reason=f"Banned by Melvin using {interaction.user.name} with the reason: {reason}",
@@ -459,7 +439,6 @@ class ModCog(
             )
             return
 
-        # ban msg
         view = PositiveUI(
             title="Banned",
             subtitle=f"**{member.mention} has been banned. Case {case_id}.**",
@@ -486,7 +465,6 @@ class ModCog(
         if not interaction.guild or not isinstance(interaction.user, discord.Member):
             return
 
-        # guard clause
         try:
             await interaction.guild.fetch_ban(user)
         except discord.NotFound:
@@ -501,7 +479,6 @@ class ModCog(
             )
             return
 
-        # the actual unban part
         try:
             await interaction.guild.unban(
                 user,
@@ -514,7 +491,6 @@ class ModCog(
             )
             return
 
-        # unban db call
         async with aiosqlite.connect(self.db_path) as conn:
             cursor = await conn.execute(
                 """
@@ -526,7 +502,6 @@ class ModCog(
             case_id = cursor.lastrowid
             await conn.commit()
 
-        # unban msg
         view = PositiveUI(
             title="Unbanned",
             subtitle=f"**{user.mention} has been unbanned. Case {case_id}.**",
@@ -536,7 +511,6 @@ class ModCog(
             allowed_mentions=discord.AllowedMentions(users=False, roles=False),
         )
 
-    # mute cmd
     @app_commands.command(name="mute", description="Mute a member.")
     @app_commands.describe(
         member="The member to mute.",
@@ -556,7 +530,6 @@ class ModCog(
         if not interaction.guild or not isinstance(interaction.user, discord.Member):
             return
 
-        # guard clause
         seconds = self.parse_duration(duration)
         if not seconds:
             await interaction.followup.send(
@@ -597,7 +570,6 @@ class ModCog(
             )
             return
 
-        # the actual mute part
         until = discord.utils.utcnow() + datetime.timedelta(seconds=seconds)
         try:
             await member.timeout(
@@ -611,7 +583,6 @@ class ModCog(
             )
             return
 
-        # mute db call
         async with aiosqlite.connect(self.db_path) as conn:
             cursor = await conn.execute(
                 """
@@ -623,7 +594,6 @@ class ModCog(
             case_id = cursor.lastrowid
             await conn.commit()
 
-        # try dm
         await self.handle_dm(
             user=member,
             action_type="mute",
@@ -632,7 +602,6 @@ class ModCog(
             reason=reason,
         )
 
-        # mute msg
         view = PositiveUI(
             title="Muted",
             subtitle=f"**{member.mention} has been muted. Case {case_id}.**",
@@ -642,7 +611,6 @@ class ModCog(
             allowed_mentions=discord.AllowedMentions(users=False, roles=False),
         )
 
-    # unmute cmd
     @app_commands.command(name="unmute", description="Unmute a member.")
     @app_commands.describe(
         member="The member to unmute.",
@@ -660,7 +628,6 @@ class ModCog(
         if not interaction.guild or not isinstance(interaction.user, discord.Member):
             return
 
-        # guard clause
         if not member.is_timed_out():
             await interaction.followup.send(
                 view=ErrorUI("**Member is not timed out.**"),
@@ -675,7 +642,6 @@ class ModCog(
             )
             return
 
-        # the actual unmute part
         try:
             await member.timeout(
                 None,
@@ -688,7 +654,6 @@ class ModCog(
             )
             return
 
-        # unmute db call
         async with aiosqlite.connect(self.db_path) as conn:
             cursor = await conn.execute(
                 """
@@ -700,7 +665,6 @@ class ModCog(
             case_id = cursor.lastrowid
             await conn.commit()
 
-        # try dm
         await self.handle_dm(
             user=member,
             action_type="unmute",
@@ -709,7 +673,6 @@ class ModCog(
             reason=reason,
         )
 
-        # unmute msg
         view = PositiveUI(
             title="Unmuted",
             subtitle=f"**{member.mention} has been unmuted. Case {case_id}.**",
@@ -719,7 +682,6 @@ class ModCog(
             allowed_mentions=discord.AllowedMentions(users=False, roles=False),
         )
 
-    # lock cmd
     @app_commands.command(name="lock", description="Lock a channel.")
     @app_commands.describe(
         channel="The channel or thread to lock.",
@@ -742,7 +704,6 @@ class ModCog(
 
         target_channel = channel or interaction.channel
 
-        # guard clause
         if not isinstance(
             target_channel,
             (discord.TextChannel, discord.VoiceChannel, discord.Thread),
@@ -761,7 +722,6 @@ class ModCog(
                 )
                 return
 
-            # the actual thread locking
             await target_channel.edit(
                 locked=True,
                 reason=f"Locked using Melvin by {interaction.user.name} for the reason: {reason}",
@@ -776,7 +736,6 @@ class ModCog(
                 )
                 return
 
-            # the actual channel locking
             current_overwrite.send_messages = False
             await target_channel.set_permissions(
                 interaction.guild.default_role,
@@ -784,7 +743,6 @@ class ModCog(
                 reason=f"Locked using Melvin by {interaction.user.name} for the reason: {reason}",
             )
 
-        # lock msg
         view = PositiveUI(
             title="Locked",
             subtitle=f"**{target_channel.mention} has been locked.**",
@@ -794,7 +752,6 @@ class ModCog(
             allowed_mentions=discord.AllowedMentions(users=False, roles=False),
         )
 
-    # unlock cmd
     @app_commands.command(name="unlock", description="Unlock a channel.")
     @app_commands.describe(
         channel="The channel or thread to unlock.",
@@ -817,7 +774,6 @@ class ModCog(
 
         target_channel = channel or interaction.channel
 
-        # guard clause
         if not isinstance(
             target_channel,
             (discord.TextChannel, discord.VoiceChannel, discord.Thread),
@@ -836,7 +792,6 @@ class ModCog(
                 )
                 return
 
-            # the actual thread unlocking
             await target_channel.edit(
                 locked=False,
                 reason=f"Unlocked using Melvin by {interaction.user.name} with the reason: {reason}",
@@ -854,7 +809,7 @@ class ModCog(
                 )
                 return
 
-            # the actual channel unlocking (sets overwrite back to neutral/inherit)
+            # None, not True. the channel goes back to whatever its category says instead of forcing sends on
             current_overwrite.send_messages = None
             await target_channel.set_permissions(
                 interaction.guild.default_role,
@@ -862,7 +817,6 @@ class ModCog(
                 reason=f"Unlocked using Melvin by {interaction.user.name} with the reason: {reason}",
             )
 
-        # unlock msg
         view = PositiveUI(
             title="Unlocked",
             subtitle=f"**Unlocked {target_channel.mention}.**",
@@ -872,7 +826,6 @@ class ModCog(
             allowed_mentions=discord.AllowedMentions.none(),
         )
 
-    # role add cmd
     @role.command(
         name="add",
         description="Add a role to a member.",
@@ -895,7 +848,6 @@ class ModCog(
         if not interaction.guild or not isinstance(interaction.user, discord.Member):
             return
 
-        # guard clause
         if role.is_default():
             await interaction.followup.send(
                 view=ErrorUI("**You cannot modify the @everyone role.**"),
@@ -936,7 +888,6 @@ class ModCog(
             )
             return
 
-        # role db call
         async with aiosqlite.connect(self.db_path) as conn:
             cursor = await conn.execute(
                 """
@@ -948,13 +899,11 @@ class ModCog(
             case_id = cursor.lastrowid
             await conn.commit()
 
-        # the actual role part
         await member.add_roles(
             role,
             reason=f"Role added by Melvin using {interaction.user.name} with the reason: {reason}",
         )
 
-        # role add msg
         view = PositiveUI(
             title="Role Added",
             subtitle=f"**{role.mention} added to {member.mention}. Case {case_id}.**",
@@ -964,7 +913,6 @@ class ModCog(
             allowed_mentions=discord.AllowedMentions(users=False, roles=False),
         )
 
-    # role remove cmd
     @role.command(
         name="remove",
         description="Remove a role from a member.",
@@ -987,7 +935,6 @@ class ModCog(
         if not interaction.guild or not isinstance(interaction.user, discord.Member):
             return
 
-        # guard clause
         if role.is_default():
             await interaction.followup.send(
                 view=ErrorUI("**You cannot modify the @everyone role.**"),
@@ -1021,7 +968,6 @@ class ModCog(
             )
             return
 
-        # role db call
         async with aiosqlite.connect(self.db_path) as conn:
             cursor = await conn.execute(
                 """
@@ -1033,13 +979,11 @@ class ModCog(
             case_id = cursor.lastrowid
             await conn.commit()
 
-        # the actual role part
         await member.remove_roles(
             role,
             reason=f"Role removed by Melvin using {interaction.user.name} with the reason: {reason}",
         )
 
-        # role remove msg
         view = PositiveUI(
             title="Role Removed",
             subtitle=f"**{role.mention} removed from {member.mention}. Case {case_id}.**",
@@ -1049,7 +993,6 @@ class ModCog(
             allowed_mentions=discord.AllowedMentions(users=False, roles=False),
         )
 
-    # config cmd
     @app_commands.command(
         name="config",
         description="Change moderation settings for this server.",

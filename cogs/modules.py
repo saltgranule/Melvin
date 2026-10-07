@@ -96,7 +96,6 @@ class ModulesCog(
         super().__init__()
         self.bot = bot
 
-    # cogwide error handling
     async def cog_app_command_error(
         self,
         interaction: discord.Interaction,

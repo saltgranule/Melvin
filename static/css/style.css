@@ -1,5 +1,6 @@
 @import url('https://fonts.cdnfonts.com/css/arcon');
 
+/* base */
 * {
     margin: 0;
     padding: 0;
@@ -35,7 +36,7 @@ a {
     color: #252422;
 }
 
-/* status banners, the colors come from globals.py through the theme variables in base.html */
+/* banners. their colors come from globals.py, through the theme variables in base.html */
 .banner {
     display: flex;
     align-items: flex-start;
@@ -72,6 +73,7 @@ a {
     color: #252422;
 }
 
+/* shared */
 :focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
@@ -94,6 +96,7 @@ a {
     padding-right: 24px;
 }
 
+/* navbar */
 .navbar {
     display: flex;
     align-items: center;
@@ -202,6 +205,7 @@ a {
     transform: translateY(2px);
 }
 
+/* footer */
 .site-footer {
     background: #252422;
     color: #a8a49c;
@@ -274,6 +278,7 @@ a {
     color: #97938b;
 }
 
+/* home page */
 .hero {
     display: flex;
     align-items: center;
@@ -418,6 +423,7 @@ a {
     color: #726e66;
 }
 
+/* buttons */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -468,6 +474,27 @@ a {
     transform: translateY(2px);
 }
 
+.btn-light {
+    background: #f4f3f0;
+    color: #252422;
+    border-bottom: 3px solid #c9c5bd;
+}
+
+.btn-light:hover {
+    opacity: 0.9;
+}
+
+.btn-light:active {
+    border-bottom-width: 1px;
+    transform: translateY(2px);
+}
+
+.btn-small {
+    font-size: 13px;
+    padding: 6px 14px;
+}
+
+/* docs, whose sidebar layout the dashboard borrows */
 .docs-layout {
     display: flex;
     align-items: flex-start;
@@ -767,6 +794,7 @@ a {
 }
 
 
+/* status page */
 .status-section {
     padding-top: 40px;
     padding-bottom: 64px;
@@ -956,27 +984,9 @@ a {
     font-size: 14px;
 }
 
-.btn-light {
-    background: #f4f3f0;
-    color: #252422;
-    border-bottom: 3px solid #c9c5bd;
-}
+/* dashboard */
 
-.btn-light:hover {
-    opacity: 0.9;
-}
-
-.btn-light:active {
-    border-bottom-width: 1px;
-    transform: translateY(2px);
-}
-
-.btn-small {
-    font-size: 13px;
-    padding: 6px 14px;
-}
-
-/* full width, so the page doesn't shrink and shift when searching hides cards */
+/* full width, or the page shrinks and jumps whenever search hides cards */
 .dashboard-section {
     width: 100%;
     padding-top: 40px;
@@ -1147,6 +1157,7 @@ a {
     display: flex;
 }
 
+/* dashboard settings */
 .dashboard-form {
     display: flex;
     flex-direction: column;
@@ -1360,8 +1371,9 @@ textarea.dashboard-input {
     color: #726e66;
 }
 
-/* two joined buttons, the selected half is filled with the banner colors,
-   success green for on and error red for off, and the other half stays light */
+/* module switches */
+
+/* two joined buttons. the picked half takes a banner color, green for on and red for off */
 .dashboard-switch {
     display: inline-flex;
     flex: 0 0 auto;
@@ -1431,6 +1443,7 @@ textarea.dashboard-input {
     color: #6b675f;
 }
 
+/* smaller screens */
 @media (max-width: 1100px) {
     .docs-toc {
         display: none;

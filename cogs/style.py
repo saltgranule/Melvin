@@ -44,7 +44,6 @@ class StyleCog(
     async def cog_unload(self) -> None:
         self.sync_styles.cancel()
 
-    # cogwide error handling
     async def cog_app_command_error(
         self,
         interaction: discord.Interaction,
