@@ -146,7 +146,7 @@ These are the fields a setting can have.
 | `max_length` | For text settings, the longest value allowed. Over 100 gets a larger text box. |
 | `placeholder` | Example text shown in empty boxes. |
 | `permission` | A Discord permission needed on top of Manage Server, like `"manage_roles"`. |
-| `channel_type` | For channel settings, which channels are offered. `"text"` by default, or `"news"` for announcement channels. |
+| `channel_type` | For channel settings, which channels are offered. `"text"` by default, or `"any"` for text and announcement channels. |
 
 Each kind of setting gets its own controls on both sides, and is stored as text.
 

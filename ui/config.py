@@ -11,7 +11,10 @@ from .views import ErrorUI, SmallSeparator
 # called after a setting changes, for modules that need to act on it straight away
 OnChange = Callable[[discord.Guild], Awaitable[None]]
 
-CHANNEL_TYPES = {"text": discord.ChannelType.text, "news": discord.ChannelType.news}
+CHANNEL_TYPES = {
+    "text": [discord.ChannelType.text],
+    "any": [discord.ChannelType.text, discord.ChannelType.news],
+}
 
 
 def _display(setting: module_config.Setting, value: str | None) -> str:
@@ -100,7 +103,7 @@ class ConfigView(discord.ui.LayoutView):
             several = setting.kind == "channels"
             select = discord.ui.ChannelSelect(
                 placeholder="Pick channels..." if several else "Pick a channel...",
-                channel_types=[CHANNEL_TYPES[setting.channel_type]],
+                channel_types=CHANNEL_TYPES[setting.channel_type],
                 min_values=0,
                 max_values=module_config.MAX_CHANNELS if several else 1,
                 default_values=[

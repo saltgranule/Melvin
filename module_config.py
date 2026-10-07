@@ -41,7 +41,7 @@ class Setting:
     placeholder: str = ""
     # a discord permission needed on top of Manage Server to change this setting
     permission: str | None = None
-    # which channels channel settings offer, text or news (announcement)
+    # which channels channel settings offer, text, or any for text and announcement
     channel_type: str = "text"
 
 
@@ -127,9 +127,9 @@ CONFIG: dict[str, tuple[Setting, ...]] = {
         Setting(
             "channels",
             "Channels",
-            "Announcement channels whose messages are published. Melvin needs Manage Messages in them.",
+            "Pick announcement channels, anything else is skipped.",
             "channels",
-            channel_type="news",
+            channel_type="any",
         ),
         Setting(
             "bots",

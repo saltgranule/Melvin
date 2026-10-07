@@ -349,10 +349,10 @@ def guild_context(
             for channel in sorted(channels, key=operator.itemgetter("position"))
             if channel["type"] == TEXT_CHANNEL
         ],
-        "news_channels": [
+        "any_channels": [
             (channel["id"], f"#{channel['name']}")
             for channel in sorted(channels, key=operator.itemgetter("position"))
-            if channel["type"] == NEWS_CHANNEL
+            if channel["type"] in {TEXT_CHANNEL, NEWS_CHANNEL}
         ],
         # the same rules as the discord side, so neither can hand out more than the other
         "roles": [
@@ -729,9 +729,8 @@ def _check_value(
         return
     if setting.kind in {"channel", "channels"}:
         available = dict(_channel_options(setting, context))
-        kind = "announcement" if setting.channel_type == "news" else "text"
         if any(part not in available for part in value.split(",")):
-            msg = f"That channel isn't available, Melvin can only use {kind} channels here."
+            msg = "That channel isn't available, Melvin can only use text channels here."
             raise module_config.ConfigError(msg)
     if setting.kind == "role" and value not in dict(context["roles"]):
         msg = "That role is above Melvin's or your top role, or can't be given out."
@@ -740,7 +739,7 @@ def _check_value(
 
 def _channel_options(setting: module_config.Setting, context: dict) -> list[tuple[str, str]]:
     return list(
-        context["news_channels"] if setting.channel_type == "news" else context["channels"],
+        context["any_channels"] if setting.channel_type == "any" else context["channels"],
     )
 
 
