@@ -1,14 +1,61 @@
+import math
+import random
 from typing import TYPE_CHECKING
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
+import server_stats
 from globals import LOG_CHANNEL, MELVIN_BANNER, MELVIN_MISC_EMOJI, QUATERNARY
 from ui import ErrorUI, GalleryWithItem, GatedUI, PositiveUI, SmallSeparator
 
 if TYPE_CHECKING:
     from main import Melvin
+
+
+DENSITIES = {
+    "low": (15, 3, 40),
+    "medium": (90, 12, 600),
+    "high": (450, 45, 6000),
+}
+DENSITY_CHOICES = [
+    app_commands.Choice(name=key.title(), value=key) for key in DENSITIES
+]
+# the made up data covers the whole 30 day range
+POPULATE_HOURS = 30 * 24
+
+
+def _fake_stats(density: str) -> list[tuple[int, int, int, int]]:
+    peak_messages, peak_voice, members = DENSITIES[density]
+    members = members * random.uniform(0.8, 1.2)
+    growth = random.uniform(0.001, 0.004)
+    first = server_stats.hour_start() - (POPULATE_HOURS - 1) * server_stats.HOUR
+
+    rows = []
+    day_mood = 1.0
+    for i in range(POPULATE_HOURS):
+        hour = first + i * server_stats.HOUR
+        hour_of_day = hour // server_stats.HOUR % 24
+        day = hour // server_stats.DAY
+        if hour_of_day == 0 or i == 0:
+            day_mood = random.uniform(0.6, 1.4)
+        weekend = 1.25 if (day + 3) % 7 in (5, 6) else 1.0
+
+        curve = 0.55 - 0.45 * math.cos((hour_of_day - 8) / 24 * 2 * math.pi)
+        activity = curve * day_mood * weekend * random.uniform(0.7, 1.3)
+
+        messages = max(0, round(peak_messages * activity))
+        in_voice = max(0, round(peak_voice * activity * random.uniform(0.5, 1.2)))
+        voice_minutes = sum(random.randint(15, 60) for _ in range(in_voice))
+
+        change = members * growth / 24 * random.uniform(-1.5, 3)
+        if random.random() < 0.003:
+            change -= members * random.uniform(0.002, 0.008)
+        members = max(1.0, members + change)
+
+        rows.append((hour, messages, voice_minutes, round(members)))
+    return rows
 
 
 class PrivateCog(
@@ -59,6 +106,39 @@ class PrivateCog(
         view = PositiveUI(
             title="Tree Sync Complete",
             subtitle=f"**Synced {len(synced)} command(s).**",
+        )
+        await interaction.followup.send(view=view, ephemeral=True)
+
+    @app_commands.command(
+        name="populate",
+        description="Fill this server's stats with made up data.",
+    )
+    @app_commands.describe(density="How much activity to make up.")
+    @app_commands.choices(density=DENSITY_CHOICES)
+    # the stats belong to a server, so this only makes sense used in one
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+    async def populate(
+        self,
+        interaction: discord.Interaction,
+        density: app_commands.Choice[str],
+    ) -> None:
+        await interaction.response.defer(ephemeral=True)
+        if not await self.bot.is_owner(interaction.user):
+            view = GatedUI()
+            await interaction.followup.send(view=view, ephemeral=True)
+            return
+        if interaction.guild_id is None:
+            return
+
+        rows = _fake_stats(density.value)
+        await server_stats.init_db()
+        await server_stats.replace(interaction.guild_id, rows)
+        view = PositiveUI(
+            title="Server Stats Populated",
+            subtitle=(
+                f"**Replaced this server's stats with {len(rows)} hours of "
+                f"{density.name.lower()} density data.**"
+            ),
         )
         await interaction.followup.send(view=view, ephemeral=True)
 

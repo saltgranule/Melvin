@@ -73,6 +73,19 @@ async def record(rows: list[tuple[int, int, int, int, int | None]]) -> None:
         await db.commit()
 
 
+async def replace(guild_id: int, rows: list[tuple[int, int, int, int | None]]) -> None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("DELETE FROM guild_stats WHERE guild_id = ?", (guild_id,))
+        await db.executemany(
+            """
+            INSERT INTO guild_stats (guild_id, hour, messages, voice_minutes, members)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            [(guild_id, *row) for row in rows],
+        )
+        await db.commit()
+
+
 async def prune() -> None:
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
