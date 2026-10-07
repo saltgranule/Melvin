@@ -24,7 +24,12 @@
                 <span class="dashboard-card-icon is-initials" aria-hidden="true">{{ guild.initials }}</span>
                 {% endif %}
                 <span class="status-card-row">
-                    <span class="dashboard-card-name" title="{{ guild.name }}">{{ guild.name }}</span>
+                    <span class="dashboard-card-title">
+                        <span class="dashboard-card-name" title="{{ guild.name }}">{{ guild.name }}</span>
+                        {% if guild.owner_access %}
+                        <span class="dashboard-card-note">Owner access</span>
+                        {% endif %}
+                    </span>
                     {% if guild.has_bot %}
                     <a href="{{ url_for('dashboard.modules', guild_id=guild.id) }}" class="btn btn-primary btn-small">Manage</a>
                     {% else %}

@@ -1056,6 +1056,19 @@ a {
     min-width: 0;
 }
 
+.dashboard-card-title {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+/* servers listed only because the user owns melvin */
+.dashboard-card-note {
+    font-size: 12px;
+    color: #6b675f;
+}
+
 .dashboard-module .status-card-row .status-checked {
     flex: 0 0 auto;
     white-space: nowrap;

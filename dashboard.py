@@ -265,6 +265,8 @@ def manageable_guilds(
         for guild in raw
         if _can_manage(guild)
     ]
+    if json.loads(row["user"])["id"] in bot_owner_ids():
+        guilds = _with_bot_guilds(guilds)
     with _connect() as conn:
         conn.execute(
             "UPDATE sessions SET guilds = ?, guilds_fetched_at = ? WHERE sid_hash = ?",
@@ -274,7 +276,7 @@ def manageable_guilds(
 
 
 def has_permission(guild: dict, permission: str | None) -> bool:
-    if permission is None or guild.get("owner"):
+    if permission is None or guild.get("owner") or guild.get("bot_owner"):
         return True
     permissions = guild.get("permissions", 0)
     return bool(
@@ -299,8 +301,13 @@ def _bot_request(path: str, *, fresh: bool = False) -> dict | list:
     return data
 
 
-def guild_context(guild_id: int, user_id: str, *, fresh: bool = False) -> dict:
-    # the channels and roles melvin can use in a guild, as the dashboard's config pages need them
+def guild_context(
+    guild_id: int,
+    user_id: str,
+    *,
+    fresh: bool = False,
+    bot_owner: bool = False,
+) -> dict:
     bot_user = _bot_request("/users/@me")
 
     # these don't depend on each other, so they're fetched together instead of one by one
@@ -308,8 +315,9 @@ def guild_context(guild_id: int, user_id: str, *, fresh: bool = False) -> dict:
         "guild": f"/guilds/{guild_id}",
         "channels": f"/guilds/{guild_id}/channels",
         "bot_member": f"/guilds/{guild_id}/members/{bot_user['id']}",
-        "member": f"/guilds/{guild_id}/members/{user_id}",
     }
+    if not bot_owner:
+        paths["member"] = f"/guilds/{guild_id}/members/{user_id}"
     with ThreadPoolExecutor(max_workers=len(paths)) as pool:
         futures = {
             name: pool.submit(_bot_request, path, fresh=fresh)
@@ -319,7 +327,7 @@ def guild_context(guild_id: int, user_id: str, *, fresh: bool = False) -> dict:
     guild, channels = results["guild"], results["channels"]
 
     positions = {role["id"]: role["position"] for role in guild["roles"]}
-    is_owner = guild["owner_id"] == user_id
+    is_owner = bot_owner or guild["owner_id"] == user_id
     bot_top = max(
         (positions.get(role, 0) for role in results["bot_member"]["roles"]),
         default=0,
@@ -351,6 +359,58 @@ def guild_context(guild_id: int, user_id: str, *, fresh: bool = False) -> dict:
         ],
         "role_names": {role["id"]: role["name"] for role in roles},
     }
+
+
+def bot_owner_ids() -> set[str]:
+    try:
+        app = _bot_request("/oauth2/applications/@me")
+    except DiscordError:
+        log.warning("Couldn't load Melvin's owners, owner access is off for now")
+        return set()
+    team = app.get("team")
+    if team:
+        return {
+            member["user"]["id"]
+            for member in team["members"]
+            if member.get("role") in {"admin", "developer"}
+        }
+    return {app["owner"]["id"]}
+
+
+def _with_bot_guilds(guilds: list[dict]) -> list[dict]:
+    # every server melvin is in, marked as managed through owner access. servers the
+    # owner could already manage keep their real details
+    try:
+        bot_guilds = []
+        after = "0"
+        while True:
+            page = _bot_request(f"/users/@me/guilds?limit=200&after={after}")
+            bot_guilds += page
+            if len(page) < 200:
+                break
+            after = page[-1]["id"]
+    except DiscordError:
+        log.warning("Couldn't load Melvin's servers for owner access")
+        return guilds
+
+    known = {guild["id"]: guild for guild in guilds}
+    in_bot = {guild["id"] for guild in bot_guilds}
+    return [
+        {
+            **known.get(
+                guild["id"],
+                {
+                    "id": guild["id"],
+                    "name": guild["name"],
+                    "icon": guild.get("icon"),
+                    "owner": False,
+                    "permissions": 0,
+                },
+            ),
+            "bot_owner": True,
+        }
+        for guild in bot_guilds
+    ] + [guild for guild in guilds if guild["id"] not in in_bot]
 
 
 def bot_guild_ids() -> set[str]:
@@ -403,6 +463,7 @@ def index() -> str:
                 "icon_url": guild_icon_url(guild),
                 "initials": initials(guild["name"]),
                 "has_bot": guild["id"] in present,
+                "owner_access": bool(guild.get("bot_owner")) and not _can_manage(guild),
             }
             for guild in guilds
         ),
@@ -738,7 +799,12 @@ async def module_config_page(
 
     user = current_user()
     try:
-        context = guild_context(guild_id, user["id"], fresh=posting)
+        context = guild_context(
+            guild_id,
+            user["id"],
+            fresh=posting,
+            bot_owner=bool(match.get("bot_owner")),
+        )
     except DiscordError, KeyError:
         log.exception("Couldn't load channels and roles for guild %s", guild_id)
         context = None
