@@ -463,7 +463,6 @@ def index() -> str:
                 "icon_url": guild_icon_url(guild),
                 "initials": initials(guild["name"]),
                 "has_bot": guild["id"] in present,
-                "owner_access": bool(guild.get("bot_owner")) and not _can_manage(guild),
             }
             for guild in guilds
         ),
