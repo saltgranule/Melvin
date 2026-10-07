@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% from "_icons.html" import icon %}
 {% from "_banner.html" import banner %}
 {% block content %}
 <div class="docs-layout dashboard-layout">
@@ -28,7 +27,7 @@
         <ul class="dashboard-grid stats-metrics">
             {% for card in cards %}
             <li class="dashboard-card stats-metric">
-                <span class="status-shard-label stats-metric-label">{{ icon(card.icon, 16) }}{{ card.label }}</span>
+                <span class="status-shard-label">{{ card.label }}</span>
                 <span class="status-latency">{{ card.value }}</span>
                 <span class="status-checked">{{ card.meta }}</span>
             </li>

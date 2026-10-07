@@ -13,6 +13,10 @@ Modules are handled by three shared files. Cogs only need small additions to plu
 
 The bot and the website both read and write the same database at `data/modules.db`. The bot caches it and re-reads it every 10 seconds, so a change made on the dashboard reaches the bot within that time.
 
+## Starting from the template
+`cogs/template.py` is a blank module with everything below already in place: the GroupCog, the server only decorators, the shared error handler, a config command, a listener that checks the module, and cleanup for when Melvin leaves a guild. It isn't loaded, so it never shows up in Discord.
+To start a new module, copy it to `cogs/<key>.py`, replace every `template` with the new key, then add the key to `MODULES` and load the cog in `main.py`. The steps are also listed at the top of the file.
+
 ## Making a cog a module
 A module is a cog that can be turned on or off per guild, from `/modules` or the dashboard.
 

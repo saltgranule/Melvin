@@ -1293,12 +1293,6 @@ textarea.dashboard-input {
     margin-bottom: 16px;
 }
 
-.stats-metric-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
 .dashboard-card.stats-metric {
     width: auto;
     max-width: none;
