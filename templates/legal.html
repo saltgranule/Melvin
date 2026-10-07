@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_banner.html" import banner %}
+{% block content %}
+<div class="docs-layout legal-layout">
+    <main class="docs-content">
+        {{ banner("misc", "This is a work in progress and will be improved on. Questions? Ask in the support server.") }}
+        {{ doc.content | safe }}
+    </main>
+
+    {% if doc.headings %}
+    <aside class="docs-toc" aria-label="On this page">
+        <p class="docs-toc-title">On this page</p>
+        <ul class="docs-toc-list">
+            {% for heading in doc.headings %}
+            <li>
+                <a href="#{{ heading.id }}" class="docs-toc-link {{ 'is-sub' if heading.level == 3 else '' }}">{{ heading.name }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </aside>
+    {% endif %}
+</div>
+<script src="{{ url_for('static', filename='js/toc.js') }}"></script>
+{% endblock %}

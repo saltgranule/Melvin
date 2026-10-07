@@ -61,6 +61,7 @@ def add_security_headers(response: Response) -> Response:
 
 
 DOCS_DIR = Path(app.root_path) / "docs"
+LEGAL_DIR = Path(app.root_path) / "legal"
 bot_process = None
 
 
@@ -290,6 +291,26 @@ async def status() -> str:
         overall=summarize_status(shards),
         metrics=await get_metrics_status(),
     )
+
+
+def legal_page(slug: str, active: str) -> str:
+    return render_template(
+        "legal.html",
+        active=active,
+        theme=THEME,
+        links=LINKS,
+        doc=load_doc(LEGAL_DIR / f"{slug}.md"),
+    )
+
+
+@app.route("/privacy")
+def privacy() -> str:
+    return legal_page("privacy", "privacy")
+
+
+@app.route("/terms")
+def terms() -> str:
+    return legal_page("terms", "terms")
 
 
 @app.errorhandler(404)
