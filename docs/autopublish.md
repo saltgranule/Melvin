@@ -1,23 +1,23 @@
 # Auto-Publish Cog Documentation
 **FYI, thanks to lucibot in the d.py server for showcasing this neat feature!!**
-Publishes messages in announcement channels as soon as they're sent, so they reach every server following those channels without anyone pressing Publish.
+Publishes messages in announcement channels when they're sent, so servers following those channels receive them.
 Command group name: `autopublish`
 
 All commands require Manage Server and are guild only.
 
-## How it works
-When a message is sent in one of the picked announcement channels, Melvin publishes it straight away. These are skipped:
+## How messages are published
+When a message is sent in one of the picked channels, Melvin publishes it. These messages are skipped:
 
 | Message | Why |
 |------|--------------|
 | System messages, like "thread created" or "poll ended" | Discord can't publish them. |
-| Messages from bots and webhooks | Unless Bot messages is set to publish them, for feeds from other apps. |
+| Messages from bots and webhooks | Skipped unless Bot messages is set to publish them. |
 | Messages in channels that weren't picked | Only the picked channels are published. |
 | Messages in picked channels that aren't announcement channels | Only announcement channels can be published. |
 
-Melvin needs Manage Messages in each picked channel to publish other people's messages. Without it, nothing is published there and nothing is posted about it.
-Discord allows 10 published messages an hour per channel. Past that, the next message is published once Discord allows it again, so a busy channel publishes late rather than never.
-When the module is turned off with `/modules` or the dashboard, nothing is published until it's turned back on.
+Melvin needs Manage Messages in each picked channel to publish other people's messages. Without it, messages in that channel aren't published.
+Discord allows 10 published messages per channel per hour. Messages past the limit are published once Discord allows it.
+When the module is turned off with `/modules` or the dashboard, messages aren't published.
 
 ## Storage
 Settings are stored with the rest of Melvin's module settings, in `data/modules.db`. Messages aren't stored.
@@ -34,7 +34,7 @@ None.
 Requires Manage Server. Guild only.
 
 **Behavior**
-The command replies with a settings card listing each setting, what it does, and its current value. Channels are picked from a select menu, up to 25 of them, and deselecting all of them clears the setting. The menu lists text channels too, so make sure the ones picked are announcement channels, since anything else is skipped.
+The command replies with a settings card listing each setting, what it does, and its current value. Channels are picked from a select menu, up to 25 of them, and deselecting all of them clears the setting. The menu also lists text channels. Only announcement channels are published, other channels are skipped.
 Each change saves straight away and the card updates in place. Only members with Manage Server can use the card, and it stops responding after 5 minutes.
 The same settings can be changed from the dashboard on the website, under Config on the module's card, where each channel has a checkbox.
 

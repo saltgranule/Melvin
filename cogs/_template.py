@@ -1,12 +1,9 @@
-# a blank module to start new ones from. it isn't loaded, so nothing here shows up in
-# discord until it's copied. to make a real module out of it:
-#   1. copy this file to cogs/<key>.py and swap every "template" for the new key
-#   2. add the key to MODULES in module_settings.py, it's what gives the module its switch
-#          "template": ("Template", "One short line about what it does."),
-#   3. load it in main.py, next to the other cogs
-#          await bot.load_extension("cogs.<key>")
-#   4. give it a page in docs/, and a config section if it has settings
-# docs/developers.md has the long version
+# a blank module to copy when making a new one. files starting with an underscore
+# aren't loaded. to use it:
+#   1. copy it to cogs/<key>.py and replace "template" with the key
+#   2. fill in MODULE
+#   3. restart the bot
+# see docs/developers.md for details
 
 import logging
 
@@ -17,14 +14,31 @@ from discord.ext import commands
 import module_config
 import module_settings
 from globals import ERROR_MESSAGE
+from module_registry import Module, Setting
 from ui import ErrorUI, ResponseUI, open_config
 
 log = logging.getLogger(__name__)
 
 KEY = "template"
 
+# the label and description are shown on /modules and the dashboard. settings are
+# optional, without them remove the config command
+MODULE = Module(
+    KEY,
+    "Template",
+    "One short line about what it does.",
+    settings=(
+        Setting(
+            "channel",
+            "Channel",
+            "Where this module posts. Nothing is posted until one is set.",
+            "channel",
+        ),
+    ),
+)
 
-# server only. drop both decorators if the commands make sense in dms or as a user app
+
+# server only. remove both decorators to allow dms and user installs
 @app_commands.allowed_installs(guilds=True, users=False)
 @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
 class TemplateCog(
@@ -55,7 +69,7 @@ class TemplateCog(
         else:
             await interaction.response.send_message(view=view, ephemeral=True)
 
-    # commands are blocked on their own when the module's off. nothing to check here
+    # commands are blocked automatically when the module is off
     @app_commands.command(name="hello", description="Say hello.")
     async def hello(self, interaction: discord.Interaction) -> None:
         await interaction.response.send_message(
@@ -63,8 +77,7 @@ class TemplateCog(
             allowed_mentions=discord.AllowedMentions.none(),
         )
 
-    # settings live in CONFIG in module_config.py, keyed by KEY. once there's an entry,
-    # this command and the dashboard's Config button both work. no entry yet? delete it
+    # uses the settings in MODULE, like the dashboard's Config button
     @app_commands.command(
         name="config",
         description="Change this module's settings for this server.",
@@ -73,13 +86,13 @@ class TemplateCog(
     async def config(self, interaction: discord.Interaction) -> None:
         await open_config(interaction, KEY)
 
-    # listeners are a different thing. they run either way, so each one checks first
+    # listeners aren't blocked when the module is off, so they check it themselves
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
         if member.bot or not await module_settings.is_enabled(member.guild.id, KEY):
             return
 
-    # runs whether the module's on or not, the guild is gone either way
+    # runs even when the module is off
     @commands.Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild) -> None:
         if not module_config.is_configurable(KEY):

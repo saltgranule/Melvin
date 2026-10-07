@@ -8,7 +8,23 @@ from discord.ext import commands
 
 import module_config
 import module_settings
+from module_registry import Module, Setting
 from ui import CasesView, ErrorUI, InfoUI, PositiveUI, open_config
+
+MODULE = Module(
+    "mod",
+    "Moderation",
+    "Warnings, kicks, bans, mutes, cases, and the auto-role.",
+    settings=(
+        Setting(
+            "auto_role",
+            "Auto-role",
+            "Given to members when they join. Leave empty for none.",
+            "role",
+            permission="manage_roles",
+        ),
+    ),
+)
 
 log = logging.getLogger(__name__)
 
@@ -328,7 +344,7 @@ class ModCog(
             reason=reason,
         )
 
-        # if the kick fails, the case goes too. a case for a kick that never happened is worse than no case
+        # if the kick fails, the case is deleted
         try:
             await member.kick(
                 reason=f"Kicked by Melvin using {interaction.user.name} with the reason: {reason}",
@@ -420,7 +436,7 @@ class ModCog(
             reason=reason,
         )
 
-        # same as kick, no ban means no case
+        # if the ban fails, the case is deleted
         try:
             await member.ban(
                 reason=f"Banned by Melvin using {interaction.user.name} with the reason: {reason}",
@@ -809,7 +825,7 @@ class ModCog(
                 )
                 return
 
-            # None, not True. the channel goes back to whatever its category says instead of forcing sends on
+            # None rather than True, so the channel inherits from its category again
             current_overwrite.send_messages = None
             await target_channel.set_permissions(
                 interaction.guild.default_role,

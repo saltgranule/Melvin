@@ -53,7 +53,7 @@ a {
     display: none;
 }
 
-/* nudged down to sit on the first line of text */
+/* lined up with the first line of text */
 .banner-icon {
     flex: 0 0 auto;
     margin-top: 2px;
@@ -494,7 +494,7 @@ a {
     padding: 6px 14px;
 }
 
-/* docs, whose sidebar layout the dashboard borrows */
+/* docs, the dashboard uses the same sidebar layout */
 .docs-layout {
     display: flex;
     align-items: flex-start;
@@ -986,7 +986,7 @@ a {
 
 /* dashboard */
 
-/* full width, or the page shrinks and jumps whenever search hides cards */
+/* full width, so the page doesn't resize when search hides cards */
 .dashboard-section {
     width: 100%;
     padding-top: 40px;
@@ -1373,7 +1373,7 @@ textarea.dashboard-input {
 
 /* module switches */
 
-/* two joined buttons. the picked half takes a banner color, green for on and red for off */
+/* two joined buttons. the selected half uses a banner color, green for on and red for off */
 .dashboard-switch {
     display: inline-flex;
     flex: 0 0 auto;

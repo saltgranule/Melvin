@@ -2,7 +2,14 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from module_registry import Module
 from ui import ErrorUI, GalleryWithItem, SmallSeparator
+
+MODULE = Module(
+    "info",
+    "Info",
+    "View avatars and banners.",
+)
 
 
 class AvatarView(discord.ui.LayoutView):

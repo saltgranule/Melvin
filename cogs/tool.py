@@ -8,7 +8,14 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from module_registry import Module
 from ui import ErrorUI, GalleryWithItem, GatedUI, ResponseUI
+
+MODULE = Module(
+    "tool",
+    "Tools",
+    "Encoding, decoding, speak, and 8ball.",
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable

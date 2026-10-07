@@ -15,7 +15,58 @@ from globals import (
     DisplayNameEffect,
     DisplayNameFont,
 )
+from module_registry import Module, Setting
 from ui import ErrorUI, GalleryWithItem, open_config
+
+FONTS = (
+    ("cherry_bomb", "Sakura"),
+    ("chicle", "Jellybean"),
+    ("museo_moderno", "Modern"),
+    ("neo_castel", "Medieval"),
+    ("pixelify", "8Bit"),
+    ("sinistre", "Vampyre"),
+    ("default", "GG Sans"),
+    ("zilla_slab", "Tempo"),
+)
+EFFECTS = (
+    ("solid", "Solid"),
+    ("gradient", "Gradient"),
+    ("neon", "Neon"),
+    ("toon", "Toon"),
+    ("pop", "Pop"),
+)
+
+MODULE = Module(
+    "style",
+    "Style",
+    "Melvin's display name style.",
+    settings=(
+        Setting(
+            "font",
+            "Font",
+            "The font of Melvin's name in this server.",
+            "choice",
+            default="cherry_bomb",
+            choices=FONTS,
+        ),
+        Setting(
+            "effect",
+            "Effect",
+            "The effect on Melvin's name in this server.",
+            "choice",
+            default="gradient",
+            choices=EFFECTS,
+        ),
+        Setting(
+            "colors",
+            "Colors",
+            "One hex color, or two joined by a dash for the gradient effect, like F4A261-FFFFFF.",
+            "color",
+            default="FFFFFF",
+            placeholder="F4A261-FFFFFF",
+        ),
+    ),
+)
 
 if TYPE_CHECKING:
     from main import Melvin

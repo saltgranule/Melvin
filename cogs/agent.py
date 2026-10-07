@@ -13,7 +13,14 @@ from discord.ext import commands
 from groq import AsyncGroq
 
 from globals import MELVIN_EMOJI
+from module_registry import Module
 from ui import ErrorUI, Paginator
+
+MODULE = Module(
+    "ai",
+    "AI",
+    "Ask a free AI model questions.",
+)
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 

@@ -22,7 +22,7 @@ DENSITIES = {
 DENSITY_CHOICES = [
     app_commands.Choice(name=key.title(), value=key) for key in DENSITIES
 ]
-# the made up data covers the whole 30 day range
+# covers the full 30 day range
 POPULATE_HOURS = 30 * 24
 
 
@@ -115,7 +115,7 @@ class PrivateCog(
     )
     @app_commands.describe(density="How much activity to make up.")
     @app_commands.choices(density=DENSITY_CHOICES)
-    # the stats belong to a server, so this only makes sense used in one
+    # server only, since stats are per server
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     async def populate(
         self,

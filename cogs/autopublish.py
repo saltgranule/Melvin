@@ -7,7 +7,31 @@ from discord.ext import commands
 import module_config
 import module_settings
 from globals import ERROR_MESSAGE
+from module_registry import Module, Setting
 from ui import ErrorUI, open_config
+
+MODULE = Module(
+    "autopublish",
+    "Auto-Publish",
+    "Publishes messages in announcement channels.",
+    settings=(
+        Setting(
+            "channels",
+            "Channels",
+            "Pick announcement channels, anything else is skipped.",
+            "channels",
+            channel_type="any",
+        ),
+        Setting(
+            "bots",
+            "Bot messages",
+            "Whether messages from bots and webhooks are published too, like feeds from other apps.",
+            "choice",
+            default="off",
+            choices=(("off", "Skip them"), ("on", "Publish them")),
+        ),
+    ),
+)
 
 log = logging.getLogger(__name__)
 
@@ -53,10 +77,10 @@ class AutoPublishCog(
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
-        # the channel type is free to check, so it goes before anything that hits the db
+        # checked first, since it doesn't need the database
         if message.guild is None or message.channel.type is not discord.ChannelType.news:
             return
-        # "thread created", "poll ended" and friends can't be published anyway
+        # system messages, like "thread created", can't be published
         if message.is_system() or message.author.system:
             return
         if not await module_settings.is_enabled(message.guild.id, "autopublish"):
@@ -65,12 +89,12 @@ class AutoPublishCog(
         settings = await module_config.get_all(message.guild.id, "autopublish")
         if str(message.channel.id) not in (settings["channels"] or "").split(","):
             return
-        # webhooks count as bots here, which is what feeds from other apps usually are
+        # webhook messages count as bot messages
         if message.author.bot and settings["bots"] != "on":
             return
 
-        # discord allows 10 publishes an hour per channel. past that, discord.py waits
-        # until it's allowed again, so a busy channel publishes late rather than never
+        # discord allows 10 publishes per channel per hour. discord.py waits out the limit,
+        # so messages past it are published late
         try:
             await message.publish()
         except discord.Forbidden:

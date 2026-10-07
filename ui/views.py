@@ -18,7 +18,7 @@ from globals import (
 )
 
 
-# HelpView's helpers, for digging the commands out of a cog's group
+# helpers for HelpView, to get the commands in a cog's group
 def get_cog_commands(cog: commands.Cog) -> list:
     group = getattr(cog, "__cog_app_commands_group__", None)
     if group is not None:
@@ -438,7 +438,7 @@ class PositiveUI(discord.ui.LayoutView):
         self.add_item(container)
 
 
-# PositiveUI with a different emoji. PositiveUI's is hardcoded, and a copy was easier
+# PositiveUI with a different emoji, since PositiveUI's emoji is hardcoded
 class ThankUI(discord.ui.LayoutView):
     def __init__(self, *, title: str, subtitle: str) -> None:
         super().__init__()

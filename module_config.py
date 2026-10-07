@@ -2,12 +2,14 @@ import asyncio
 import re
 import secrets
 import time
-from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import aiosqlite
 
+# Setting and MAX_CHANNELS are defined in module_registry, and imported here for
+# existing code that uses module_config.Setting
+from module_registry import CONFIG, MAX_CHANNELS, Setting
 from module_settings import DATA_DIR, DB_PATH
 
 if TYPE_CHECKING:
@@ -25,180 +27,6 @@ SNOWFLAKE_PATTERN = re.compile(r"^\d{15,21}$")
 
 class ConfigError(ValueError):
     pass
-
-
-@dataclass(frozen=True)
-class Setting:
-    key: str
-    label: str
-    description: str
-    # channel, role, choice, text, url, color, or image
-    kind: str
-    default: str | None = None
-    # (value, label) pairs for choice settings
-    choices: tuple[tuple[str, str], ...] = ()
-    max_length: int = 100
-    placeholder: str = ""
-    # a discord permission needed on top of Manage Server to change this setting
-    permission: str | None = None
-    # which channels channel settings offer, text, or any for text and announcement
-    channel_type: str = "text"
-
-
-FONTS = (
-    ("cherry_bomb", "Sakura"),
-    ("chicle", "Jellybean"),
-    ("museo_moderno", "Modern"),
-    ("neo_castel", "Medieval"),
-    ("pixelify", "8Bit"),
-    ("sinistre", "Vampyre"),
-    ("default", "GG Sans"),
-    ("zilla_slab", "Tempo"),
-)
-EFFECTS = (
-    ("solid", "Solid"),
-    ("gradient", "Gradient"),
-    ("neon", "Neon"),
-    ("toon", "Toon"),
-    ("pop", "Pop"),
-)
-
-# discord won't take more than this in one channel select
-MAX_CHANNELS = 25
-
-CONFIG: dict[str, tuple[Setting, ...]] = {
-    "audit": (
-        Setting(
-            "log_channel",
-            "Log channel",
-            "The channel audit logs are posted in. Nothing is logged until one is set.",
-            "channel",
-        ),
-    ),
-    "welcome": (
-        Setting(
-            "channel",
-            "Welcome channel",
-            "The channel welcome messages are sent in. Nothing is sent until one is set.",
-            "channel",
-        ),
-        Setting(
-            "message",
-            "Message",
-            "Use {member} to mention the new member and {member_count} for the member count.",
-            "text",
-            default="Welcome, {member}!",
-            max_length=2000,
-            placeholder="Welcome, {member}! We're at {member_count} members now.",
-        ),
-        Setting("image", "Image", "Shown under the message.", "image"),
-        Setting(
-            "button1_label",
-            "First button label",
-            "The text on the first link button.",
-            "text",
-            default="Link 1",
-            max_length=80,
-        ),
-        Setting(
-            "button1_url",
-            "First button link",
-            "Where the first button goes. Leave empty for no button.",
-            "url",
-            placeholder="https://",
-        ),
-        Setting(
-            "button2_label",
-            "Second button label",
-            "The text on the second link button.",
-            "text",
-            default="Link 2",
-            max_length=80,
-        ),
-        Setting(
-            "button2_url",
-            "Second button link",
-            "Where the second button goes. Leave empty for no button.",
-            "url",
-            placeholder="https://",
-        ),
-    ),
-    "autopublish": (
-        Setting(
-            "channels",
-            "Channels",
-            "Pick announcement channels, anything else is skipped.",
-            "channels",
-            channel_type="any",
-        ),
-        Setting(
-            "bots",
-            "Bot messages",
-            "Whether messages from bots and webhooks are published too, like feeds from other apps.",
-            "choice",
-            default="off",
-            choices=(("off", "Skip them"), ("on", "Publish them")),
-        ),
-    ),
-    "thanks": (
-        Setting(
-            "announce",
-            "Thank messages",
-            "Whether Melvin posts a message when someone is thanked. Thanks are counted either way.",
-            "choice",
-            default="on",
-            choices=(("on", "On"), ("off", "Off")),
-        ),
-        Setting(
-            "cooldown",
-            "Cooldown",
-            "How long each member waits between giving thanks.",
-            "choice",
-            default="60",
-            choices=(
-                ("30", "30 seconds"),
-                ("60", "1 minute"),
-                ("300", "5 minutes"),
-                ("600", "10 minutes"),
-            ),
-        ),
-    ),
-    "mod": (
-        Setting(
-            "auto_role",
-            "Auto-role",
-            "Given to members when they join. Leave empty for none.",
-            "role",
-            permission="manage_roles",
-        ),
-    ),
-    "style": (
-        Setting(
-            "font",
-            "Font",
-            "The font of Melvin's name in this server.",
-            "choice",
-            default="cherry_bomb",
-            choices=FONTS,
-        ),
-        Setting(
-            "effect",
-            "Effect",
-            "The effect on Melvin's name in this server.",
-            "choice",
-            default="gradient",
-            choices=EFFECTS,
-        ),
-        Setting(
-            "colors",
-            "Colors",
-            "One hex color, or two joined by a dash for the gradient effect, like F4A261-FFFFFF.",
-            "color",
-            default="FFFFFF",
-            placeholder="F4A261-FFFFFF",
-        ),
-    ),
-}
 
 
 def is_configurable(module: str) -> bool:

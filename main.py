@@ -12,6 +12,7 @@ from discord import app_commands
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
 
+import module_registry
 import module_settings
 import status
 from globals import (
@@ -297,21 +298,13 @@ async def main() -> None:
     STATS_FILE.parent.mkdir(parents=True, exist_ok=True)
     await module_settings.init_db()
     async with bot:
-        await bot.load_extension("cogs.info")
-        await bot.load_extension("cogs.agent")
-        await bot.load_extension("cogs.mod")
-        await bot.load_extension("cogs.audit")
-        await bot.load_extension("cogs.tool")
-        await bot.load_extension("cogs.debug")
-        await bot.load_extension("cogs.welcome")
-        await bot.load_extension("cogs.autopublish")
-        await bot.load_extension("cogs.private")
-        await bot.load_extension("cogs.timezone")
-        await bot.load_extension("cogs.style")
-        await bot.load_extension("cogs.stats")
-        await bot.load_extension("cogs.thanks")
-        await bot.load_extension("cogs.modules")
-        await bot.load_extension("cogs.serverstats")
+        # loads every file in cogs/ except those starting with an underscore. files without
+        # a setup function are skipped
+        for name in module_registry.cog_names():
+            try:
+                await bot.load_extension(name)
+            except commands.NoEntryPointError:
+                log.info("Skipped %s, it has no setup function", name)
         await bot.start(token)
 
 

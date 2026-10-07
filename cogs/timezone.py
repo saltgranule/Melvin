@@ -7,7 +7,14 @@ import discord
 from discord import AllowedMentions, app_commands
 from discord.ext import commands
 
+from module_registry import Module
 from ui import ErrorUI, InfoUI, PositiveUI, ResponseUI
+
+MODULE = Module(
+    "timezone",
+    "Timezones",
+    "Set and compare member timezones.",
+)
 
 time_quotes = [
     "**Men talk of killing time, while time quietly kills them.**\n-# *-- Dion Boucicault*",

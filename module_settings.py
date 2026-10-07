@@ -3,30 +3,15 @@ from pathlib import Path
 
 import aiosqlite
 
+# module key -> (label, description), from each cog's MODULE
+from module_registry import MODULES
+
 DATA_DIR = Path("data")
 DB_PATH = DATA_DIR / "modules.db"
 
 # how long the bot trusts its cached settings before re-reading them, so changes
 # made outside the bot (like the dashboard) still apply within a few seconds
 CACHE_SECONDS = 10
-
-# module key -> (label, description), keys match each cog's command group name
-MODULES = {
-    "mod": ("Moderation", "Warnings, kicks, bans, mutes, cases, and the auto-role."),
-    "audit": ("Audit Logs", "Logs member, message, voice, channel, and role changes."),
-    "welcome": ("Welcome", "Welcome messages for new members."),
-    "autopublish": ("Auto-Publish", "Publishes messages in announcement channels."),
-    "thanks": ("Thanks", "Counts thanks between members."),
-    "ai": ("AI", "Ask a free AI model questions."),
-    "tool": ("Tools", "Encoding, decoding, speak, and 8ball."),
-    "timezone": ("Timezones", "Set and compare member timezones."),
-    "info": ("Info", "View avatars and banners."),
-    "style": ("Style", "Melvin's display name style."),
-    "serverstats": (
-        "Server Stats",
-        "Counts messages, voice minutes, and members for the dashboard.",
-    ),
-}
 
 # guild id -> (when it was loaded, the modules it has turned off)
 _cache: dict[int, tuple[float, set[str]]] = {}

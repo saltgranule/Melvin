@@ -54,7 +54,7 @@ NEWS_CHANNEL = 5
 BOT_CACHE_SECONDS = 30
 
 # how long a user's server list is trusted before asking discord again. saving a setting
-# uses a much shorter window, so lost permissions bite fast
+# uses a shorter window, so lost permissions take effect quickly
 GUILDS_CACHE_SECONDS = 120
 WRITE_CHECK_SECONDS = 15
 
@@ -72,7 +72,7 @@ bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 
 
 class DiscordError(Exception):
-    # discord couldn't be reached, or said no
+    # discord couldn't be reached or refused the request
     pass
 
 
@@ -231,8 +231,8 @@ def manageable_guilds(
     strict: bool = False,
 ) -> list[dict] | None:
     # the servers the logged in user can manage, or None if they need to log in again.
-    # strict never falls back to an older list when discord is down. anything that
-    # changes settings wants that
+    # strict never uses an older list when discord can't be reached, and is used for
+    # anything that changes settings
     row = current_session()
     if row is None:
         return None
@@ -246,7 +246,7 @@ def manageable_guilds(
         raw = _discord_request("/users/@me/guilds", token=row["access_token"])
     except DiscordError as e:
         if e.args[0] == 401:
-            # revoked or expired, either way the session is dead
+            # the token was revoked or expired, so the session is no longer valid
             _delete_session(session.pop("sid"))
             g.dashboard_session = None
             return None
@@ -311,7 +311,7 @@ def guild_context(
 ) -> dict:
     bot_user = _bot_request("/users/@me")
 
-    # none of these depend on each other, so they all go out at once
+    # fetched together, since none of them depend on each other
     paths = {
         "guild": f"/guilds/{guild_id}",
         "channels": f"/guilds/{guild_id}/channels",
@@ -776,7 +776,7 @@ def _config_fields(
                 "selected": selected,
                 "error": errors.get(setting.key),
                 "locked": not has_permission(guild, setting.permission),
-                # only real hex codes get a swatch. values from a failed save haven't been checked yet
+                # only valid hex codes get a swatch, values from a failed save aren't checked yet
                 "colors": (
                     value.split("-")
                     if setting.kind == "color"
@@ -981,8 +981,8 @@ async def server_stats_page(guild_id: int) -> str | Response:
     total_ys = charts.scale(totals, 0, top, height)
     message_ys = charts.scale(messages, 0, top, height)
 
-    # members only show change, so the scale hugs the counts, like the status charts.
-    # periods before the first reading borrow it
+    # the member scale fits the counts, like the status charts, so changes are visible.
+    # periods before the first reading use the first reading
     known = [count for count in series["members"] if count is not None]
     members = [
         count if count is not None else (known[0] if known else 0)

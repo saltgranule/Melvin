@@ -8,7 +8,62 @@ from discord.ext import commands
 import module_config
 import module_settings
 from globals import ERROR_MESSAGE
+from module_registry import Module, Setting
 from ui import ErrorUI, GalleryWithItem, ResponseUI, open_config
+
+MODULE = Module(
+    "welcome",
+    "Welcome",
+    "Welcome messages for new members.",
+    settings=(
+        Setting(
+            "channel",
+            "Welcome channel",
+            "The channel welcome messages are sent in. Nothing is sent until one is set.",
+            "channel",
+        ),
+        Setting(
+            "message",
+            "Message",
+            "Use {member} to mention the new member and {member_count} for the member count.",
+            "text",
+            default="Welcome, {member}!",
+            max_length=2000,
+            placeholder="Welcome, {member}! We're at {member_count} members now.",
+        ),
+        Setting("image", "Image", "Shown under the message.", "image"),
+        Setting(
+            "button1_label",
+            "First button label",
+            "The text on the first link button.",
+            "text",
+            default="Link 1",
+            max_length=80,
+        ),
+        Setting(
+            "button1_url",
+            "First button link",
+            "Where the first button goes. Leave empty for no button.",
+            "url",
+            placeholder="https://",
+        ),
+        Setting(
+            "button2_label",
+            "Second button label",
+            "The text on the second link button.",
+            "text",
+            default="Link 2",
+            max_length=80,
+        ),
+        Setting(
+            "button2_url",
+            "Second button link",
+            "Where the second button goes. Leave empty for no button.",
+            "url",
+            placeholder="https://",
+        ),
+    ),
+)
 
 log = logging.getLogger(__name__)
 

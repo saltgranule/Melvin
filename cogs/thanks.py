@@ -9,10 +9,40 @@ from discord.ext import commands
 import module_config
 import module_settings
 from globals import ERROR_MESSAGE
+from module_registry import Module, Setting
 from ui import ErrorUI, InfoUI, ThankUI, open_config
 
-# rate_int thanks per rate_time seconds. servers pick their own rate_time with the
-# cooldown in /thanks config, this one's only the fallback
+MODULE = Module(
+    "thanks",
+    "Thanks",
+    "Counts thanks between members.",
+    settings=(
+        Setting(
+            "announce",
+            "Thank messages",
+            "Whether Melvin posts a message when someone is thanked. Thanks are counted either way.",
+            "choice",
+            default="on",
+            choices=(("on", "On"), ("off", "Off")),
+        ),
+        Setting(
+            "cooldown",
+            "Cooldown",
+            "How long each member waits between giving thanks.",
+            "choice",
+            default="60",
+            choices=(
+                ("30", "30 seconds"),
+                ("60", "1 minute"),
+                ("300", "5 minutes"),
+                ("600", "10 minutes"),
+            ),
+        ),
+    ),
+)
+
+# a user can give rate_int thanks per rate_time seconds. rate_time is only used when a
+# server hasn't set a cooldown in /thanks config
 rate_int = 1
 rate_time = 60.0
 
@@ -49,13 +79,13 @@ negations = [
     "certainly not",
 ]
 
-# word boundaries, so "ty" doesn't go off inside "pretty"
+# word boundaries, so "ty" doesn't match inside "pretty"
 TRIGGER_PATTERN = re.compile(
     r"\b(" + "|".join(re.escape(t) for t in trigger) + r")\b",
     re.IGNORECASE,
 )
 
-# a negation right before a trigger cancels it. "no thanks" isn't a thank you
+# a negation right before a trigger cancels it, like "no thanks"
 NEGATION_PATTERN = re.compile(
     r"\b(" + "|".join(re.escape(n) for n in negations) + r")\s+"
     r"(" + "|".join(re.escape(t) for t in trigger) + r")\b",
@@ -226,9 +256,9 @@ class ThanksCog(
                 discord.Message,
             ):
                 await self._credit_thanks(message, thanker, replied_message.author)
-                return  # and only them, mentions in a reply don't count on top
+                return  # mentions in a reply aren't credited as well
 
-        # no reply, so everyone mentioned gets one
+        # otherwise, everyone mentioned is credited
         if message.mentions:
             for mentioned in message.mentions:
                 await self._credit_thanks(message, thanker, mentioned)

@@ -7,10 +7,25 @@ from discord.ext import commands
 import module_config
 import module_settings
 from globals import ERROR_MESSAGE, PRIMARY, SECONDARY, TERTIARY
+from module_registry import Module, Setting
 from ui import (
     ErrorUI,
     LargeSeparator,
     open_config,
+)
+
+MODULE = Module(
+    "audit",
+    "Audit Logs",
+    "Logs member, message, voice, channel, and role changes.",
+    settings=(
+        Setting(
+            "log_channel",
+            "Log channel",
+            "The channel audit logs are posted in. Nothing is logged until one is set.",
+            "channel",
+        ),
+    ),
 )
 
 log = logging.getLogger(__name__)

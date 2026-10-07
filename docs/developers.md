@@ -1,21 +1,32 @@
 # Module Development Documentation
 How to make a cog show up on the dashboard as a module, and how to give it settings. This page is for contributors. The examples come from Melvin's own cogs, mostly the thanks cog, since it uses every part of this.
 
-## How it fits together
-Modules are handled by three shared files. Cogs only need small additions to plug into them.
+## How modules are loaded
+Each module is a single cog file. The cog declares the module with a `MODULE` at the top of the file, and the bot and the website read it from there.
 
 | File | What it does |
 |------|--------------|
-| `module_settings.py` | Lists the modules, and stores whether each one is on or off per guild. |
-| `module_config.py` | Lists each module's settings with their defaults, checks values, and stores them per guild. |
+| `cogs/<key>.py` | The cog, and its `MODULE`, with the label, description, and settings. |
+| `module_registry.py` | Finds every `MODULE` in `cogs/`, and lists the files the bot loads. |
+| `module_settings.py` | Stores whether each module is on or off per guild. |
+| `module_config.py` | Checks setting values and stores them per guild. |
 | `ui/config.py` | The settings card every `/<module> config` command replies with. |
 | `dashboard.py` | The website dashboard, built from the files above. |
 
+Every file in `cogs/` is loaded when the bot starts, except files whose name starts with an underscore, like `_template.py`. Files without a `setup` function are also skipped.
+
 The bot and the website both read and write the same database at `data/modules.db`. The bot caches it and re-reads it every 10 seconds, so a change made on the dashboard reaches the bot within that time.
 
-## Starting from the template
-`cogs/template.py` is a blank module with everything below already in place: the GroupCog, the server only decorators, the shared error handler, a config command, a listener that checks the module, and cleanup for when Melvin leaves a guild. It isn't loaded, so it never shows up in Discord.
-To start a new module, copy it to `cogs/<key>.py`, replace every `template` with the new key, then add the key to `MODULES` and load the cog in `main.py`. The steps are also listed at the top of the file.
+## Using the template
+`cogs/_template.py` is a blank module that includes everything below: the `MODULE`, the GroupCog, the server only decorators, the shared error handler, a config command, a listener that checks the module, and cleanup for when Melvin leaves a guild. It isn't loaded, since its name starts with an underscore.
+To start a new module:
+
+1. Copy it to `cogs/<key>.py`, without the underscore.
+2. Replace `template` with the new key.
+3. Fill in `MODULE`.
+4. Restart the bot.
+
+The same steps are listed at the top of the file. New modules should also have a docs page in `docs/`.
 
 ## Making a cog a module
 A module is a cog that can be turned on or off per guild, from `/modules` or the dashboard.
@@ -31,17 +42,20 @@ class ThanksCog(
 ):
 ```
 
-**2. Add it to MODULES**
-In `module_settings.py`, add an entry with the group name as the key, then a label and a short description. These show on `/modules` and on the dashboard card.
+**2. Declare MODULE**
+Under the imports in the cog's file, add a `MODULE` with the group name as the key, a label, and a short description. The label and description are shown on `/modules` and on the dashboard card. Modules are listed alphabetically by label.
 
 ```python
-MODULES = {
-    ...
-    "thanks": ("Thanks", "Counts thanks between members."),
-}
+from module_registry import Module
+
+MODULE = Module(
+    "thanks",
+    "Thanks",
+    "Counts thanks between members.",
+)
 ```
 
-That's all it takes for the module to get a switch on `/modules` and the dashboard. When it's turned off, the bot automatically blocks every command in the group, including subcommands and any message options the cog adds, and leaves the group out of `/help` in that guild.
+The module then has a switch on `/modules` and the dashboard. When it's turned off, the bot automatically blocks every command in the group, including subcommands and any message options the cog adds, and leaves the group out of `/help` in that guild.
 
 **3. Check it in listeners**
 Listeners aren't commands, so they aren't blocked automatically. Every listener that does something in a guild should check the module first, like the thanks cog does before counting a thank.
@@ -82,18 +96,25 @@ class ModCog(
 Don't use `app_commands.guild_only` for this. The bot wide setting in `main.py` overrides it, so the commands would still show up in DMs.
 
 **What isn't a module**
-Commands outside a group, like `/help`, `/latency`, and `/melvin`, can't be turned off. Neither can the stats, private, and debug cogs, since they aren't listed in `MODULES`.
+Commands outside a group, like `/help`, `/latency`, and `/melvin`, can't be turned off. Neither can the stats, private, and debug cogs, since they don't declare a `MODULE`.
+
+**Importing cog files**
+The website imports each cog file to read its `MODULE`, without loading the cog or connecting to Discord. Anything that needs the bot, a token, or an API key should be in `__init__` or `cog_load`, not at the top level of the file. Constants and imports at the top level are fine.
 
 ## Making a module configurable
 A configurable module gets a `/<module> config` command and a Config button on its dashboard card. Both are built from the same list of settings, so each setting is only defined once.
 
-**1. Add its settings to CONFIG**
-In `module_config.py`, add the module's settings to `CONFIG`, in the order they should appear.
+**1. Add settings to MODULE**
+Add a `settings` tuple to `MODULE`, in the order the settings should appear.
 
 ```python
-CONFIG = {
-    ...
-    "thanks": (
+from module_registry import Module, Setting
+
+MODULE = Module(
+    "thanks",
+    "Thanks",
+    "Counts thanks between members.",
+    settings=(
         Setting(
             "announce",
             "Thank messages",
@@ -116,7 +137,7 @@ CONFIG = {
             ),
         ),
     ),
-}
+)
 ```
 
 A setting that needs more than Manage Server says so with `permission`, like the moderation auto-role.
@@ -294,9 +315,10 @@ In the template, give the chart's element the `status-chart` class and pass the 
 ```
 
 ## Checklist
-- The cog is a GroupCog, and its group name is in `MODULES`.
+- The cog is a GroupCog, and its `MODULE` uses the group name as its key.
+- Nothing at the top level of the file needs the bot, a token, or an API key.
 - Every listener that acts in a guild checks `module_settings.is_enabled`.
-- Its settings are in `CONFIG`, with a description and default for each.
+- Its settings are in `MODULE`, with a description and default for each.
 - It has a `config` command that replies through `open_config`, with the Manage Server check and the shared error handler.
 - It reads settings with `module_config`, never from its own table.
 - Old settings are moved with `migrate_legacy`, if there were any.

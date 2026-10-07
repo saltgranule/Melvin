@@ -6,6 +6,13 @@ from discord.ext import commands, tasks
 
 import module_settings
 import server_stats
+from module_registry import Module
+
+MODULE = Module(
+    "serverstats",
+    "Server Stats",
+    "Counts messages, voice minutes, and members for the dashboard.",
+)
 
 log = logging.getLogger(__name__)
 
