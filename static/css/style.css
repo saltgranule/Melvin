@@ -967,7 +967,9 @@ a {
     padding: 6px 14px;
 }
 
+/* full width, so the page doesn't shrink and shift when searching hides cards */
 .dashboard-section {
+    width: 100%;
     padding-top: 40px;
     padding-bottom: 64px;
 }

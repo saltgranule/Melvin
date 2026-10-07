@@ -14,9 +14,20 @@
     </div>
 
     {% if guilds %}
-    <ul class="dashboard-grid">
+    <div class="docs-search dashboard-search">
+        <svg class="docs-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+            <path d="M20 20L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input type="text" id="server-search-input" class="docs-search-input" placeholder="Search servers..."
+               autocomplete="off" aria-label="Search servers" aria-controls="server-list">
+        <kbd class="docs-search-kbd">/</kbd>
+    </div>
+    <p class="docs-search-empty" id="server-search-empty" hidden>No servers match "<span id="server-search-empty-term"></span>".</p>
+
+    <ul class="dashboard-grid" id="server-list">
         {% for guild in guilds %}
-        <li>
+        <li data-search="{{ guild.name | lower }}">
             <div class="dashboard-card dashboard-server">
                 {% if guild.icon_url %}
                 <img src="{{ guild.icon_url }}" alt="" class="dashboard-card-icon" loading="lazy">
@@ -35,6 +46,86 @@
         </li>
         {% endfor %}
     </ul>
+
+    <script>
+        (function () {
+            // same search as the docs sidebar, filtering server cards instead of links
+            var input = document.getElementById("server-search-input");
+            var emptyState = document.getElementById("server-search-empty");
+            var emptyTerm = document.getElementById("server-search-empty-term");
+            var cards = Array.prototype.slice.call(document.querySelectorAll("#server-list > li[data-search]")).map(function (li) {
+                var name = li.querySelector(".dashboard-card-name");
+                return {
+                    li: li,
+                    name: name,
+                    label: name.textContent.trim(),
+                    link: li.querySelector("a.btn"),
+                    text: li.getAttribute("data-search")
+                };
+            });
+
+            // bold the matched part of a label without touching innerHTML
+            function highlight(element, text, query) {
+                var index = query ? text.toLowerCase().indexOf(query) : -1;
+                element.textContent = "";
+                if (index === -1) {
+                    element.textContent = text;
+                    return;
+                }
+                var mark = document.createElement("mark");
+                mark.textContent = text.slice(index, index + query.length);
+                element.append(text.slice(0, index), mark, text.slice(index + query.length));
+            }
+
+            function filter() {
+                var query = input.value.trim().toLowerCase();
+                var visible = 0;
+                cards.forEach(function (card) {
+                    var match = card.text.indexOf(query) !== -1;
+                    card.li.hidden = !match;
+                    highlight(card.name, card.label, query);
+                    if (match) visible += 1;
+                });
+
+                if (query && visible === 0) {
+                    emptyTerm.textContent = input.value.trim();
+                    emptyState.hidden = false;
+                } else {
+                    emptyState.hidden = true;
+                }
+            }
+
+            input.addEventListener("input", filter);
+
+            // like the docs, enter opens the top result
+            input.addEventListener("keydown", function (event) {
+                if (event.key !== "Enter" || !input.value.trim()) return;
+                var first = cards.filter(function (card) { return !card.li.hidden; })[0];
+                if (first) {
+                    event.preventDefault();
+                    window.location.href = first.link.href;
+                }
+            });
+
+            // "/" to focus, like GitHub/Linear/Slack. Ctrl/Cmd+K as the
+            // secondary industry-standard shortcut (Stripe, Algolia, VS Code).
+            document.addEventListener("keydown", function (event) {
+                var isTypingElsewhere = ["INPUT", "TEXTAREA"].indexOf(document.activeElement.tagName) !== -1;
+                var isCmdK = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
+                var isSlash = event.key === "/" && !isTypingElsewhere;
+
+                if (isCmdK || isSlash) {
+                    event.preventDefault();
+                    input.focus();
+                    input.select();
+                } else if (event.key === "Escape" && document.activeElement === input) {
+                    input.value = "";
+                    filter();
+                    input.blur();
+                }
+            });
+        })();
+    </script>
     {% else %}
     <div class="status-card-empty dashboard-empty">You don't have Manage Server in any servers yet.</div>
     {% endif %}
