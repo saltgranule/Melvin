@@ -953,6 +953,7 @@ def _time_ago(start: int) -> str:
     return "Just now"
 
 
+# pretty much a statcord.xyz rewrite, will be appended with more soon!!
 @bp.route("/<int:guild_id>/stats")
 async def server_stats_page(guild_id: int) -> str | Response:
     try:
