@@ -990,21 +990,25 @@ async def server_stats_page(guild_id: int) -> str | Response:
         cards=[
             {
                 "label": "Total messages",
+                "icon": "chat-circle-dots",
                 "value": f"{series['total_messages']:,}",
                 "meta": f"In the last {series['label']}",
             },
             {
                 "label": "Total voice minutes",
+                "icon": "microphone",
                 "value": f"{series['total_voice']:,}",
                 "meta": f"In the last {series['label']}",
             },
             {
                 "label": "Member count",
+                "icon": "users",
                 "value": f"{series['member_count'] or 0:,}",
                 "meta": "Right now",
             },
             {
                 "label": "Net growth",
+                "icon": "trend-down" if series["member_change"] < 0 else "trend-up",
                 # joins minus leaves over the range, signed so a drop is clear
                 "value": f"{series['member_change']:+,}"
                 if series["member_change"]

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
 {% from "_banner.html" import banner %}
 {% block content %}
 <div class="docs-layout dashboard-layout">
@@ -9,10 +10,7 @@
         <p class="dashboard-notice">Changes apply in Discord within a few seconds.</p>
 
         <div class="docs-search dashboard-search">
-            <svg class="docs-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
-                <path d="M20 20L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
+            {{ icon("magnifying-glass", 14, "docs-search-icon") }}
             <input type="text" id="module-search-input" class="docs-search-input" placeholder="Search modules..."
                    autocomplete="off" aria-label="Search modules" aria-controls="module-list">
             <kbd class="docs-search-kbd">/</kbd>
@@ -38,7 +36,7 @@
                         </button>
                     </form>
                     {% if module.configurable %}
-                    <a href="{{ url_for('dashboard.module_config_page', guild_id=guild.id, module=module.key) }}" class="btn btn-dark btn-small">Config</a>
+                    <a href="{{ url_for('dashboard.module_config_page', guild_id=guild.id, module=module.key) }}" class="btn btn-dark btn-small">Config{{ icon("arrow-right", 14) }}</a>
                     {% endif %}
                 </div>
             </li>
@@ -72,13 +70,13 @@
         // only one banner shows at a time, the latest save's result
         function showError(message) {
             successBox.hidden = true;
-            errorBox.textContent = message;
+            errorBox.querySelector(".banner-text").textContent = message;
             errorBox.hidden = false;
         }
 
         function showSaved(label, enabled) {
             errorBox.hidden = true;
-            successBox.textContent = label + " turned " + (enabled ? "on" : "off") +
+            successBox.querySelector(".banner-text").textContent = label + " turned " + (enabled ? "on" : "off") +
                 ". Changes apply in Discord within a few seconds.";
             successBox.hidden = false;
         }

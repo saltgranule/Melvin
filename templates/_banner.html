@@ -1,5 +1,11 @@
-{# status banners for the whole site, kind is success, error, or misc #}
+{% from "_icons.html" import icon %}
+{# status banners for the whole site, kind is success, error, or misc. scripts that change
+   the message set the .banner-text inside, so the icon stays #}
+{% set banner_icons = {"success": "check-circle", "error": "warning-circle", "misc": "info"} %}
 {% macro banner(kind, message, id=None, hidden=False) -%}
 <div class="banner banner-{{ kind }}" role="{{ 'alert' if kind == 'error' else 'status' }}"
-     {%- if id %} id="{{ id }}"{% endif %}{% if hidden %} hidden{% endif %}>{{ message }}</div>
+     {%- if id %} id="{{ id }}"{% endif %}{% if hidden %} hidden{% endif %}>
+    {{- icon(banner_icons[kind], 18, "banner-icon") -}}
+    <span class="banner-text">{{ message }}</span>
+</div>
 {%- endmacro %}

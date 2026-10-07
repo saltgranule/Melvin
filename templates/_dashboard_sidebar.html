@@ -1,9 +1,8 @@
+{% from "_icons.html" import icon -%}
 {# shared by every server page in the dashboard #}
 <aside class="docs-sidebar dashboard-sidebar">
     <a href="{{ url_for('dashboard.index') }}" class="dashboard-back">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        {{ icon("arrow-left", 14) }}
         All servers
     </a>
 

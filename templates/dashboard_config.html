@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
 {% from "_banner.html" import banner %}
 {% block content %}
 <div class="docs-layout dashboard-layout">
@@ -6,9 +7,7 @@
 
     <main class="dashboard-main">
         <a href="{{ url_for('dashboard.modules', guild_id=guild.id) }}" class="dashboard-back">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            {{ icon("arrow-left", 14) }}
             Modules
         </a>
         <h1 class="status-heading">{{ module.label}} settings</h1>
