@@ -146,12 +146,14 @@ These are the fields a setting can have.
 | `max_length` | For text settings, the longest value allowed. Over 100 gets a larger text box. |
 | `placeholder` | Example text shown in empty boxes. |
 | `permission` | A Discord permission needed on top of Manage Server, like `"manage_roles"`. |
+| `channel_type` | For channel settings, which channels are offered. `"text"` by default, or `"news"` for announcement channels. |
 
 Each kind of setting gets its own controls on both sides, and is stored as text.
 
 | Kind | In Discord | On the dashboard | Stored as |
 |------|------|------|------|
-| `channel` | Channel select menu | Dropdown of text channels | The channel id |
+| `channel` | Channel select menu | Dropdown of channels | The channel id |
+| `channels` | Channel select menu that takes up to 25 | A checkbox for each channel | The channel ids, joined by commas |
 | `role` | Role select menu | Dropdown of roles Melvin and the user can give out | The role id |
 | `choice` | Select menu | Dropdown | The chosen value |
 | `text` | Edit button and form | Text box | The text |

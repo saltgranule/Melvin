@@ -36,7 +36,20 @@
                 <label for="{{ id }}" class="dashboard-field-label">{{ setting.label }}</label>
                 <p class="dashboard-field-description" id="{{ id }}-description">{{ setting.description }}</p>
 
-                {% if setting.kind in ["channel", "role", "choice"] %}
+                {% if setting.kind == "channels" %}
+                <div class="dashboard-checklist" id="{{ id }}" role="group" aria-describedby="{{ id }}-description">
+                    {% for value, label in field.options %}
+                    <label class="dashboard-checkbox">
+                        <input type="checkbox" name="{{ setting.key }}" value="{{ value }}"
+                               {% if value in field.selected %}checked{% endif %} {% if field.locked %}disabled{% endif %}>
+                        {{ label }}
+                    </label>
+                    {% else %}
+                    <p class="dashboard-field-description">This server doesn't have any {{ "announcement" if setting.channel_type == "news" else "text" }} channels Melvin can see.</p>
+                    {% endfor %}
+                </div>
+
+                {% elif setting.kind in ["channel", "role", "choice"] %}
                 <select name="{{ setting.key }}" id="{{ id }}" class="dashboard-input"
                         aria-describedby="{{ id }}-description" {% if field.locked %}disabled{% endif %}>
                     {% if setting.kind != "choice" %}

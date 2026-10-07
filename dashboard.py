@@ -49,6 +49,7 @@ MANAGE_ROLES = 1 << 28
 PERMISSION_BITS = {"manage_guild": MANAGE_GUILD, "manage_roles": MANAGE_ROLES}
 
 TEXT_CHANNEL = 0
+NEWS_CHANNEL = 5
 # channels and roles fetched with the bot's token are reused for this long
 BOT_CACHE_SECONDS = 30
 
@@ -347,6 +348,11 @@ def guild_context(
             (channel["id"], f"#{channel['name']}")
             for channel in sorted(channels, key=operator.itemgetter("position"))
             if channel["type"] == TEXT_CHANNEL
+        ],
+        "news_channels": [
+            (channel["id"], f"#{channel['name']}")
+            for channel in sorted(channels, key=operator.itemgetter("position"))
+            if channel["type"] == NEWS_CHANNEL
         ],
         # the same rules as the discord side, so neither can hand out more than the other
         "roles": [
@@ -721,12 +727,21 @@ def _check_value(
         raise module_config.ConfigError(msg)
     if value is None:
         return
-    if setting.kind == "channel" and value not in dict(context["channels"]):
-        msg = "That channel isn't available, Melvin can only use text channels."
-        raise module_config.ConfigError(msg)
+    if setting.kind in {"channel", "channels"}:
+        available = dict(_channel_options(setting, context))
+        kind = "announcement" if setting.channel_type == "news" else "text"
+        if any(part not in available for part in value.split(",")):
+            msg = f"That channel isn't available, Melvin can only use {kind} channels here."
+            raise module_config.ConfigError(msg)
     if setting.kind == "role" and value not in dict(context["roles"]):
         msg = "That role is above Melvin's or your top role, or can't be given out."
         raise module_config.ConfigError(msg)
+
+
+def _channel_options(setting: module_config.Setting, context: dict) -> list[tuple[str, str]]:
+    return list(
+        context["news_channels"] if setting.channel_type == "news" else context["channels"],
+    )
 
 
 def _config_fields(
@@ -740,8 +755,8 @@ def _config_fields(
     for setting in module_config.CONFIG[module]:
         value = values.get(setting.key)
         options: list[tuple[str, str]] = []
-        if setting.kind == "channel":
-            options = list(context["channels"])
+        if setting.kind in {"channel", "channels"}:
+            options = _channel_options(setting, context)
         elif setting.kind == "role":
             options = list(context["roles"])
         elif setting.kind == "choice":
@@ -751,12 +766,15 @@ def _config_fields(
         if value and setting.kind in {"channel", "role"} and value not in dict(options):
             name = context["role_names"].get(value) if setting.kind == "role" else None
             options.insert(0, (value, name or f"Unknown {setting.kind}"))
+        selected = value.split(",") if setting.kind == "channels" and value else []
+        options += [(part, "Unknown channel") for part in selected if part not in dict(options)]
 
         fields.append(
             {
                 "setting": setting,
                 "value": value,
                 "options": options,
+                "selected": selected,
                 "error": errors.get(setting.key),
                 "locked": not has_permission(guild, setting.permission),
                 # only real hex codes get a swatch. values from a failed save haven't been checked yet
@@ -827,7 +845,10 @@ async def module_config_page(
                     images[key] = None
                 continue
 
-            raw = request.form.get(key, "")
+            if setting.kind == "channels":
+                raw = ",".join(request.form.getlist(key))
+            else:
+                raw = request.form.get(key, "")
             submitted[key] = raw or None
             try:
                 value = module_config.clean_value(setting, raw)

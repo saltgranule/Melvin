@@ -1250,6 +1250,12 @@ textarea.dashboard-input {
     accent-color: var(--primary);
 }
 
+.dashboard-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
 .dashboard-form-actions {
     display: flex;
     gap: 12px;

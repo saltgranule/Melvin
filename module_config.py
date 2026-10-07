@@ -41,6 +41,8 @@ class Setting:
     placeholder: str = ""
     # a discord permission needed on top of Manage Server to change this setting
     permission: str | None = None
+    # which channels channel settings offer, text or news (announcement)
+    channel_type: str = "text"
 
 
 FONTS = (
@@ -60,6 +62,9 @@ EFFECTS = (
     ("toon", "Toon"),
     ("pop", "Pop"),
 )
+
+# discord won't take more than this in one channel select
+MAX_CHANNELS = 25
 
 CONFIG: dict[str, tuple[Setting, ...]] = {
     "audit": (
@@ -116,6 +121,23 @@ CONFIG: dict[str, tuple[Setting, ...]] = {
             "Where the second button goes. Leave empty for no button.",
             "url",
             placeholder="https://",
+        ),
+    ),
+    "autopublish": (
+        Setting(
+            "channels",
+            "Channels",
+            "Announcement channels whose messages are published. Melvin needs Manage Messages in them.",
+            "channels",
+            channel_type="news",
+        ),
+        Setting(
+            "bots",
+            "Bot messages",
+            "Whether messages from bots and webhooks are published too, like feeds from other apps.",
+            "choice",
+            default="off",
+            choices=(("off", "Skip them"), ("on", "Publish them")),
         ),
     ),
     "thanks": (
@@ -201,7 +223,17 @@ def clean_value(setting: Setting, raw: str | None) -> str | None:
     if not value:
         return None
 
-    if setting.kind in {"channel", "role"}:
+    if setting.kind == "channels":
+        # stored as ids joined by commas, in the order they were picked
+        ids = list(dict.fromkeys(part for part in re.split(r"[\s,]+", value) if part))
+        if not all(SNOWFLAKE_PATTERN.match(part) for part in ids):
+            msg = "That isn't a valid list of channels."
+            raise ConfigError(msg)
+        if len(ids) > MAX_CHANNELS:
+            msg = f"{setting.label} can have at most {MAX_CHANNELS} channels."
+            raise ConfigError(msg)
+        value = ",".join(ids)
+    elif setting.kind in {"channel", "role"}:
         if not SNOWFLAKE_PATTERN.match(value):
             msg = f"That isn't a valid {setting.kind}."
             raise ConfigError(msg)

@@ -9,13 +9,14 @@ Melvin sees what Discord shows a bot in the servers it's in, messages included. 
 - **Thanks** looks for words like "thanks", to credit whoever was thanked.
 - **Server Stats** counts messages and time spent in voice, per server and per hour.
 - **Audit Logs** posts edits, deletions, and member changes to a channel the server picks. Those posts live in that server's Discord channel.
+- **Auto-Publish** publishes new messages in the announcement channels a server picks, so they reach the servers following them.
 
 ## What Melvin keeps
 Everything below is stored on the machine Melvin runs on.
 
 | What | Why | How long |
 |------|------|------|
-| Server settings, like which modules are on, the welcome message, and uploaded welcome images | So each server works the way it was set up | Until they're changed. Welcome settings and images are deleted when Melvin leaves a server, other settings stay until someone asks for them to be removed |
+| Server settings, like which modules are on, the welcome message, and uploaded welcome images | So each server works the way it was set up | Until they're changed. Welcome and Auto-Publish settings, and welcome images, are deleted when Melvin leaves a server. Other settings stay until someone asks for them to be removed |
 | Moderation cases, with the member, the moderator, the action, and the reason | So moderators can look back at a member's history with `/case` | Until a moderator removes them |
 | Your timezone, if you set one | So `/timezone` can show it | Until you run `/timezone reset` |
 | How many times you've been thanked | For the thanks count | Until you ask for it to be removed |

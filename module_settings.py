@@ -15,6 +15,7 @@ MODULES = {
     "mod": ("Moderation", "Warnings, kicks, bans, mutes, cases, and the auto-role."),
     "audit": ("Audit Logs", "Logs member, message, voice, channel, and role changes."),
     "welcome": ("Welcome", "Welcome messages for new members."),
+    "autopublish": ("Auto-Publish", "Publishes messages in announcement channels."),
     "thanks": ("Thanks", "Counts thanks between members."),
     "ai": ("AI", "Ask a free AI model questions."),
     "tool": ("Tools", "Encoding, decoding, speak, and 8ball."),

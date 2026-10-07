@@ -11,6 +11,8 @@ from .views import ErrorUI, SmallSeparator
 # called after a setting changes, for modules that need to act on it straight away
 OnChange = Callable[[discord.Guild], Awaitable[None]]
 
+CHANNEL_TYPES = {"text": discord.ChannelType.text, "news": discord.ChannelType.news}
+
 
 def _display(setting: module_config.Setting, value: str | None) -> str:
     if value is None:
@@ -19,6 +21,8 @@ def _display(setting: module_config.Setting, value: str | None) -> str:
     is_default = value == setting.default
     if setting.kind == "channel":
         shown = f"<#{value}>"
+    elif setting.kind == "channels":
+        shown = ", ".join(f"<#{part}>" for part in value.split(","))
     elif setting.kind == "role":
         shown = f"<@&{value}>"
     elif setting.kind == "choice":
@@ -92,13 +96,16 @@ class ConfigView(discord.ui.LayoutView):
         setting: module_config.Setting,
         value: str | None,
     ) -> discord.ui.Item:
-        if setting.kind == "channel":
+        if setting.kind in {"channel", "channels"}:
+            several = setting.kind == "channels"
             select = discord.ui.ChannelSelect(
-                placeholder="Pick a channel...",
-                channel_types=[discord.ChannelType.text],
+                placeholder="Pick channels..." if several else "Pick a channel...",
+                channel_types=[CHANNEL_TYPES[setting.channel_type]],
                 min_values=0,
-                max_values=1,
-                default_values=[discord.Object(int(value))] if value else [],
+                max_values=module_config.MAX_CHANNELS if several else 1,
+                default_values=[
+                    discord.Object(int(part)) for part in (value or "").split(",") if part
+                ],
             )
         elif setting.kind == "role":
             select = discord.ui.RoleSelect(
@@ -129,9 +136,11 @@ class ConfigView(discord.ui.LayoutView):
             return button
 
         async def _picked(interaction: discord.Interaction) -> None:
-            picked = select.values[0] if select.values else None
-            raw = str(picked.id) if hasattr(picked, "id") else picked
-            await self.save(interaction, setting, raw)
+            raw = ",".join(
+                str(picked.id) if hasattr(picked, "id") else picked
+                for picked in select.values
+            )
+            await self.save(interaction, setting, raw or None)
 
         select.callback = _picked
         return select
