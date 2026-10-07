@@ -35,7 +35,7 @@
                 <span class="status-card-row">
                     <span class="dashboard-card-name" title="{{ guild.name }}">{{ guild.name }}</span>
                     {% if guild.has_bot %}
-                    <a href="{{ url_for('dashboard.modules', guild_id=guild.id) }}" class="btn btn-primary btn-small">Manage{{ icon("arrow-up-right", 14) }}</a>
+                    <a href="{{ url_for('dashboard.modules', guild_id=guild.id) }}" class="btn btn-primary btn-small">Manage{{ icon("arrow-circle-up-right", 14) }}</a>
                     {% else %}
                     <a href="{{ add_bot_url }}" class="btn btn-dark btn-small">Add Melvin</a>
                     {% endif %}
