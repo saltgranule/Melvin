@@ -288,15 +288,16 @@ class ToolCog(
     @app_commands.describe(
         text="The message text to send.",
         attachment="Optional attachment to include with the message.",
+        containerized="Send the message in a container. Defaults to true.",
     )
     async def speak(
         self,
         interaction: discord.Interaction,
         text: str,
         attachment: discord.Attachment | None = None,
+        containerized: bool = True,
     ) -> None:
         await interaction.response.defer(ephemeral=False)
-        view = ResponseUI(text)
 
         if (
             isinstance(interaction.user, discord.Member)
@@ -305,19 +306,26 @@ class ToolCog(
             await interaction.followup.send(view=GatedUI(), ephemeral=True)
             return
 
-        if attachment is not None:
-            file = await attachment.to_file()
-            view.container.add_item(GalleryWithItem(f"attachment://{file.filename}"))
-            await interaction.followup.send(
-                view=view,
-                file=file,
-                allowed_mentions=discord.AllowedMentions.none(),
-            )
+        file = await attachment.to_file() if attachment is not None else None
+        mentions = discord.AllowedMentions.none()
+
+        if not containerized:
+            # Raw text, with the attachment as a regular file
+            if file is not None:
+                await interaction.followup.send(text, file=file, allowed_mentions=mentions)
+            else:
+                await interaction.followup.send(text, allowed_mentions=mentions)
+            return
+
+        view = discord.ui.LayoutView()
+        container = discord.ui.Container(discord.ui.TextDisplay(text))
+        view.add_item(container)
+
+        if file is not None:
+            container.add_item(GalleryWithItem(f"attachment://{file.filename}"))
+            await interaction.followup.send(view=view, file=file, allowed_mentions=mentions)
         else:
-            await interaction.followup.send(
-                view=view,
-                allowed_mentions=discord.AllowedMentions.none(),
-            )
+            await interaction.followup.send(view=view, allowed_mentions=mentions)
 
     @app_commands.command(name="8ball", description="game of fate")
     @app_commands.describe(prompt="the prompt for the 8ball")

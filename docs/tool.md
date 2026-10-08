@@ -87,14 +87,15 @@ Speak through Melvin. Sends a message as the bot, with an optional attachment.
 |------|------|----------|--------------|
 | text | string | yes | The message text to send. |
 | attachment | attachment | no | Optional attachment to include with the message. |
+| containerized | boolean | no | Send the message in a container. Defaults to true. |
 
 **Permissions**
 Requires the Manage Messages permission. If the user does not have this permission, the command shows a gated response instead of running **unless the user is using the speak command in a private message, or group chat.**
 
 **Behavior**
 
-If an attachment is provided, it is converted to a file and included in the response, with the attachment shown in a gallery item linked to the file.
-If no attachment is provided, the command sends just the text.
+If containerized is true, the text is sent inside a container. If an attachment is provided, it is converted to a file and shown in a gallery item in the container, below the text.
+If containerized is false, the text is sent as a plain message with no container. If an attachment is provided, it is included as a regular file attachment.
 In both cases, mentions in the text are suppressed, so the message will not ping users, roles, or everyone.
 
 **Error handling**
