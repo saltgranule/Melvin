@@ -8,8 +8,6 @@ import secrets
 import subprocess  # ruff: ignore[suspicious-subprocess-import]
 import sys
 import time
-import urllib.error
-import urllib.request
 from pathlib import Path
 
 import markdown
@@ -17,8 +15,10 @@ from dotenv import load_dotenv
 from flask import Flask, Response, abort, render_template
 
 import dashboard
+import http_client
 from globals import (
     ADD_BOT_URL,
+    DATA_DIR,
     INVITE_URL,
     MELVIN_GITHUB_URL,
     PRIMARY,
@@ -66,7 +66,7 @@ bot_process = None
 
 
 def start_bot() -> None:
-    globals()["bot_process"] = subprocess.Popen([sys.executable, "main.py"])
+    globals()["bot_process"] = subprocess.Popen([sys.executable, str(Path(app.root_path) / "main.py")])
 
 
 THEME = {
@@ -110,17 +110,10 @@ def _github_get(path: str) -> dict | list:
     token = os.environ.get("GITHUB_TOKEN")
     if token:
         headers["Authorization"] = f"Bearer {token}"
-
-    url = f"{GITHUB_API}{path}"
-    if not url.startswith("https://"):
-        raise ValueError("Invalid URL scheme")
-
-    request = urllib.request.Request(url, headers=headers)  # ruff: ignore[suspicious-url-open-usage]
-    with urllib.request.urlopen(request, timeout=5) as response:  # ruff: ignore[suspicious-url-open-usage]
-        return json.load(response)
+    return http_client.fetch_json(f"{GITHUB_API}{path}", headers=headers, timeout=5)
 
 
-def get_repo_meta() -> int | dict:
+def get_repo_meta() -> dict:
     now = time.time()
     cached = _repo_meta_cache["data"]
     if cached is not None and now - _repo_meta_cache["fetched_at"] < REPO_META_TTL:
@@ -140,7 +133,7 @@ def get_repo_meta() -> int | dict:
             if c.get("type") == "User"
             and c.get("login", "").lower() not in HIDDEN_CONTRIBUTORS
         ]
-    except urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError:
+    except http_client.RequestError:
         pass
 
     data = {
@@ -153,7 +146,7 @@ def get_repo_meta() -> int | dict:
     return data
 
 
-BOT_STATS_FILE = Path(app.root_path) / "data" / "bot_stats.json"
+BOT_STATS_FILE = DATA_DIR / "bot_stats.json"
 
 
 def get_bot_stats() -> dict[str, int]:
@@ -229,8 +222,6 @@ def home() -> str:
     return render_template(
         "index.html",
         active="home",
-        theme=THEME,
-        links=LINKS,
         repo=get_repo_meta(),
         stats=get_bot_stats(),
     )
@@ -241,8 +232,6 @@ def docs_index() -> str:
     return render_template(
         "docs.html",
         active="docs",
-        theme=THEME,
-        links=LINKS,
         docs=get_docs_list(),
         doc=None,
         active_slug=None,
@@ -257,8 +246,6 @@ def docs_page(slug: str) -> str:
     return render_template(
         "docs.html",
         active="docs",
-        theme=THEME,
-        links=LINKS,
         docs=get_docs_list(),
         doc=doc,
         active_slug=slug,
@@ -271,8 +258,6 @@ async def status() -> str:
     return render_template(
         "status.html",
         active="status",
-        theme=THEME,
-        links=LINKS,
         shards=shards,
         overall=summarize_status(shards),
         metrics=await get_metrics_status(),
@@ -283,8 +268,6 @@ def legal_page(slug: str, active: str) -> str:
     return render_template(
         "legal.html",
         active=active,
-        theme=THEME,
-        links=LINKS,
         doc=load_doc(LEGAL_DIR / f"{slug}.md"),
     )
 
@@ -301,7 +284,7 @@ def terms() -> str:
 
 @app.errorhandler(404)
 def not_found(_error: Exception) -> tuple[str, int]:
-    return render_template("404.html", active=None, theme=THEME, links=LINKS), 404
+    return render_template("404.html", active=None), 404
 
 
 if __name__ == "__main__":

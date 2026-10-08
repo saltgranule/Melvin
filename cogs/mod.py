@@ -8,6 +8,7 @@ from discord.ext import commands
 
 import module_config
 import module_settings
+from globals import DATA_DIR
 from module_registry import Module, Setting
 from ui import CasesView, ErrorUI, InfoUI, PositiveUI, open_config
 
@@ -40,7 +41,7 @@ class ModCog(
     def __init__(self, bot: commands.Bot) -> None:
         super().__init__()
         self.bot = bot
-        self.db_path = "data/mod.db"
+        self.db_path = DATA_DIR / "mod.db"
 
     role = app_commands.Group(name="role", description="Moderation role commands.")
     cases = app_commands.Group(name="case", description="Moderation case commands.")

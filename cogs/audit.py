@@ -6,7 +6,7 @@ from discord.ext import commands
 
 import module_config
 import module_settings
-from globals import ERROR_MESSAGE, PRIMARY, SECONDARY, TERTIARY
+from globals import DATA_DIR, ERROR_MESSAGE, PRIMARY, SECONDARY, TERTIARY
 from module_registry import Module, Setting
 from ui import (
     ErrorUI,
@@ -56,7 +56,7 @@ class AuditCog(
     def __init__(self, bot: commands.Bot) -> None:
         super().__init__()
         self.bot = bot
-        self.db_path = "data/logging.db"
+        self.db_path = DATA_DIR / "logging.db"
 
     def clean_and_truncate(self, text: str, length: int = 500) -> str:
         return discord.utils.escape_markdown(

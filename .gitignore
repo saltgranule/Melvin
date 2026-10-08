@@ -1,6 +1,18 @@
+# secrets and local config
+.env
+.replit
+
+# python
+__pycache__/
+.venv/
+
+# editors
+.idea/
+
+# databases, uploaded images and files the bot writes for the website
+data/
+*.db
+
+# node
 package.json
 package-lock.json
-.env
-*.db
-.replit
-pyproject.toml

@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 
 import discord
 from discord import app_commands
@@ -7,7 +6,7 @@ from discord.ext import commands
 
 import module_config
 import module_settings
-from globals import ERROR_MESSAGE
+from globals import DATA_DIR, ERROR_MESSAGE
 from module_registry import Module, Setting
 from ui import ErrorUI, GalleryWithItem, ResponseUI, open_config
 
@@ -92,9 +91,10 @@ async def safe_finish(
 
 
 def _load_image_file(path: str | None) -> discord.File | None:
-    if not path or not Path(path).is_file():
+    file = module_config.image_file(path)
+    if file is None:
         return None
-    return discord.File(path, filename=Path(path).name)
+    return discord.File(file, filename=file.name)
 
 
 # server only, installed to a server and used in it, never in dms or as a user app
@@ -108,7 +108,7 @@ class WelcomeCog(
     def __init__(self, bot: commands.Bot) -> None:
         super().__init__()
         self.bot = bot
-        self.db_path = "data/welcome.db"
+        self.db_path = DATA_DIR / "welcome.db"
 
     async def cog_load(self) -> None:
         await module_config.migrate_legacy(

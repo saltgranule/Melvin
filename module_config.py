@@ -10,7 +10,8 @@ import aiosqlite
 # Setting and MAX_CHANNELS are defined in module_registry, and imported here for
 # existing code that uses module_config.Setting
 from module_registry import CONFIG, MAX_CHANNELS, Setting
-from module_settings import DATA_DIR, DB_PATH
+from globals import DATA_DIR
+from module_settings import DB_PATH
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -98,7 +99,14 @@ def clean_value(setting: Setting, raw: str | None) -> str | None:
 _cache: dict[tuple[int, str], tuple[float, dict[str, str | None]]] = {}
 
 
+_state = {"db_ready": False}
+
+
 async def init_db() -> None:
+    # the tables only need setting up once per process
+    if _state["db_ready"]:
+        return
+
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     async with aiosqlite.connect(DB_PATH) as db:
         # the bot and the website both read and write here, WAL stops them locking each other out
@@ -116,6 +124,7 @@ async def init_db() -> None:
             """,
         )
         await db.commit()
+    _state["db_ready"] = True
 
 
 async def _stored(guild_id: int, module: str) -> dict[str, str | None]:
@@ -202,12 +211,21 @@ async def clear_module(guild_id: int, module: str) -> None:
 
 
 # images are stored as files, and the setting holds the path
-def _delete_file(path: str | None) -> None:
+def image_file(path: str | None) -> Path | None:
+    # the stored image as a file, or None if it's missing or outside the data folder.
+    # older settings hold paths relative to the project folder
     if not path:
-        return
-    file = Path(path).resolve()
-    # never delete anything outside the data folder, whatever the setting says
-    if file.is_file() and DATA_DIR.resolve() in file.parents:
+        return None
+    file = (DATA_DIR.parent / path).resolve()
+    if not file.is_file() or DATA_DIR.resolve() not in file.parents:
+        return None
+    return file
+
+
+def _delete_file(path: str | None) -> None:
+    # never deletes anything outside the data folder, whatever the setting says
+    file = image_file(path)
+    if file is not None:
         file.unlink()
 
 

@@ -12,7 +12,7 @@ from discord import app_commands
 from discord.ext import commands
 from groq import AsyncGroq
 
-from globals import MELVIN_EMOJI
+from globals import DATA_DIR, MELVIN_EMOJI
 from module_registry import Module
 from ui import ErrorUI, Paginator
 
@@ -58,7 +58,7 @@ class AgentCog(
         self.bot = bot
         self.api_key = os.getenv("GROQ")
         self.client = AsyncGroq(api_key=self.api_key)
-        self.db_path = "data/ai_usage.db"
+        self.db_path = DATA_DIR / "ai_usage.db"
 
     async def cog_load(self) -> None:
         async with aiosqlite.connect(self.db_path) as db:

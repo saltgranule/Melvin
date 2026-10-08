@@ -1,4 +1,9 @@
 import enum
+from pathlib import Path
+
+# where the bot and the website keep their databases and shared files. built from this
+# file's location, so it's the same folder whichever directory melvin is started from
+DATA_DIR = Path(__file__).parent / "data"
 
 # colors
 PRIMARY = "#f4a261"

@@ -4,7 +4,6 @@ import logging
 import math
 import os
 import time
-from pathlib import Path
 
 import aiodns
 import discord
@@ -17,6 +16,7 @@ import module_settings
 import status
 from globals import (
     API_ICON,
+    DATA_DIR,
     MELVIN_EMOJI,
     SHARD_ICON,
     DisplayNameEffect,
@@ -29,8 +29,8 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 log = logging.getLogger(__name__)
-STATS_FILE = Path(__file__).parent / "data" / "bot_stats.json"
-GUILDS_FILE = Path(__file__).parent / "data" / "bot_guilds.json"
+STATS_FILE = DATA_DIR / "bot_stats.json"
+GUILDS_FILE = DATA_DIR / "bot_guilds.json"
 
 
 class MelvinTree(app_commands.CommandTree):

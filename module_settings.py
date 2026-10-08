@@ -1,12 +1,11 @@
 import time
-from pathlib import Path
 
 import aiosqlite
 
 # module key -> (label, description), from each cog's MODULE
+from globals import DATA_DIR
 from module_registry import MODULES
 
-DATA_DIR = Path("data")
 DB_PATH = DATA_DIR / "modules.db"
 
 # how long the bot trusts its cached settings before re-reading them, so changes
@@ -17,7 +16,14 @@ CACHE_SECONDS = 10
 _cache: dict[int, tuple[float, set[str]]] = {}
 
 
+_state = {"db_ready": False}
+
+
 async def init_db() -> None:
+    # the tables only need setting up once per process
+    if _state["db_ready"]:
+        return
+
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     async with aiosqlite.connect(DB_PATH) as db:
         # the bot and the website both read and write here, WAL stops them locking each other out
@@ -33,6 +39,7 @@ async def init_db() -> None:
             """,
         )
         await db.commit()
+    _state["db_ready"] = True
 
 
 async def disabled_modules(guild_id: int) -> set[str]:

@@ -7,6 +7,7 @@ import discord
 from discord import AllowedMentions, app_commands
 from discord.ext import commands
 
+from globals import DATA_DIR
 from module_registry import Module
 from ui import ErrorUI, InfoUI, PositiveUI, ResponseUI
 
@@ -51,7 +52,7 @@ class TimezoneCog(
     def __init__(self, bot: commands.Bot) -> None:
         super().__init__()
         self.bot = bot
-        self.db_path = "data/timezones.db"
+        self.db_path = DATA_DIR / "timezones.db"
 
     async def _ensure_db(self) -> None:
         async with aiosqlite.connect(self.db_path) as conn:

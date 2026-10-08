@@ -1,20 +1,18 @@
 import asyncio
 import logging
 from datetime import UTC, datetime
-from pathlib import Path
 
 import aiosqlite
 
 import charts
+from globals import DATA_DIR
 
-DATA_DIR = Path("data")
 DB_PATH = DATA_DIR / "uptime.db"
 START_TIME_FILE = DATA_DIR / "start_time.txt"
 
 MAX_HISTORY_POINTS = 14
 CHART_WIDTH = 200
 CHART_HEIGHT = 60
-CHART_PADDING = 4
 
 DEGRADED_GATEWAY_MS = 400
 DEGRADED_API_MS = 800
@@ -63,7 +61,14 @@ def _format_seconds(seconds: int) -> str:
     return f"{minutes}m"
 
 
+_state = {"db_ready": False}
+
+
 async def init_db() -> None:
+    # the tables only need setting up once per process
+    if _state["db_ready"]:
+        return
+
     await asyncio.to_thread(DATA_DIR.mkdir, parents=True, exist_ok=True)
     async with aiosqlite.connect(DB_PATH) as db:
         # the bot writes while the status page reads, WAL keeps them from blocking each other
@@ -102,6 +107,7 @@ async def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_bot_metrics_checked ON bot_metrics (checked_at)",
         )
         await db.commit()
+    _state["db_ready"] = True
 
 
 async def record_latency(

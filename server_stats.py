@@ -5,11 +5,11 @@
 import asyncio
 import math
 import time
-from pathlib import Path
 
 import aiosqlite
 
-DATA_DIR = Path("data")
+from globals import DATA_DIR
+
 DB_PATH = DATA_DIR / "server_stats.db"
 
 HOUR = 3600
@@ -30,7 +30,14 @@ DEFAULT_RANGE = "7d"
 POINT_SIZES = (HOUR, 6 * HOUR, DAY)
 
 
+_state = {"db_ready": False}
+
+
 async def init_db() -> None:
+    # the tables only need setting up once per process
+    if _state["db_ready"]:
+        return
+
     await asyncio.to_thread(DATA_DIR.mkdir, parents=True, exist_ok=True)
     async with aiosqlite.connect(DB_PATH) as db:
         # the bot writes while the website reads, WAL keeps them from blocking each other
@@ -48,6 +55,7 @@ async def init_db() -> None:
             """,
         )
         await db.commit()
+    _state["db_ready"] = True
 
 
 def hour_start(timestamp: float | None = None) -> int:

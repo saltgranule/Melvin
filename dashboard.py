@@ -7,11 +7,8 @@ import secrets
 import sqlite3
 import threading
 import time
-import urllib.error
 import urllib.parse
-import urllib.request
 from concurrent.futures import ThreadPoolExecutor
-from pathlib import Path
 
 from flask import (
     Blueprint,
@@ -28,14 +25,14 @@ from flask import (
 from werkzeug.wrappers import Response
 
 import charts
+import http_client
 import module_config
 import module_settings
 import server_stats
-from globals import ADD_BOT_URL
+from globals import ADD_BOT_URL, DATA_DIR
 
 log = logging.getLogger(__name__)
 
-DATA_DIR = Path("data")
 SESSIONS_DB = DATA_DIR / "dashboard.db"
 BOT_GUILDS_FILE = DATA_DIR / "bot_guilds.json"
 
@@ -198,27 +195,13 @@ def _discord_request(
     bot: bool = False,
     form: dict[str, str] | None = None,
 ) -> dict | list:
-    headers = {"Accept": "application/json", "User-Agent": "Melvin-Dashboard"}
+    headers = {"User-Agent": "Melvin-Dashboard"}
     if token:
         headers["Authorization"] = f"{'Bot' if bot else 'Bearer'} {token}"
-
-    data = None
-    if form is not None:
-        data = urllib.parse.urlencode(form).encode()
-        headers["Content-Type"] = "application/x-www-form-urlencoded"
-
-    request_ = urllib.request.Request(
-        f"{DISCORD_API}{path}",
-        data=data,
-        headers=headers,
-    )
     try:
-        with urllib.request.urlopen(request_, timeout=10) as response:  # ruff: ignore[suspicious-url-open-usage]
-            return json.load(response)
-    except urllib.error.HTTPError as e:
-        raise DiscordError(e.code) from e
-    except (urllib.error.URLError, TimeoutError, ValueError) as e:
-        raise DiscordError(0) from e
+        return http_client.fetch_json(f"{DISCORD_API}{path}", headers=headers, form=form)
+    except http_client.RequestError as e:
+        raise DiscordError(e.status) from e
 
 
 def _can_manage(guild: dict) -> bool:
@@ -493,6 +476,15 @@ def initials(name: str) -> str:
     return "".join(word[0] for word in name.split()[:2]).upper() or "?"
 
 
+def _guild_header(guild: dict) -> dict:
+    return {
+        "id": guild["id"],
+        "name": guild["name"],
+        "icon_url": guild_icon_url(guild),
+        "initials": initials(guild["name"]),
+    }
+
+
 # routes
 @bp.route("/")
 def index() -> str:
@@ -513,13 +505,7 @@ def index() -> str:
     present = bot_guild_ids()
     cards = sorted(
         (
-            {
-                "id": guild["id"],
-                "name": guild["name"],
-                "icon_url": guild_icon_url(guild),
-                "initials": initials(guild["name"]),
-                "has_bot": guild["id"] in present,
-            }
+            {**_guild_header(guild), "has_bot": guild["id"] in present}
             for guild in guilds
         ),
         key=lambda card: (not card["has_bot"], card["name"].lower()),
@@ -636,6 +622,22 @@ def _find_guild(guilds: list[dict], guild_id: int) -> dict | None:
     return match
 
 
+def _require_guild(guild_id: int, *, strict: bool = False) -> dict:
+    try:
+        guilds = manageable_guilds(
+            **({"max_age": WRITE_CHECK_SECONDS, "strict": True} if strict else {}),
+        )
+    except DiscordError:
+        abort(redirect(url_for("dashboard.index")))
+    if guilds is None:
+        abort(redirect(url_for("dashboard.index")))
+
+    match = _find_guild(guilds, guild_id)
+    if match is None:
+        abort(404)
+    return match
+
+
 def _sidebar(guild_id: int, active: str) -> list[dict]:
     return [
         {
@@ -654,17 +656,7 @@ def guild(guild_id: int) -> Response:
 
 @bp.route("/<int:guild_id>/modules")
 async def modules(guild_id: int) -> str | Response:
-    try:
-        guilds = manageable_guilds()
-    except DiscordError:
-        return redirect(url_for("dashboard.index"))
-    if guilds is None:
-        return redirect(url_for("dashboard.index"))
-
-    # not finding it and not being allowed look the same from outside
-    match = _find_guild(guilds, guild_id)
-    if match is None:
-        abort(404)
+    match = _require_guild(guild_id)
 
     await module_settings.init_db()
     disabled = await module_settings.disabled_modules(guild_id)
@@ -683,12 +675,7 @@ async def modules(guild_id: int) -> str | Response:
         "dashboard_guild.html",
         saved_message=saved_message,
         active="dashboard",
-        guild={
-            "id": match["id"],
-            "name": match["name"],
-            "icon_url": guild_icon_url(match),
-            "initials": initials(match["name"]),
-        },
+        guild=_guild_header(match),
         sections=_sidebar(guild_id, "dashboard.modules"),
         modules=[
             {
@@ -851,17 +838,7 @@ async def module_config_page(
     if posting:
         _check_csrf()
 
-    try:
-        guilds = manageable_guilds(
-            **({"max_age": WRITE_CHECK_SECONDS, "strict": True} if posting else {}),
-        )
-    except DiscordError:
-        return redirect(url_for("dashboard.index"))
-    if guilds is None:
-        return redirect(url_for("dashboard.index"))
-    match = _find_guild(guilds, guild_id)
-    if match is None:
-        abort(404)
+    match = _require_guild(guild_id, strict=posting)
 
     user = current_user()
     try:
@@ -944,12 +921,7 @@ async def module_config_page(
     page = render_template(
         "dashboard_config.html",
         active="dashboard",
-        guild={
-            "id": match["id"],
-            "name": match["name"],
-            "icon_url": guild_icon_url(match),
-            "initials": initials(match["name"]),
-        },
+        guild=_guild_header(match),
         sections=_sidebar(guild_id, "dashboard.modules"),
         module={
             "key": module,
@@ -983,12 +955,9 @@ async def config_image(guild_id: int, module: str, key: str) -> Response:
     ):
         abort(404)
 
-    path = await module_config.get(guild_id, module, key)
-    if not path:
-        abort(404)
-    file = Path(path).resolve()
-    # only ever serve files from the data folder
-    if not file.is_file() or DATA_DIR.resolve() not in file.parents:
+    # only ever serves files from the data folder
+    file = module_config.image_file(await module_config.get(guild_id, module, key))
+    if file is None:
         abort(404)
     return send_file(file)
 
@@ -1006,15 +975,7 @@ def _time_ago(start: int) -> str:
 # pretty much a statcord.xyz rewrite, will be appended with more soon!!
 @bp.route("/<int:guild_id>/stats")
 async def server_stats_page(guild_id: int) -> str | Response:
-    try:
-        guilds = manageable_guilds()
-    except DiscordError:
-        return redirect(url_for("dashboard.index"))
-    if guilds is None:
-        return redirect(url_for("dashboard.index"))
-    match = _find_guild(guilds, guild_id)
-    if match is None:
-        abort(404)
+    match = _require_guild(guild_id)
 
     range_key = request.args.get("range", server_stats.DEFAULT_RANGE)
     if range_key not in server_stats.RANGES:
@@ -1044,12 +1005,7 @@ async def server_stats_page(guild_id: int) -> str | Response:
     return render_template(
         "dashboard_stats.html",
         active="dashboard",
-        guild={
-            "id": match["id"],
-            "name": match["name"],
-            "icon_url": guild_icon_url(match),
-            "initials": initials(match["name"]),
-        },
+        guild=_guild_header(match),
         sections=_sidebar(guild_id, "dashboard.server_stats_page"),
         ranges=[(key, label) for key, (label, _, _) in server_stats.RANGES.items()],
         range_key=range_key,

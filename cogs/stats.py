@@ -6,6 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 
+from globals import DATA_DIR
 from ui import InfoUI
 
 log = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ class StatsCog(
     def __init__(self, bot: commands.Bot) -> None:
         super().__init__()
         self.bot = bot
-        self.db_path = "data/stats.db"
+        self.db_path = DATA_DIR / "stats.db"
 
     async def cog_unload(self) -> None:
         self.stats_loop.cancel()
