@@ -1,53 +1,47 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
 {% block content %}
-<section class="hero section-container">
-    <div class="hero-text">
-        <h1 class="hero-title">Melvin</h1>
-        <p class="hero-subtitle">
-            A discord.py app for moderation, utilities, and more. No longer in
-            open beta. Support and <a href="{{ links.github }}">contributions</a>
-            are welcome. Please join our <a href="{{ links.invite }}">support server</a> for support related queries.
-        </p>
-        <div class="hero-cta">
-            <a href="{{ links.add }}" class="btn btn-primary">Add Melvin</a>
-            <a href="{{ links.github }}" class="btn btn-dark">
-            {{ icon("github-logo") }}
-            GitHub
-            </a>
-            <a href="/docs" class="docs-search">
-                {{ icon("magnifying-glass", 14, "docs-search-icon") }}
-                <span class="docs-search-input docs-search-fake-input">Search docs...</span>
-                <kbd class="docs-search-kbd">/</kbd>
-            </a>
-        </div>
-        <div class="repo-meta">
-            <div class="repo-contributors" role="group" aria-label="Contributors">
-                {% for c in repo.contributors %}
-                <a href="{{ c.html_url }}" class="repo-avatar" title="{{ c.login }}">
-                    <img src="{{ c.avatar_url }}" alt="{{ c.login }}" loading="lazy">
+<section class="hero-cover">
+    <img src="{{ url_for('static', filename='media/melvin-hero.jpg') }}" alt="" class="hero-cover-image">
+    <div class="hero-cover-inner section-container">
+        <div class="hero-cover-body">
+            <h1 class="hero-title">Melvin</h1>
+            <p class="hero-subtitle">
+                A discord.py app for moderation, utilities, and more. No longer in
+                open beta. Support and <a href="{{ links.github }}">contributions</a>
+                are welcome. Please join our <a href="{{ links.invite }}">support server</a> for support related queries.
+            </p>
+            <div class="hero-cta">
+                <a href="{{ links.add }}" class="btn btn-primary">Add Melvin</a>
+                <a href="{{ links.github }}" class="btn btn-light">
+                {{ icon("github-logo") }}
+                GitHub
                 </a>
-                {% endfor %}
-                {% if repo.extra_contributors > 0 %}
-                <a href="{{ links.github }}/graphs/contributors" class="repo-avatar repo-avatar-more" aria-label="{{ repo.extra_contributors }} more contributors">
-                    +{{ repo.extra_contributors }}
+                <a href="/docs" class="docs-search">
+                    {{ icon("magnifying-glass", 14, "docs-search-icon") }}
+                    <span class="docs-search-input docs-search-fake-input">Search docs...</span>
+                    <kbd class="docs-search-kbd">/</kbd>
                 </a>
-                {% endif %}
             </div>
-            <a href="{{ links.github }}/stargazers" class="repo-stars">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25z"/>
-                </svg>
-                <span>{{ repo.star_count }} stars</span>
-            </a>
-            <div class="bot-stats">
-                <span>{{ stats.guild_count }} guilds</span>
-                <span>{{ stats.member_count }} members</span>
+            <div class="repo-meta">
+                <div class="repo-contributors" role="group" aria-label="Contributors">
+                    {% for c in repo.contributors %}
+                    <a href="{{ c.html_url }}" class="repo-avatar" title="{{ c.login }}">
+                        <img src="{{ c.avatar_url }}" alt="{{ c.login }}" loading="lazy">
+                    </a>
+                    {% endfor %}
+                    {% if repo.extra_contributors > 0 %}
+                    <a href="{{ links.github }}/graphs/contributors" class="repo-avatar repo-avatar-more" aria-label="{{ repo.extra_contributors }} more contributors">
+                        +{{ repo.extra_contributors }}
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="bot-stats">
+                    <span>{{ stats.guild_count }} guilds</span>
+                    <span>{{ stats.member_count }} members</span>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="hero-logo-wrap">
-        <img src="{{ url_for('static', filename='media/MelvinLogo.png') }}" alt="" class="hero-logo">
     </div>
 </section>
 

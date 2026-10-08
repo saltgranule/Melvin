@@ -120,26 +120,13 @@ def _github_get(path: str) -> dict | list:
         return json.load(response)
 
 
-def format_count(count: int) -> str:
-    if count >= 1000:
-        return f"{count / 1000:.1f}".rstrip("0").rstrip(".") + "k"
-    return str(count)
-
-
 def get_repo_meta() -> int | dict:
     now = time.time()
     cached = _repo_meta_cache["data"]
     if cached is not None and now - _repo_meta_cache["fetched_at"] < REPO_META_TTL:
         return cached
 
-    star_count = 0
     contributors = []
-
-    try:
-        repo = _github_get("")
-        star_count = repo.get("stargazers_count", 0)
-    except urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError:
-        pass
 
     try:
         raw_contributors = _github_get("/contributors?per_page=30")
@@ -157,7 +144,6 @@ def get_repo_meta() -> int | dict:
         pass
 
     data = {
-        "star_count": format_count(star_count),
         "contributors": contributors[:6],
         "extra_contributors": max(0, len(contributors) - 6),
     }
@@ -170,7 +156,7 @@ def get_repo_meta() -> int | dict:
 BOT_STATS_FILE = Path(app.root_path) / "data" / "bot_stats.json"
 
 
-def get_bot_stats() -> dict[str, str]:
+def get_bot_stats() -> dict[str, int]:
     try:
         raw = json.loads(BOT_STATS_FILE.read_text(encoding="utf-8"))
         guild_count = int(raw.get("guild_count", 0))
@@ -180,8 +166,8 @@ def get_bot_stats() -> dict[str, str]:
         member_count = 0
 
     return {
-        "guild_count": format_count(guild_count),
-        "member_count": format_count(member_count),
+        "guild_count": guild_count,
+        "member_count": member_count,
     }
 
 

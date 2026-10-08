@@ -5,6 +5,7 @@ import operator
 import os
 import secrets
 import sqlite3
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -52,6 +53,8 @@ TEXT_CHANNEL = 0
 NEWS_CHANNEL = 5
 # channels and roles fetched with the bot's token are reused for this long
 BOT_CACHE_SECONDS = 30
+# the bot's own user and the app's owners rarely change, so they're kept much longer
+BOT_STATIC_CACHE_SECONDS = 3600
 
 # how long a user's server list is trusted before asking discord again. saving a setting
 # uses a shorter window, so lost permissions take effect quickly
@@ -144,9 +147,9 @@ def _create_session(user: dict, access_token: str, expires_in: int) -> str:
     return sid
 
 
-def _delete_session(sid: str) -> None:
+def _delete_session(sid_hash: str) -> None:
     with _connect() as conn:
-        conn.execute("DELETE FROM sessions WHERE sid_hash = ?", (_hash_sid(sid),))
+        conn.execute("DELETE FROM sessions WHERE sid_hash = ?", (sid_hash,))
 
 
 def current_session() -> sqlite3.Row | None:
@@ -225,36 +228,9 @@ def _can_manage(guild: dict) -> bool:
     )
 
 
-def manageable_guilds(
-    *,
-    max_age: float = GUILDS_CACHE_SECONDS,
-    strict: bool = False,
-) -> list[dict] | None:
-    # the servers the logged in user can manage, or None if they need to log in again.
-    # strict never uses an older list when discord can't be reached, and is used for
-    # anything that changes settings
-    row = current_session()
-    if row is None:
-        return None
-
-    cached = json.loads(row["guilds"]) if row["guilds"] else None
-    cache_age = time.time() - row["guilds_fetched_at"]
-    if cached is not None and cache_age < max_age:
-        return cached
-
-    try:
-        raw = _discord_request("/users/@me/guilds", token=row["access_token"])
-    except DiscordError as e:
-        if e.args[0] == 401:
-            # the token was revoked or expired, so the session is no longer valid
-            _delete_session(session.pop("sid"))
-            g.dashboard_session = None
-            return None
-        if strict or cached is None:
-            raise
-        log.warning("Couldn't refresh a dashboard server list, using the cached one")
-        return cached
-
+def _fetch_guilds(access_token: str, user_id: str, sid_hash: str) -> list[dict]:
+    # asks discord for the user's servers and stores them on the session
+    raw = _discord_request("/users/@me/guilds", token=access_token)
     guilds = [
         {
             "id": guild["id"],
@@ -266,14 +242,83 @@ def manageable_guilds(
         for guild in raw
         if _can_manage(guild)
     ]
-    if json.loads(row["user"])["id"] in bot_owner_ids():
+    if user_id in bot_owner_ids():
         guilds = _with_bot_guilds(guilds)
     with _connect() as conn:
         conn.execute(
             "UPDATE sessions SET guilds = ?, guilds_fetched_at = ? WHERE sid_hash = ?",
-            (json.dumps(guilds), time.time(), row["sid_hash"]),
+            (json.dumps(guilds), time.time(), sid_hash),
         )
     return guilds
+
+
+# sessions with a server list refresh already running, so a burst of page views starts one
+_refreshing: set[str] = set()
+_refreshing_lock = threading.Lock()
+
+
+def _refresh_guilds_later(row: sqlite3.Row) -> None:
+    sid_hash = row["sid_hash"]
+    with _refreshing_lock:
+        if sid_hash in _refreshing:
+            return
+        _refreshing.add(sid_hash)
+
+    access_token = row["access_token"]
+    user_id = json.loads(row["user"])["id"]
+
+    def refresh() -> None:
+        try:
+            _fetch_guilds(access_token, user_id, sid_hash)
+        except DiscordError as e:
+            if e.args[0] == 401:
+                # the token was revoked or expired, the next page view asks for a new login
+                _delete_session(sid_hash)
+            else:
+                log.warning("Couldn't refresh a dashboard server list, keeping the cached one")
+        finally:
+            with _refreshing_lock:
+                _refreshing.discard(sid_hash)
+
+    threading.Thread(target=refresh, daemon=True).start()
+
+
+def manageable_guilds(
+    *,
+    max_age: float = GUILDS_CACHE_SECONDS,
+    strict: bool = False,
+) -> list[dict] | None:
+    # the servers the logged in user can manage, or None if they need to log in again.
+    # strict always waits for discord once the list is older than max_age, and is used
+    # for anything that changes settings
+    row = current_session()
+    if row is None:
+        return None
+
+    cached = json.loads(row["guilds"]) if row["guilds"] else None
+    cache_age = time.time() - row["guilds_fetched_at"]
+    if cached is not None and cache_age < max_age:
+        return cached
+
+    # page views use the older list straight away and refresh it in the background
+    if cached is not None and not strict:
+        _refresh_guilds_later(row)
+        return cached
+
+    try:
+        return _fetch_guilds(
+            row["access_token"],
+            json.loads(row["user"])["id"],
+            row["sid_hash"],
+        )
+    except DiscordError as e:
+        if e.args[0] == 401:
+            # the token was revoked or expired, so the session is no longer valid
+            _delete_session(row["sid_hash"])
+            session.pop("sid", None)
+            g.dashboard_session = None
+            return None
+        raise
 
 
 def has_permission(guild: dict, permission: str | None) -> bool:
@@ -288,13 +333,18 @@ def has_permission(guild: dict, permission: str | None) -> bool:
 _bot_cache: dict[str, tuple[float, dict | list]] = {}
 
 
-def _bot_request(path: str, *, fresh: bool = False) -> dict | list:
+def _bot_request(
+    path: str,
+    *,
+    fresh: bool = False,
+    max_age: float = BOT_CACHE_SECONDS,
+) -> dict | list:
     token = os.environ.get("TOKEN")
     if not token:
         raise DiscordError(0)
 
     cached = _bot_cache.get(path)
-    if cached and not fresh and time.time() - cached[0] < BOT_CACHE_SECONDS:
+    if cached and not fresh and time.time() - cached[0] < max_age:
         return cached[1]
 
     data = _discord_request(path, token=token, bot=True)
@@ -309,7 +359,7 @@ def guild_context(
     fresh: bool = False,
     bot_owner: bool = False,
 ) -> dict:
-    bot_user = _bot_request("/users/@me")
+    bot_user = _bot_request("/users/@me", max_age=BOT_STATIC_CACHE_SECONDS)
 
     # fetched together, since none of them depend on each other
     paths = {
@@ -369,7 +419,7 @@ def guild_context(
 
 def bot_owner_ids() -> set[str]:
     try:
-        app = _bot_request("/oauth2/applications/@me")
+        app = _bot_request("/oauth2/applications/@me", max_age=BOT_STATIC_CACHE_SECONDS)
     except DiscordError:
         log.warning("Couldn't load Melvin's owners, owner access is off for now")
         return set()
@@ -572,7 +622,7 @@ def logout() -> Response:
     _check_csrf()
     sid = session.get("sid")
     if sid:
-        _delete_session(sid)
+        _delete_session(_hash_sid(sid))
     _cleanup_sessions(force=True)
     session.clear()
     return redirect(url_for("home"))
