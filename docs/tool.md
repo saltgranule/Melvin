@@ -100,3 +100,29 @@ In both cases, mentions in the text are suppressed, so the message will not ping
 
 **Error handling**
 If the command is run by a user without the Manage Messages permission **inside a server**, a gated response is shown instead. This response is ephemeral, meaning only the user who ran the command can see it.
+
+## urban command
+Path: `/tool urban`
+Look up a word on Urban Dictionary.
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|----------|--------------|
+| word | string | yes | The word or phrase to look up. |
+
+**Behavior**
+The command defers its response and looks the word up through the Urban Dictionary API.
+The reply is a paginated layout with one definition per page, in the order Urban Dictionary returns them, up to ten. The title shows the word, with a link button to its Urban Dictionary page.
+Each page shows the definition, the example if there is one, and a footer with the vote counts, the author, the date it was written, and a permalink. Words Urban Dictionary marks as links in the text become links to their own definitions.
+Long definitions are cut to 1200 characters and long examples to 600, ending with "...".
+The page buttons stop responding after five minutes and are disabled.
+Mentions in the reply are suppressed.
+
+**Example**
+Input: `/tool urban word: chud`
+Output: A layout titled "chud" showing the first definition, with buttons to page through the rest.
+
+**Error handling**
+If no definitions are found, the command replies with an ephemeral error message.
+If Urban Dictionary cannot be reached or does not respond within ten seconds, the command replies with an ephemeral error message.

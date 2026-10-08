@@ -1,24 +1,35 @@
 import base64
+import logging
 import random
 import re
 import urllib.parse
 from typing import TYPE_CHECKING
 
+import aiohttp
 import discord
 from discord import app_commands
 from discord.ext import commands
 
+from globals import BROWSER, THUMBS_DOWN_WHITE, THUMBS_UP_WHITE
 from module_registry import Module
-from ui import ErrorUI, GalleryWithItem, GatedUI, ResponseUI
+from ui import ErrorUI, GalleryWithItem, GatedUI, Paginator, ResponseUI
 
 MODULE = Module(
     "tool",
     "Tools",
-    "Encoding, decoding, speak, and 8ball.",
+    "Encoding, decoding, speak, 8ball, and Urban Dictionary.",
 )
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+log = logging.getLogger(__name__)
+
+URBAN_API = "https://api.urbandictionary.com/v0/define"
+URBAN_DEFINE = "https://www.urbandictionary.com/define.php?term="
+# raw text is cut before links are added, so each page stays under discord's limit
+URBAN_DEFINITION_LIMIT = 1200
+URBAN_EXAMPLE_LIMIT = 600
 
 EIGHTBALL = [
     "It is certain.",
@@ -207,6 +218,41 @@ def _decode_menu_view(text: str, selected: str | None = None) -> discord.ui.Layo
     return view
 
 
+def _urban_links(text: str) -> str:
+    # urban dictionary marks linked words with [brackets]
+    return re.sub(
+        r"\[([^\]]+)\]",
+        lambda m: f"[{m[1]}]({URBAN_DEFINE}{urllib.parse.quote(m[1])})",
+        text,
+    )
+
+
+def _urban_text(text: str, limit: int) -> str:
+    text = text.replace("\r", "").strip()
+    if len(text) > limit:
+        text = text[:limit].rstrip() + "..."
+        if text.rfind("[") > text.rfind("]"):
+            text = text[: text.rfind("[")].rstrip() + "..."
+    return _urban_links(text)
+
+
+def _urban_page(entry: dict) -> str:
+    lines = [_urban_text(entry["definition"], URBAN_DEFINITION_LIMIT)]
+    example = entry.get("example", "").strip()
+    if example:
+        quoted = "\n".join(
+            f"> {line}" for line in _urban_text(example, URBAN_EXAMPLE_LIMIT).split("\n")
+        )
+        lines.append(f"\n**Example**\n{quoted}")
+    written = entry.get("written_on", "")[:10]
+    lines.append(
+        f"\n-# {THUMBS_UP_WHITE} {entry['thumbs_up']}  {THUMBS_DOWN_WHITE} "
+        f"{entry['thumbs_down']} | by {entry['author'].strip()} on {written} | "
+        f"{BROWSER} [Permalink]({entry['permalink']})",
+    )
+    return "\n".join(lines)
+
+
 class ToolCog(
     commands.GroupCog,
     name="tool",
@@ -215,7 +261,6 @@ class ToolCog(
     def __init__(self, bot: commands.Bot) -> None:
         super().__init__()
         self.bot = bot
-        # context menus can't be in a group, so this one goes on the tree directly
         self.decode_menu = app_commands.ContextMenu(
             name="Decode",
             callback=self.decode_message,
@@ -326,6 +371,61 @@ class ToolCog(
             await interaction.followup.send(view=view, file=file, allowed_mentions=mentions)
         else:
             await interaction.followup.send(view=view, allowed_mentions=mentions)
+
+    @app_commands.command(name="urban", description="Look up a word on Urban Dictionary.")
+    @app_commands.describe(word="The word or phrase to look up.")
+    async def urban(self, interaction: discord.Interaction, word: str) -> None:
+        await interaction.response.defer()
+
+        try:
+            async with (
+                aiohttp.ClientSession() as session,
+                session.get(
+                    URBAN_API,
+                    params={"term": word},
+                    timeout=aiohttp.ClientTimeout(total=10),
+                ) as response,
+            ):
+                response.raise_for_status()
+                data = await response.json()
+        except (aiohttp.ClientError, TimeoutError):
+            log.exception("Urban Dictionary lookup failed")
+            await interaction.followup.send(
+                view=ErrorUI("**Melvin couldn't reach the urban dictionary API, try again later**"),
+                ephemeral=True,
+            )
+            return
+
+        entries = data.get("list", [])
+        if not entries:
+            await interaction.followup.send(
+                view=ErrorUI(f"**No definitions found for `{word.replace('`', '')}`.**"),
+                ephemeral=True,
+            )
+            return
+
+        title_word = entries[0]["word"].replace("`", "")
+        view = Paginator(
+            f"### {title_word}",
+            [_urban_page(entry) for entry in entries],
+            data_name="Definitions",
+            per_page=1,
+            container=True,
+            timeout=300,
+        )
+        view.set_title_button(
+            discord.ui.Button(
+                label="Urban Dictionary",
+                emoji=BROWSER,
+                style=discord.ButtonStyle.link,
+                url=URBAN_DEFINE + urllib.parse.quote(entries[0]["word"]),
+            ),
+        )
+        view.message = await interaction.followup.send(
+            view=view,
+            allowed_mentions=discord.AllowedMentions.none(),
+            wait=True,
+        )
 
     @app_commands.command(name="8ball", description="game of fate")
     @app_commands.describe(prompt="the prompt for the 8ball")
