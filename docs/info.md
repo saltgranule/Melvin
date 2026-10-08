@@ -52,3 +52,34 @@ Output: A layout showing "Alex's Banner", the banner image, and link buttons for
 **Error handling**
 If the target has no profile banner, the command replies with an ephemeral error message instead of a banner view.
 If type Server is used outside a server, the command replies with an ephemeral error message.
+## role command
+Path: `/info role`
+View information about a role.
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|----------|--------------|
+| role | role | yes | The role you want to view. |
+
+**Permissions**
+Only available in servers.
+
+**Behavior**
+The command defers its response. The reply title shows the role mention and its ID. The container uses the role's color as its accent, unless the role has no color.
+Below the title, the reply lists:
+- Appearance: the role color and "Solid". If the server has enhanced role colors and the role uses them, both colors and "Gradient" are shown, or all three colors and "Holographic".
+- Hoisted: whether the role is shown separately in the member list.
+- Mentionable: whether anyone can mention the role.
+- Number of Members: how many members have the role.
+- Created at: the full creation date and a relative time.
+
+If the role has an icon, it is shown as a thumbnail next to the details.
+If the command user has any role other than @everyone, a line states whether the role is their highest role, above it, or below it.
+A Relative Hierarchy code block lists up to three roles above and three below the role, numbered from the top of the role list, with the role marked by `>`.
+A View Members button sends an ephemeral, paginated list of the members with the role, ten per page. The button stops responding after five minutes and is disabled.
+Mentions in the reply are suppressed.
+
+**Example**
+Input: `/info role role: @Moderator`
+Output: A layout showing "@Moderator | {id}", the role details, its place in the hierarchy, and a View Members button.

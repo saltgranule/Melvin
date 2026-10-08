@@ -3,12 +3,12 @@ from discord import app_commands
 from discord.ext import commands
 
 from module_registry import Module
-from ui import ErrorUI, GalleryWithItem, SmallSeparator
+from ui import ErrorUI, GalleryWithItem, Paginator, SmallSeparator
 
 MODULE = Module(
     "info",
     "Info",
-    "View avatars and banners.",
+    "View avatars, banners, and roles.",
 )
 
 TYPE_CHOICES = [
@@ -101,6 +101,125 @@ class AssetView(discord.ui.LayoutView):
             action_row,
         )
         self.add_item(container)
+
+
+def _role_color(role: discord.Role, enhanced: bool) -> str:
+    if enhanced and role.tertiary_color is not None:
+        return f"{role.color}-{role.secondary_color}-{role.tertiary_color} | Holographic"
+    if enhanced and role.secondary_color is not None:
+        return f"{role.color}-{role.secondary_color} | Gradient"
+    return f"{role.color} | Solid"
+
+
+def _role_hierarchy(role: discord.Role, roles: list[discord.Role]) -> str:
+    # roles are sorted lowest first, so walk down from three above to three below
+    index = roles.index(role)
+    lines = []
+    for i in range(index + 3, index - 4, -1):
+        if 0 <= i < len(roles):
+            prefix = ">" if roles[i] == role else " "
+            name = roles[i].name.replace("`", "")
+            lines.append(f"{len(roles) - i:>4}.   {prefix} {name}")
+    return "\n".join(lines)
+
+
+class RoleMembersRow(discord.ui.ActionRow["RoleInfoView"]):
+    def __init__(self, role: discord.Role) -> None:
+        super().__init__()
+        self.role = role
+
+    @discord.ui.button(label="View Members")
+    async def view_members(
+        self,
+        interaction: discord.Interaction,
+        _button: discord.ui.Button["RoleInfoView"],
+    ) -> None:
+        members = [f"{m.mention} | {m.name}" for m in self.role.members]
+        view = Paginator(
+            f"### {_role_mention(self.role)} Members",
+            members,
+            data_name="Members",
+            per_page=10,
+            container=True,
+        )
+        await interaction.response.send_message(
+            view=view,
+            ephemeral=True,
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
+        view.message = await interaction.original_response()
+
+
+def _role_mention(role: discord.Role) -> str:
+    return "@everyone" if role.is_default() else role.mention
+
+
+class RoleInfoView(discord.ui.LayoutView):
+    def __init__(self, interaction: discord.Interaction, role: discord.Role) -> None:
+        super().__init__(timeout=300)
+        self.message: discord.Message | None = None
+
+        guild = role.guild
+        enhanced = "ENHANCED_ROLE_COLORS" in guild.features
+        created = role.created_at
+
+        details = "\n".join(
+            (
+                f"**Appearance:** {_role_color(role, enhanced)}",
+                f"**Hoisted:** {'Yes' if role.hoist else 'No'}",
+                f"**Mentionable:** {'Yes' if role.mentionable else 'No'}",
+                f"**Number of Members:** {len(role.members)}",
+                f"**Created at:** {discord.utils.format_dt(created, 'F')} | "
+                f"{discord.utils.format_dt(created, 'R')}",
+            ),
+        )
+
+        container = discord.ui.Container(
+            discord.ui.TextDisplay(f"### {_role_mention(role)} | {role.id}"),
+            SmallSeparator(),
+            accent_color=role.color if role.color.value else None,
+        )
+
+        if isinstance(role.display_icon, discord.Asset):
+            container.add_item(
+                discord.ui.Section(
+                    details,
+                    accessory=discord.ui.Thumbnail(role.display_icon.url),
+                ),
+            )
+        else:
+            container.add_item(discord.ui.TextDisplay(details))
+
+        # where the role sits compared to the command user's highest role
+        user = interaction.user
+        if isinstance(user, discord.Member) and not user.top_role.is_default():
+            if role == user.top_role:
+                diff = "This is your highest role."
+            elif role > user.top_role:
+                diff = "This role is above your highest role."
+            else:
+                diff = "This role is below your highest role."
+            container.add_item(discord.ui.TextDisplay(diff))
+
+        roles = sorted(guild.roles, key=lambda r: r.position)
+        container.add_item(
+            discord.ui.TextDisplay(
+                f"**Relative Hierarchy**\n```\n{_role_hierarchy(role, roles)}\n```",
+            ),
+        )
+        container.add_item(RoleMembersRow(role))
+        self.add_item(container)
+
+    async def on_timeout(self) -> None:
+        for item in self.walk_children():
+            if isinstance(item, discord.ui.Button):
+                item.disabled = True
+
+        if self.message:
+            try:
+                await self.message.edit(view=self)
+            except discord.HTTPException:
+                pass
 
 
 class InfoCog(
@@ -220,6 +339,22 @@ class InfoCog(
         await interaction.followup.send(
             view=view,
             allowed_mentions=discord.AllowedMentions.none(),
+        )
+
+    @app_commands.command(name="role", description="View information about a role.")
+    @app_commands.describe(role="The role you want to view.")
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+    async def role(
+        self,
+        interaction: discord.Interaction,
+        role: discord.Role,
+    ) -> None:
+        await interaction.response.defer()
+        view = RoleInfoView(interaction, role)
+        view.message = await interaction.followup.send(
+            view=view,
+            allowed_mentions=discord.AllowedMentions.none(),
+            wait=True,
         )
 
 
