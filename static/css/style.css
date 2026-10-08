@@ -1306,6 +1306,41 @@ a {
     opacity: 0.6;
 }
 
+input[type="file"].dashboard-input {
+    padding: 6px 8px;
+    color: var(--text-muted);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+input[type="file"].dashboard-input::file-selector-button {
+    margin-right: 10px;
+    padding: 4px 12px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-text);
+    background: var(--ink);
+    border: none;
+    border-bottom: 3px solid var(--ink-edge);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 100ms ease;
+}
+
+input[type="file"].dashboard-input:hover::file-selector-button {
+    opacity: 0.9;
+}
+
+input[type="file"].dashboard-input:active::file-selector-button {
+    border-bottom-width: 1px;
+    transform: translateY(2px);
+}
+
+input[type="file"].dashboard-input:disabled::file-selector-button {
+    cursor: not-allowed;
+}
+
 textarea.dashboard-input {
     resize: vertical;
     line-height: 1.5;
