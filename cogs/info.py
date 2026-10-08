@@ -8,7 +8,7 @@ from ui import ErrorUI, GalleryWithItem, Paginator, SmallSeparator
 MODULE = Module(
     "info",
     "Info",
-    "View avatars, banners, and roles.",
+    "View avatars, banners, roles, and servers.",
 )
 
 TYPE_CHOICES = [
@@ -222,6 +222,99 @@ class RoleInfoView(discord.ui.LayoutView):
                 pass
 
 
+VERIFICATION_LEVELS = {
+    discord.VerificationLevel.none: ("None", "Unrestricted"),
+    discord.VerificationLevel.low: ("Low", "Must have a verified email"),
+    discord.VerificationLevel.medium: ("Medium", "Registered on Discord for 5+ minutes"),
+    discord.VerificationLevel.high: ("High", "Member of the server for 10+ minutes"),
+    discord.VerificationLevel.highest: ("Highest", "Must have a verified phone number"),
+}
+
+
+# i was too lazy to grab the emoji's for these, will do later
+def _server_type(guild: discord.Guild) -> str | None:
+    features = guild.features
+    if "PARTNERED" in features:
+        return "Partnered"
+    if "VERIFIED" in features:
+        return "Verified"
+    if "DISCOVERABLE" in features:
+        return "Discoverable"
+    if "COMMUNITY" in features:
+        return "Community"
+    return None
+
+
+class ServerInfoView(discord.ui.LayoutView):
+    def __init__(self, guild: discord.Guild, owner: discord.Member) -> None:
+        super().__init__()
+
+        member_total = guild.member_count or 0
+        bots = sum(1 for member in guild.members if member.bot)
+        humans = member_total - bots
+
+        # i was too lazy to grab the emoji's for these, will do later
+        channels = (
+            f"{len(guild.text_channels)} text, "
+            f"{len(guild.voice_channels)} voice, "
+            f"{len(guild.categories)} categories, "
+            f"{len(guild.stage_channels)} stage, "
+            f"{len(guild.forums)} forums | "
+            f"{len(guild.channels)} total"
+        )
+
+        level, requirement = VERIFICATION_LEVELS.get(
+            guild.verification_level,
+            ("Unknown", "Unknown"),
+        )
+        created = guild.created_at
+
+        details = "\n".join(
+            (
+                f"**Owner:** {owner.mention} | {owner.id}",
+                f"**Icon:** [Icon Link]({guild.icon.url})" if guild.icon else "**Icon:** None",
+                f"**Verification:** {level} | {requirement}",
+                f"**2FA:** {'Enabled' if guild.mfa_level else 'Disabled'}",
+                f"**Roles:** {len(guild.roles)}",
+                f"**Members:** {humans} humans, {bots} bots | {member_total} total",
+                f"**Channels:** {channels}",
+                f"**Server Boosts:** Level {guild.premium_tier} | "
+                f"{guild.premium_subscription_count} boosts total",
+                f"**Vanity Link:** {guild.vanity_url or 'None'}",
+                f"**Created at:** {discord.utils.format_dt(created, 'F')} | "
+                f"{discord.utils.format_dt(created, 'R')}",
+            ),
+        )
+
+        server_type = _server_type(guild)
+        title = (
+            f"### {guild.name} | {server_type} | {guild.id}"
+            if server_type
+            else f"### {guild.name} | {guild.id}"
+        )
+
+        container = discord.ui.Container(
+            discord.ui.TextDisplay(title),
+            SmallSeparator(),
+            accent_color=owner.color if owner.color.value else None,
+        )
+
+        if guild.icon:
+            container.add_item(
+                discord.ui.Section(
+                    details,
+                    accessory=discord.ui.Thumbnail(guild.icon.url),
+                ),
+            )
+        else:
+            container.add_item(discord.ui.TextDisplay(details))
+
+        if guild.banner:
+            container.add_item(GalleryWithItem(guild.banner.url))
+
+        self.add_item(container)
+
+
 class InfoCog(
     commands.GroupCog,
     name="info",
@@ -355,6 +448,31 @@ class InfoCog(
             view=view,
             allowed_mentions=discord.AllowedMentions.none(),
             wait=True,
+        )
+
+    @app_commands.command(name="server", description="View information about this server.")
+    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+    async def server(self, interaction: discord.Interaction) -> None:
+        await interaction.response.defer()
+
+        guild = interaction.guild
+        if guild is None:
+            return
+
+        owner = guild.owner
+        if owner is None:
+            try:
+                owner = await guild.fetch_member(guild.owner_id or 0)
+            except discord.HTTPException:
+                await interaction.followup.send(
+                    view=ErrorUI("Fetching the server owner failed."),
+                    ephemeral=True,
+                )
+                return
+
+        await interaction.followup.send(
+            view=ServerInfoView(guild, owner),
+            allowed_mentions=discord.AllowedMentions.none(),
         )
 
 

@@ -83,3 +83,35 @@ Mentions in the reply are suppressed.
 **Example**
 Input: `/info role role: @Moderator`
 Output: A layout showing "@Moderator | {id}", the role details, its place in the hierarchy, and a View Members button.
+
+## server command
+Path: `/info server`
+View information about the current server.
+
+**Permissions**
+Only available in servers.
+
+**Behavior**
+The command defers its response. The reply title shows the server name, its type, and its ID. The type is Partnered, Verified, Discoverable, or Community, checked in that order, and is left out if none apply. The container uses the owner's color as its accent, unless the owner has no color.
+If the owner is not cached, the command fetches them from Discord.
+Below the title, the reply lists:
+- Owner: the owner mention and ID.
+- Icon: a link to the server icon, or None.
+- Verification: the verification level and what it requires of new members.
+- 2FA: whether moderators must have two-factor authentication enabled.
+- Roles: the number of roles.
+- Members: the number of humans and bots, and the total.
+- Channels: the number of text, voice, category, stage, and forum channels, and the total.
+- Server Boosts: the boost level and number of boosts.
+- Vanity Link: the vanity invite link, or None.
+- Created at: the full creation date and a relative time.
+
+If the server has an icon, it is shown as a thumbnail next to the details. If the server has a banner, it is shown below the details.
+Mentions in the reply are suppressed.
+
+**Example**
+Input: `/info server`
+Output: A layout showing "{server} | Community | {id}", the server details, and the server banner if one is set.
+
+**Error handling**
+If the owner cannot be fetched, the command replies with an ephemeral error message.
