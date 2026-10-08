@@ -16,6 +16,7 @@
     --tooltip-bg: #252422;
     --chart-1-opacity: 0.55;
     --chart-2-fill: color-mix(in srgb, var(--primary) 45%, white);
+    --chart-2-opacity: 0.7;
     --chart-key-1: color-mix(in srgb, var(--primary) 55%, white);
     --chart-key-2: color-mix(in srgb, var(--primary) 32%, white);
 }
@@ -35,9 +36,10 @@
         --ink-edge: #a8a49c;
         --tooltip-bg: #34322e;
         --chart-1-opacity: 0.8;
-        --chart-2-fill: color-mix(in srgb, var(--primary) 60%, #252422);
+        --chart-2-fill: color-mix(in srgb, var(--primary) 55%, white);
+        --chart-2-opacity: 0.9;
         --chart-key-1: color-mix(in srgb, var(--primary) 80%, #252422);
-        --chart-key-2: color-mix(in srgb, var(--primary) 42%, #252422);
+        --chart-key-2: color-mix(in srgb, var(--chart-2-fill) 90%, #252422);
     }
 }
 
@@ -1069,7 +1071,7 @@ a {
 
 .status-chart-series-2 {
     fill: var(--chart-2-fill);
-    fill-opacity: 0.7;
+    fill-opacity: var(--chart-2-opacity);
     stroke: none;
 }
 
