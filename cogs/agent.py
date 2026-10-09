@@ -51,7 +51,7 @@ def paginate(text: str, size: int = PAGE_SIZE) -> list[str]:
 class AgentCog(
     commands.GroupCog,
     name="ai",
-    description="Self explanatory, ask a free AI model some stupid shit.",
+    description="Self explanatory, ask a free AI model some stupid stuff.",
 ):
     def __init__(self, bot: commands.Bot) -> None:
         super().__init__()
