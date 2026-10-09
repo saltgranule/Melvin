@@ -1131,6 +1131,73 @@ a {
     border-radius: 50%;
 }
 
+.user-menu {
+    position: relative;
+}
+
+.user-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    border-bottom: none;
+    list-style: none;
+    cursor: pointer;
+}
+
+.user-chip::-webkit-details-marker {
+    display: none;
+}
+
+.user-menu[open] .user-chip {
+    color: #e8e6e3;
+}
+
+.user-chip-name {
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-menu-panel {
+    position: absolute;
+    top: calc(100% + 14px);
+    right: 0;
+    z-index: 20;
+    width: 220px;
+    max-width: calc(100vw - 32px);
+    padding: 6px;
+    border-radius: 0 0 12px 12px;
+    background: #252422;
+}
+
+.user-menu-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.user-menu-item {
+    display: block;
+    width: 100%;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: #a8a49c;
+    font-family: inherit;
+    font-size: 14px;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.user-menu-item:hover {
+    color: #e8e6e3;
+    background: #2f2e2b;
+}
+
 .dashboard-grid {
     list-style: none;
     display: flex;
@@ -1751,6 +1818,11 @@ textarea.dashboard-input {
     .navbar .btn {
         padding: 6px 12px;
         font-size: 13px;
+    }
+
+    /* just the avatar, to leave room for the other buttons */
+    .user-chip-name {
+        display: none;
     }
 }
 

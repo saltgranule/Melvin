@@ -6,7 +6,10 @@
     {% include "_dashboard_sidebar.html" %}
 
     <main class="dashboard-main">
-        <h1 class="status-heading">Modules</h1>
+        <div class="dashboard-header">
+            <h1 class="status-heading">Modules</h1>
+            {% include "_dashboard_user.html" %}
+        </div>
         <p class="dashboard-notice">Changes apply in Discord within a few seconds.</p>
 
         <div class="docs-search dashboard-search">

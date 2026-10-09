@@ -1,0 +1,9 @@
+{# who's logged in, with a log out button, at the top right of the dashboard pages #}
+<div class="dashboard-user">
+    <img src="{{ dashboard_avatar }}" alt="" class="dashboard-user-avatar">
+    <span class="dashboard-user-name">{{ dashboard_user.name }}</span>
+    <form method="post" action="{{ url_for('dashboard.logout') }}">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-dark btn-small">Log out</button>
+    </form>
+</div>

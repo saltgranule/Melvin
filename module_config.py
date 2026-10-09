@@ -104,7 +104,8 @@ _state = {"db_ready": False}
 
 
 async def init_db() -> None:
-    # the tables only need setting up once per process
+    # the tables only need setting up once per process. everything that touches them calls this
+    # first, since the bot can read settings before the dashboard has ever created them
     if _state["db_ready"]:
         return
 
@@ -133,6 +134,7 @@ async def _stored(guild_id: int, module: str) -> dict[str, str | None]:
     if cached and time.monotonic() - cached[0] < CACHE_SECONDS:
         return cached[1]
 
+    await init_db()
     async with (
         aiosqlite.connect(DB_PATH) as db,
         db.execute(
@@ -167,6 +169,7 @@ async def set_values(
     for key in values:
         get_setting(module, key)
 
+    await init_db()
     now = time.time()
     async with aiosqlite.connect(DB_PATH) as db:
         await db.executemany(
@@ -186,6 +189,7 @@ async def set_values(
 
 async def changed_since(module: str, since: float) -> set[int]:
     # guilds with a setting in this module changed after a time.time() timestamp
+    await init_db()
     async with (
         aiosqlite.connect(DB_PATH) as db,
         db.execute(
@@ -201,6 +205,7 @@ async def clear_module(guild_id: int, module: str) -> None:
         if setting.kind == "image":
             await remove_image(guild_id, module, setting.key)
 
+    await init_db()
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             "DELETE FROM guild_settings WHERE guild_id = ? AND module = ?",

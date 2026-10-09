@@ -54,7 +54,25 @@
             <a href="{{ links.github }}" class="navbar-github" aria-label="GitHub">
                 {{ icon("github-logo") }}
             </a>
+            {% if dashboard_user %}
+            <details class="user-menu">
+                <summary class="navbar-link user-chip" aria-label="Account menu, logged in as {{ dashboard_user.name }}">
+                    <img src="{{ dashboard_avatar }}" alt="" class="dashboard-user-avatar">
+                    <span class="user-chip-name">{{ dashboard_user.name }}</span>
+                </summary>
+                <div class="user-menu-panel">
+                    <div class="user-menu-actions">
+                        <a href="{{ url_for('dashboard.index') }}" class="user-menu-item">Your servers</a>
+                        <form method="post" action="{{ url_for('dashboard.logout') }}">
+                            <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+                            <button type="submit" class="user-menu-item">Log out</button>
+                        </form>
+                    </div>
+                </div>
+            </details>
+            {% else %}
             <a href="/dashboard/" class="btn btn-light">Dashboard</a>
+            {% endif %}
             <a href="{{ links.add }}" class="btn btn-primary">Add Melvin</a>
         </div>
     </nav>
@@ -97,5 +115,8 @@
             <span>Melvin</span>
         </div>
     </footer>
+    {% if dashboard_user %}
+    <script src="{{ url_for('static', filename='js/user-menu.js') }}"></script>
+    {% endif %}
 </body>
 </html>

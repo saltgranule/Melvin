@@ -30,14 +30,7 @@
     <main class="dashboard-main">
     <div class="dashboard-header">
         <h1 class="status-heading">Your servers</h1>
-        <div class="dashboard-user">
-            <img src="{{ dashboard_avatar }}" alt="" class="dashboard-user-avatar">
-            <span class="dashboard-user-name">{{ dashboard_user.name }}</span>
-            <form method="post" action="{{ url_for('dashboard.logout') }}">
-                <input type="hidden" name="csrf" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-dark btn-small">Log out</button>
-            </form>
-        </div>
+        {% include "_dashboard_user.html" %}
     </div>
 
     {% if guilds %}
