@@ -3,6 +3,16 @@
 {% block content %}
 <div class="docs-layout dashboard-layout">
     <aside class="docs-sidebar dashboard-sidebar">
+        {% if guilds %}
+        <div class="docs-search">
+            {{ icon("magnifying-glass", 14, "docs-search-icon") }}
+            <input type="text" id="server-search-input" class="docs-search-input" placeholder="Search servers..."
+                   autocomplete="off" aria-label="Search servers" aria-controls="server-list">
+            <kbd class="docs-search-kbd">/</kbd>
+        </div>
+        <p class="docs-search-empty" id="server-search-empty" hidden>No servers match "<span id="server-search-empty-term"></span>".</p>
+        {% endif %}
+
         <nav aria-label="Dashboard">
             <ul class="docs-list">
                 <li>
@@ -31,14 +41,6 @@
     </div>
 
     {% if guilds %}
-    <div class="docs-search dashboard-search">
-        {{ icon("magnifying-glass", 14, "docs-search-icon") }}
-        <input type="text" id="server-search-input" class="docs-search-input" placeholder="Search servers..."
-               autocomplete="off" aria-label="Search servers" aria-controls="server-list">
-        <kbd class="docs-search-kbd">/</kbd>
-    </div>
-    <p class="docs-search-empty" id="server-search-empty" hidden>No servers match "<span id="server-search-empty-term"></span>".</p>
-
     <ul class="dashboard-grid" id="server-list">
         {% for guild in guilds %}
         <li data-search="{{ guild.name | lower }}">
