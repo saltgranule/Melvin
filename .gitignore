@@ -1,6 +1,7 @@
 # secrets and local config
 .env
 .replit
+pyproject.toml
 
 # python
 __pycache__/
