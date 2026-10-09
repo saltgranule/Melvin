@@ -443,12 +443,12 @@ a {
     display: block;
 }
 
-/* darkest behind the text on the left, letting a little more of the photo through on the right */
+/* flat wash, dark enough to keep the muted subtitle readable even over bright snow */
 .hero-cover::after {
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, rgba(37, 36, 34, 0.95) 0%, rgba(37, 36, 34, 0.88) 45%, rgba(37, 36, 34, 0.78) 100%);
+    background: rgba(37, 36, 34, 0.9);
 }
 
 /* width is needed because the auto side margins from .section-container would otherwise shrink it to its content */
@@ -526,10 +526,6 @@ a {
 }
 
 @media (max-width: 900px) {
-    .hero-cover::after {
-        background: rgba(37, 36, 34, 0.9);
-    }
-
     .hero-cover-inner {
         min-height: 0;
         padding-top: 56px;
