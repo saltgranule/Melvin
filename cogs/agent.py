@@ -188,7 +188,7 @@ class AgentCog(
 
     @app_commands.command(
         name="ask",
-        description="Ask a free AI model some stupid shit.",
+        description="Ask a free AI model some stupid stuff.",
     )
     @app_commands.describe(
         prompt="The question or prompt to ask the AI model.",
