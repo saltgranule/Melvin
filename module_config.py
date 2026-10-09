@@ -7,10 +7,11 @@ from typing import TYPE_CHECKING
 
 import aiosqlite
 
+from globals import DATA_DIR
+
 # Setting and MAX_CHANNELS are defined in module_registry, and imported here for
 # existing code that uses module_config.Setting
 from module_registry import CONFIG, MAX_CHANNELS, Setting
-from globals import DATA_DIR
 from module_settings import DB_PATH
 
 if TYPE_CHECKING:

@@ -241,7 +241,8 @@ def _urban_page(entry: dict) -> str:
     example = entry.get("example", "").strip()
     if example:
         quoted = "\n".join(
-            f"> {line}" for line in _urban_text(example, URBAN_EXAMPLE_LIMIT).split("\n")
+            f"> {line}"
+            for line in _urban_text(example, URBAN_EXAMPLE_LIMIT).split("\n")
         )
         lines.append(f"\n**Example**\n{quoted}")
     written = entry.get("written_on", "")[:10]
@@ -357,7 +358,11 @@ class ToolCog(
         if not containerized:
             # Raw text, with the attachment as a regular file
             if file is not None:
-                await interaction.followup.send(text, file=file, allowed_mentions=mentions)
+                await interaction.followup.send(
+                    text,
+                    file=file,
+                    allowed_mentions=mentions,
+                )
             else:
                 await interaction.followup.send(text, allowed_mentions=mentions)
             return
@@ -368,11 +373,18 @@ class ToolCog(
 
         if file is not None:
             container.add_item(GalleryWithItem(f"attachment://{file.filename}"))
-            await interaction.followup.send(view=view, file=file, allowed_mentions=mentions)
+            await interaction.followup.send(
+                view=view,
+                file=file,
+                allowed_mentions=mentions,
+            )
         else:
             await interaction.followup.send(view=view, allowed_mentions=mentions)
 
-    @app_commands.command(name="urban", description="Look up a word on Urban Dictionary.")
+    @app_commands.command(
+        name="urban",
+        description="Look up a word on Urban Dictionary.",
+    )
     @app_commands.describe(word="The word or phrase to look up.")
     async def urban(self, interaction: discord.Interaction, word: str) -> None:
         await interaction.response.defer()
@@ -388,10 +400,12 @@ class ToolCog(
             ):
                 response.raise_for_status()
                 data = await response.json()
-        except (aiohttp.ClientError, TimeoutError):
+        except aiohttp.ClientError, TimeoutError:
             log.exception("Urban Dictionary lookup failed")
             await interaction.followup.send(
-                view=ErrorUI("**Melvin couldn't reach the urban dictionary API, try again later**"),
+                view=ErrorUI(
+                    "**Melvin couldn't reach the urban dictionary API, try again later**",
+                ),
                 ephemeral=True,
             )
             return
@@ -399,7 +413,9 @@ class ToolCog(
         entries = data.get("list", [])
         if not entries:
             await interaction.followup.send(
-                view=ErrorUI(f"**No definitions found for `{word.replace('`', '')}`.**"),
+                view=ErrorUI(
+                    f"**No definitions found for `{word.replace('`', '')}`.**",
+                ),
                 ephemeral=True,
             )
             return

@@ -78,7 +78,10 @@ class AutoPublishCog(
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
         # checked first, since it doesn't need the database
-        if message.guild is None or message.channel.type is not discord.ChannelType.news:
+        if (
+            message.guild is None
+            or message.channel.type is not discord.ChannelType.news
+        ):
             return
         # system messages, like "thread created", can't be published
         if message.is_system() or message.author.system:

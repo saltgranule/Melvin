@@ -107,7 +107,9 @@ class ConfigView(discord.ui.LayoutView):
                 min_values=0,
                 max_values=module_config.MAX_CHANNELS if several else 1,
                 default_values=[
-                    discord.Object(int(part)) for part in (value or "").split(",") if part
+                    discord.Object(int(part))
+                    for part in (value or "").split(",")
+                    if part
                 ],
             )
         elif setting.kind == "role":

@@ -48,6 +48,7 @@ MELVIN_HELP_BANNER = "https://cdn.discordapp.com/attachments/1537874702146469988
 # messages
 ERROR_MESSAGE = f"**Something went wrong with that. Please [join the support server]({INVITE_URL}) to report this issue.**"
 
+
 class DisplayNameFont(enum.Enum):
     bangers = 1  # unimplemented
     bio_rhyme = 2  # unimplemented

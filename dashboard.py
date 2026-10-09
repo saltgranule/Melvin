@@ -199,7 +199,11 @@ def _discord_request(
     if token:
         headers["Authorization"] = f"{'Bot' if bot else 'Bearer'} {token}"
     try:
-        return http_client.fetch_json(f"{DISCORD_API}{path}", headers=headers, form=form)
+        return http_client.fetch_json(
+            f"{DISCORD_API}{path}",
+            headers=headers,
+            form=form,
+        )
     except http_client.RequestError as e:
         raise DiscordError(e.status) from e
 
@@ -258,7 +262,9 @@ def _refresh_guilds_later(row: sqlite3.Row) -> None:
                 # the token was revoked or expired, the next page view asks for a new login
                 _delete_session(sid_hash)
             else:
-                log.warning("Couldn't refresh a dashboard server list, keeping the cached one")
+                log.warning(
+                    "Couldn't refresh a dashboard server list, keeping the cached one",
+                )
         finally:
             with _refreshing_lock:
                 _refreshing.discard(sid_hash)
@@ -767,16 +773,23 @@ def _check_value(
     if setting.kind in {"channel", "channels"}:
         available = dict(_channel_options(setting, context))
         if any(part not in available for part in value.split(",")):
-            msg = "That channel isn't available, Melvin can only use text channels here."
+            msg = (
+                "That channel isn't available, Melvin can only use text channels here."
+            )
             raise module_config.ConfigError(msg)
     if setting.kind == "role" and value not in dict(context["roles"]):
         msg = "That role is above Melvin's or your top role, or can't be given out."
         raise module_config.ConfigError(msg)
 
 
-def _channel_options(setting: module_config.Setting, context: dict) -> list[tuple[str, str]]:
+def _channel_options(
+    setting: module_config.Setting,
+    context: dict,
+) -> list[tuple[str, str]]:
     return list(
-        context["any_channels"] if setting.channel_type == "any" else context["channels"],
+        context["any_channels"]
+        if setting.channel_type == "any"
+        else context["channels"],
     )
 
 
@@ -803,7 +816,9 @@ def _config_fields(
             name = context["role_names"].get(value) if setting.kind == "role" else None
             options.insert(0, (value, name or f"Unknown {setting.kind}"))
         selected = value.split(",") if setting.kind == "channels" and value else []
-        options += [(part, "Unknown channel") for part in selected if part not in dict(options)]
+        options += [
+            (part, "Unknown channel") for part in selected if part not in dict(options)
+        ]
 
         fields.append(
             {

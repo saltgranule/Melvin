@@ -24,9 +24,9 @@ KEY = "template"
 # the label and description are shown on /modules and the dashboard. settings are
 # optional, without them remove the config command
 MODULE = Module(
-    KEY, # key
-    "Template", # label
-    "One short line about what it does.", # description
+    KEY,  # key
+    "Template",  # label
+    "One short line about what it does.",  # description
     settings=(
         Setting(
             "channel",

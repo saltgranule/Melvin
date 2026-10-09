@@ -28,7 +28,7 @@ POPULATE_HOURS = 30 * 24
 
 def _fake_stats(density: str) -> list[tuple[int, int, int, int]]:
     peak_messages, peak_voice, members = DENSITIES[density]
-    members = members * random.uniform(0.8, 1.2)
+    members *= random.uniform(0.8, 1.2)
     growth = random.uniform(0.001, 0.004)
     first = server_stats.hour_start() - (POPULATE_HOURS - 1) * server_stats.HOUR
 
@@ -40,7 +40,7 @@ def _fake_stats(density: str) -> list[tuple[int, int, int, int]]:
         day = hour // server_stats.DAY
         if hour_of_day == 0 or i == 0:
             day_mood = random.uniform(0.6, 1.4)
-        weekend = 1.25 if (day + 3) % 7 in (5, 6) else 1.0
+        weekend = 1.25 if (day + 3) % 7 in {5, 6} else 1.0
 
         curve = 0.55 - 0.45 * math.cos((hour_of_day - 8) / 24 * 2 * math.pi)
         activity = curve * day_mood * weekend * random.uniform(0.7, 1.3)

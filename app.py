@@ -66,7 +66,9 @@ bot_process = None
 
 
 def start_bot() -> None:
-    globals()["bot_process"] = subprocess.Popen([sys.executable, str(Path(app.root_path) / "main.py")])
+    globals()["bot_process"] = subprocess.Popen(
+        [sys.executable, str(Path(app.root_path) / "main.py")],
+    )
 
 
 THEME = {

@@ -41,9 +41,7 @@ def _subject(
 
 def _format_buttons(asset: discord.Asset) -> list[discord.ui.Button]:
     formats = (
-        ("png", "jpg", "webp", "gif")
-        if asset.is_animated()
-        else ("png", "jpg", "webp")
+        ("png", "jpg", "webp", "gif") if asset.is_animated() else ("png", "jpg", "webp")
     )
     return [
         discord.ui.Button(
@@ -105,7 +103,9 @@ class AssetView(discord.ui.LayoutView):
 
 def _role_color(role: discord.Role, enhanced: bool) -> str:
     if enhanced and role.tertiary_color is not None:
-        return f"{role.color}-{role.secondary_color}-{role.tertiary_color} | Holographic"
+        return (
+            f"{role.color}-{role.secondary_color}-{role.tertiary_color} | Holographic"
+        )
     if enhanced and role.secondary_color is not None:
         return f"{role.color}-{role.secondary_color} | Gradient"
     return f"{role.color} | Solid"
@@ -132,7 +132,7 @@ class RoleMembersRow(discord.ui.ActionRow["RoleInfoView"]):
     async def view_members(
         self,
         interaction: discord.Interaction,
-        _button: discord.ui.Button["RoleInfoView"],
+        _button: discord.ui.Button[RoleInfoView],
     ) -> None:
         members = [f"{m.mention} | {m.name}" for m in self.role.members]
         view = Paginator(
@@ -169,8 +169,10 @@ class RoleInfoView(discord.ui.LayoutView):
                 f"**Hoisted:** {'Yes' if role.hoist else 'No'}",
                 f"**Mentionable:** {'Yes' if role.mentionable else 'No'}",
                 f"**Number of Members:** {len(role.members)}",
-                f"**Created at:** {discord.utils.format_dt(created, 'F')} | "
-                f"{discord.utils.format_dt(created, 'R')}",
+                (
+                    f"**Created at:** {discord.utils.format_dt(created, 'F')} | "
+                    f"{discord.utils.format_dt(created, 'R')}"
+                ),
             ),
         )
 
@@ -225,7 +227,10 @@ class RoleInfoView(discord.ui.LayoutView):
 VERIFICATION_LEVELS = {
     discord.VerificationLevel.none: ("None", "Unrestricted"),
     discord.VerificationLevel.low: ("Low", "Must have a verified email"),
-    discord.VerificationLevel.medium: ("Medium", "Registered on Discord for 5+ minutes"),
+    discord.VerificationLevel.medium: (
+        "Medium",
+        "Registered on Discord for 5+ minutes",
+    ),
     discord.VerificationLevel.high: ("High", "Member of the server for 10+ minutes"),
     discord.VerificationLevel.highest: ("Highest", "Must have a verified phone number"),
 }
@@ -272,17 +277,23 @@ class ServerInfoView(discord.ui.LayoutView):
         details = "\n".join(
             (
                 f"**Owner:** {owner.mention} | {owner.id}",
-                f"**Icon:** [Icon Link]({guild.icon.url})" if guild.icon else "**Icon:** None",
+                f"**Icon:** [Icon Link]({guild.icon.url})"
+                if guild.icon
+                else "**Icon:** None",
                 f"**Verification:** {level} | {requirement}",
                 f"**2FA:** {'Enabled' if guild.mfa_level else 'Disabled'}",
                 f"**Roles:** {len(guild.roles)}",
                 f"**Members:** {humans} humans, {bots} bots | {member_total} total",
                 f"**Channels:** {channels}",
-                f"**Server Boosts:** Level {guild.premium_tier} | "
-                f"{guild.premium_subscription_count} boosts total",
+                (
+                    f"**Server Boosts:** Level {guild.premium_tier} | "
+                    f"{guild.premium_subscription_count} boosts total"
+                ),
                 f"**Vanity Link:** {guild.vanity_url or 'None'}",
-                f"**Created at:** {discord.utils.format_dt(created, 'F')} | "
-                f"{discord.utils.format_dt(created, 'R')}",
+                (
+                    f"**Created at:** {discord.utils.format_dt(created, 'F')} | "
+                    f"{discord.utils.format_dt(created, 'R')}"
+                ),
             ),
         )
 
@@ -421,7 +432,7 @@ class InfoCog(
         if fetched_user.banner is None:
             await interaction.followup.send(
                 view=ErrorUI(
-                    f"{_subject(interaction, target)} not have a profile banner."
+                    f"{_subject(interaction, target)} not have a profile banner.",
                 ),
                 ephemeral=True,
                 allowed_mentions=discord.AllowedMentions.none(),
@@ -450,7 +461,10 @@ class InfoCog(
             wait=True,
         )
 
-    @app_commands.command(name="server", description="View information about this server.")
+    @app_commands.command(
+        name="server",
+        description="View information about this server.",
+    )
     @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     async def server(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer()
