@@ -1,7 +1,23 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
 {% block content %}
-<section class="section-container dashboard-section">
+<div class="docs-layout dashboard-layout">
+    <aside class="docs-sidebar dashboard-sidebar">
+        <nav aria-label="Dashboard">
+            <ul class="docs-list">
+                <li>
+                    <a href="{{ url_for('dashboard.index') }}" class="docs-list-item is-active" aria-current="page">Servers</a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="docs-notice">
+            <p>This dashboard is still under development, feel free to point out any errors to us on the support server.</p>
+            <a href="{{ links.invite }}" class="btn btn-dark">Support Server</a>
+        </div>
+    </aside>
+
+    <main class="dashboard-main">
     <div class="dashboard-header">
         <h1 class="status-heading">Your servers</h1>
         <div class="dashboard-user">
@@ -127,5 +143,6 @@
     {% else %}
     <div class="status-card-empty dashboard-empty">You don't have Manage Server in any servers yet.</div>
     {% endif %}
-</section>
+    </main>
+</div>
 {% endblock %}
