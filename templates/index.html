@@ -2,7 +2,10 @@
 {% from "_icons.html" import icon %}
 {% block content %}
 <section class="hero-cover">
-    <img src="{{ url_for('static', filename='media/melvin-hero.jpg') }}" alt="" class="hero-cover-image">
+    <img src="{{ url_for('static', filename='media/melvin-hero.jpg') }}"
+         srcset="{{ url_for('static', filename='media/melvin-hero.jpg') }} 2000w,
+                 {{ url_for('static', filename='media/melvin-hero-3840.jpg') }} 3840w"
+         sizes="100vw" alt="" class="hero-cover-image">
     <div class="hero-cover-inner section-container">
         <div class="hero-cover-body">
             <h1 class="hero-title">Melvin</h1>
