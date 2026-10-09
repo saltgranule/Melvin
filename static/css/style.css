@@ -1,11 +1,19 @@
-/* self-hosted, the cdn was blocked or slow on some browsers. only a regular weight exists, bolder text is synthesized */
+/* self-hosted arcon, the cdn was blocked or slow on some browsers */
 @font-face {
-    font-family: 'Arcon';
+    font-family: 'Melvin Sans';
     font-style: normal;
-    font-weight: 400;
+    font-weight: 400 500;
     font-display: swap;
     src: url('../fonts/Arcon-Regular.woff2') format('woff2'),
          url('../fonts/Arcon-Regular.otf') format('opentype');
+}
+
+@font-face {
+    font-family: 'Melvin Sans';
+    font-style: normal;
+    font-weight: 600 700;
+    font-display: swap;
+    src: url('../fonts/MelvinSans-Bold.woff2') format('woff2');
 }
 
 :root {
@@ -23,10 +31,8 @@
     --ink-edge: #4a473f;
     --tooltip-bg: #252422;
     --chart-1-opacity: 0.55;
-    --chart-2-fill: color-mix(in srgb, var(--primary) 45%, white);
     --chart-2-opacity: 0.7;
-    --chart-key-1: color-mix(in srgb, var(--primary) 55%, white);
-    --chart-key-2: color-mix(in srgb, var(--primary) 32%, white);
+    /* the chart, mark and switch edge shades come from THEME_SHADES in app.py, set in base.html */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -44,10 +50,7 @@
         --ink-edge: #a8a49c;
         --tooltip-bg: #34322e;
         --chart-1-opacity: 0.8;
-        --chart-2-fill: color-mix(in srgb, var(--primary) 55%, white);
         --chart-2-opacity: 0.9;
-        --chart-key-1: color-mix(in srgb, var(--primary) 80%, #252422);
-        --chart-key-2: color-mix(in srgb, var(--chart-2-fill) 90%, #252422);
     }
 }
 
@@ -60,7 +63,7 @@
 
 body {
     background: var(--bg);
-    font-family: 'Arcon', ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
+    font-family: 'Melvin Sans', ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
     color: var(--text);
     display: flex;
     flex-direction: column;
@@ -737,7 +740,7 @@ a {
 }
 
 .docs-list-item mark {
-    background: color-mix(in srgb, var(--primary) 35%, transparent);
+    background: var(--mark-bg);
     color: inherit;
     border-radius: 2px;
 }
@@ -1252,7 +1255,7 @@ a {
 
 .dashboard-card-name mark,
 .dashboard-module-description mark {
-    background: color-mix(in srgb, var(--primary) 35%, transparent);
+    background: var(--mark-bg);
     color: inherit;
     border-radius: 2px;
 }
@@ -1553,13 +1556,13 @@ textarea.dashboard-input {
 .dashboard-switch[aria-checked="true"] .is-on {
     background: var(--secondary);
     color: #ffffff;
-    border-bottom-color: color-mix(in srgb, var(--secondary) 75%, black);
+    border-bottom-color: var(--secondary-edge);
 }
 
 .dashboard-switch[aria-checked="false"] .is-off {
     background: var(--tertiary);
     color: #ffffff;
-    border-bottom-color: color-mix(in srgb, var(--tertiary) 75%, black);
+    border-bottom-color: var(--tertiary-edge);
 }
 
 .dashboard-switch:hover {

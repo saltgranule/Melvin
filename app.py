@@ -78,6 +78,38 @@ THEME = {
     "quaternary": QUATERNARY,
 }
 
+
+def mix(color: str, other: str, weight: float) -> str:
+    a = [int(color.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4)]
+    b = [int(other.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4)]
+    return "#" + "".join(
+        f"{round(x * weight + y * (1 - weight)):02x}" for x, y in zip(a, b, strict=True)
+    )
+
+
+def alpha(color: str, opacity: float) -> str:
+    r, g, b = (int(color.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4))
+    return f"rgba({r}, {g}, {b}, {opacity})"
+
+
+DARK_SURFACE = "#252422"
+_dark_chart_2_fill = mix(PRIMARY, "#ffffff", 0.55)
+THEME_SHADES = {
+    "light": {
+        "chart-2-fill": mix(PRIMARY, "#ffffff", 0.45),
+        "chart-key-1": mix(PRIMARY, "#ffffff", 0.55),
+        "chart-key-2": mix(PRIMARY, "#ffffff", 0.32),
+        "mark-bg": alpha(PRIMARY, 0.35),
+        "secondary-edge": mix(SECONDARY, "#000000", 0.75),
+        "tertiary-edge": mix(TERTIARY, "#000000", 0.75),
+    },
+    "dark": {
+        "chart-2-fill": _dark_chart_2_fill,
+        "chart-key-1": mix(PRIMARY, DARK_SURFACE, 0.8),
+        "chart-key-2": mix(_dark_chart_2_fill, DARK_SURFACE, 0.9),
+    },
+}
+
 LINKS = {
     "add": ADD_BOT_URL,
     "invite": INVITE_URL,
@@ -90,6 +122,7 @@ def inject_globals() -> dict:
     user = dashboard.current_user()
     return {
         "theme": THEME,
+        "theme_shades": THEME_SHADES,
         "links": LINKS,
         "dashboard_user": user,
         "dashboard_avatar": dashboard.user_avatar_url(user) if user else None,

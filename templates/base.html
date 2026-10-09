@@ -14,6 +14,17 @@
             --secondary: {{ theme.secondary }};
             --tertiary: {{ theme.tertiary }};
             --quaternary: {{ theme.quaternary }};
+            {%- for name, value in theme_shades.light.items() %}
+            --{{ name }}: {{ value }};
+            {%- endfor %}
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                {%- for name, value in theme_shades.dark.items() %}
+                --{{ name }}: {{ value }};
+                {%- endfor %}
+            }
         }
     </style>
     {% block meta_tags %}
