@@ -42,8 +42,8 @@ API_ICON = "<:API:1555862891691778160>"
 INVITE_URL = "https://discord.gg/PfyKM7dyx4"
 ADD_BOT_URL = "https://discord.com/oauth2/authorize?client_id=1468362201197973756"
 MELVIN_GITHUB_URL = "https://github.com/saltgranule/Melvin"
+WEBSITE_URL = "https://justmelvin.site"
 MELVIN_BANNER = "https://cdn.discordapp.com/attachments/1537874702146469988/1541048056751849512/image.png?ex=6a8c2c58&is=6a8adad8&hm=a13f54c4349d9a4d2672fd6b90b544ca5b00d27964c28891d56a0e49e00cead1&"
-MELVIN_HELP_BANNER = "https://cdn.discordapp.com/attachments/1537874702146469988/1540084821462884475/MNBCMD.png?ex=6a88ab42&is=6a8759c2&hm=9d4c248fff8eda006f93ae87e8965c00f5afdefd017b185e935edf7f3e663f9d&"
 
 # messages
 ERROR_MESSAGE = f"**Something went wrong with that. Please [join the support server]({INVITE_URL}) to report this issue.**"

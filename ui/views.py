@@ -1,24 +1,31 @@
+from dataclasses import dataclass
+
 import aiosqlite
 import discord
+from discord import app_commands
 from discord.ext import commands
 
+import module_registry
 from globals import (
+    BROWSER,
     ERROR_MESSAGE,
     INVITE_URL,
     MELVIN_CHECK_EMOJI,
     MELVIN_CROSS_EMOJI,
     MELVIN_EMOJI,
-    MELVIN_HELP_BANNER,
     MELVIN_MISC_EMOJI,
     MELVIN_WARN_EMOJI,
     PRIMARY,
     SECONDARY,
     TERTIARY,
     THUMBS_UP,
+    WEBSITE_URL,
 )
 
+# people dont need to see this
+HIDDEN_COGS = frozenset({"private"})
 
-# helpers for HelpView, to get the commands in a cog's group
+
 def get_cog_commands(cog: commands.Cog) -> list:
     group = getattr(cog, "__cog_app_commands_group__", None)
     if group is not None:
@@ -35,60 +42,95 @@ def flatten_commands(cmd: object) -> list:
     return [cmd]
 
 
-def help_page(cog: commands.Cog) -> str:
-    lines = [f"# {MELVIN_EMOJI} {cog.__cog_group_name__} Commands"]
-    if (
-        hasattr(cog, "__cog_group_description__")
-        and cog.__cog_group_description__ != "…"
-    ):
-        lines.append(f"-# **{cog.__cog_group_description__}**")
+CORE_PAGE = "melvin"
 
-    lines.extend(
-        f"**\n/{cmd.qualified_name}**\n-# **{cmd.description}**"
-        for top_cmd in get_cog_commands(cog)
-        for cmd in flatten_commands(top_cmd)
+
+def docs_url(page: str, cmd: app_commands.Command | None = None) -> str:
+    url = f"{WEBSITE_URL}/docs/{page}"
+    if cmd is None:
+        return url
+    return f"{url}#{cmd.qualified_name.replace(' ', '-')}"
+
+
+@dataclass(frozen=True)
+class HelpPage:
+    key: str
+    label: str
+    description: str
+    commands: tuple[app_commands.Command, ...]
+
+
+def help_pages(
+    bot: commands.Bot,
+    hidden: set[str] | frozenset[str],
+) -> list[HelpPage]:
+    pages = []
+    for cog in bot.cogs.values():
+        key = cog.__cog_group_name__
+        cmds = tuple(
+            cmd
+            for top_cmd in get_cog_commands(cog)
+            for cmd in flatten_commands(top_cmd)
+        )
+        if not cmds or key in hidden or key in HIDDEN_COGS:
+            continue
+        label, description = module_registry.MODULES.get(
+            key,
+            (key.title(), cog.__cog_group_description__),
+        )
+        if description == "…":
+            description = ""
+        pages.append(HelpPage(key, label, description, cmds))
+    pages.sort(key=lambda page: page.label.lower())
+
+    core = tuple(
+        cmd
+        for cmd in bot.tree.get_commands()
+        if isinstance(cmd, app_commands.Command) and cmd.binding is None
     )
+    if core:
+        pages.insert(
+            0,
+            # finally showing core cmds
+            HelpPage(CORE_PAGE, "Melvin", "Commands registered outside modules.", core),
+        )
+    return pages
 
+
+def help_title(page: HelpPage) -> str:
+    lines = [f"# {MELVIN_EMOJI} {page.label}"]
+    if page.description:
+        lines.append(f"-# **{page.description}**")
     return "\n".join(lines)
 
 
-class CogSelect(discord.ui.Select):
-    def __init__(self, cogs: list[commands.Cog]) -> None:
-        self.cogs_map = {cog.__cog_group_name__: cog for cog in cogs}
+def help_commands(page: HelpPage) -> str:
+    return "\n".join(
+        f"**[/{cmd.qualified_name}]({docs_url(page.key, cmd)})**\n-# **{cmd.description}**"
+        for cmd in page.commands
+    )
 
-        options = [
-            discord.SelectOption(
-                label=cog.__cog_group_name__,
-                value=cog.__cog_group_name__,
-                description=(
-                    cog.__cog_group_description__[:100]
-                    if hasattr(cog, "__cog_group_description__")
-                    and cog.__cog_group_description__ != "…"
-                    else None
-                ),
-            )
-            for cog in cogs
-            if not isinstance(cog.__cog_group_name__, discord.app_commands.locale_str)
-            and not isinstance(
-                cog.__cog_group_description__,
-                discord.app_commands.locale_str,
-            )
-        ]
 
+class HelpSelect(discord.ui.Select):
+    def __init__(self, pages: list[HelpPage]) -> None:
         super().__init__(
-            placeholder="Select a cog category.",
+            placeholder="Select a category.",
             min_values=1,
             max_values=1,
-            options=options,
+            options=[
+                discord.SelectOption(
+                    label=page.label,
+                    value=page.key,
+                    description=page.description[:100] or None,
+                )
+                for page in pages
+            ],
             custom_id="help_view:cog_select",
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
-        selected_cog_name = self.values[0]
-        selected_cog = self.cogs_map.get(selected_cog_name)
-
-        if selected_cog and self.view:
-            self.view.text_display.content = help_page(selected_cog)
+        if isinstance(self.view, HelpView):
+            self.view.show(self.values[0])
             await interaction.response.edit_message(view=self.view)
 
 
@@ -99,56 +141,45 @@ class HelpView(discord.ui.LayoutView):
         hidden: set[str] | frozenset[str] = frozenset(),
     ) -> None:
         super().__init__(timeout=None)
-        self.bot = bot
-        # cog group names to leave out, like modules a guild has turned off
-        self.hidden = hidden
+        self.pages = {page.key: page for page in help_pages(bot, hidden)}
 
-        banner_gallery = GalleryWithItem(MELVIN_HELP_BANNER)
-        banner_container = discord.ui.Container(banner_gallery)
-
-        cogs = self.get_cogs()
-        initial_content = help_page(cogs[0]) if cogs else "No commands available."
-        self.text_display = discord.ui.TextDisplay(initial_content)
-        separator = discord.ui.Separator(
-            visible=True,
-            spacing=discord.SeparatorSpacing.small,
-        )
-
-        if cogs:
-            self.cog_select = CogSelect(cogs)
-            select_row = discord.ui.ActionRow(self.cog_select)
-            content_container = discord.ui.Container(
-                self.text_display,
-                separator,
-                select_row,
+        if not self.pages:
+            self.add_item(
+                discord.ui.Container(
+                    discord.ui.TextDisplay("No commands available."),
+                    SmallSeparator(),
+                ),
             )
-        else:
-            content_container = discord.ui.Container(self.text_display, separator)
+            return
 
-        self.add_item(banner_container)
-        self.add_item(content_container)
+        self.title_text = discord.ui.TextDisplay("")
+        self.docs_button = discord.ui.Button(
+            label="Docs",
+            style=discord.ButtonStyle.link,
+            url=WEBSITE_URL,
+            emoji=BROWSER,
+        )
+        self.commands_text = discord.ui.TextDisplay("")
+        self.page_select = HelpSelect(list(self.pages.values()))
 
-    def get_cogs(self) -> list[commands.Cog]:
-        return [
-            c
-            for c in self.bot.cogs.values()
-            if get_cog_commands(c) and c.__cog_group_name__ not in self.hidden
-        ]
+        self.add_item(
+            discord.ui.Container(
+                discord.ui.Section(self.title_text, accessory=self.docs_button),
+                SmallSeparator(),
+                self.commands_text,
+                SmallSeparator(),
+                discord.ui.ActionRow(self.page_select),
+            ),
+        )
+        self.show(next(iter(self.pages)))
 
-    async def on_select_cog(self, interaction: discord.Interaction) -> None:
-        selected_cog_name = self.cog_select.values[0]
-
-        cogs_map = {
-            getattr(c, "__cog_group_name__", c.qualified_name): c
-            for c in self.get_cogs()
-        }
-        selected_cog = cogs_map.get(selected_cog_name)
-
-        if selected_cog:
-            self.text_display.content = help_page(selected_cog)
-            await interaction.response.edit_message(view=self)
-        else:
-            await interaction.response.defer()
+    def show(self, key: str) -> None:
+        page = self.pages[key]
+        self.title_text.content = help_title(page)
+        self.commands_text.content = help_commands(page)
+        self.docs_button.url = docs_url(page.key)
+        for option in self.page_select.options:
+            option.default = option.value == key
 
 
 class CaseRemoveButton(discord.ui.Button):

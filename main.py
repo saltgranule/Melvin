@@ -19,6 +19,7 @@ from globals import (
     DATA_DIR,
     MELVIN_EMOJI,
     SHARD_ICON,
+    WEBSITE_URL,
     DisplayNameEffect,
     DisplayNameFont,
 )
@@ -264,13 +265,13 @@ async def melvin_command(interaction: discord.Interaction) -> None:
     web = discord.ui.Button(
         label="Website",
         style=discord.ButtonStyle.link,
-        url="https://justmelvin.site",
+        url=WEBSITE_URL,
         emoji="<:browsersduotone:1548410087037477066>",
     )
     status_btn = discord.ui.Button(
         label="Status",
         style=discord.ButtonStyle.link,
-        url="https://justmelvin.site/status",
+        url=f"{WEBSITE_URL}/status",
         emoji="<:browsersduotone:1548410087037477066>",
     )
     github = discord.ui.Button(
