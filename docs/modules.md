@@ -5,8 +5,7 @@ Turn Melvin's features on or off for a guild, with `/modules` in Discord or from
 Module settings are stored in a SQLite database at `data/modules.db`, in a table called `guild_modules`. Each row holds a guild id, a module name, and whether it's enabled. A guild only has rows for modules it has changed. The table is created automatically when the bot starts, if it does not already exist.
 The bot keeps the settings cached and re-reads them every 10 seconds, so changes made outside of Discord still apply shortly after.
 
-## modules command
-Path: `/modules`
+## /modules
 Turn Melvin's features on or off for this server.
 
 **Parameters**

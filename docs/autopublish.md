@@ -23,8 +23,7 @@ When the module is turned off with `/modules` or the dashboard, messages aren't 
 Settings are stored with the rest of Melvin's module settings, in `data/modules.db`. Messages aren't stored.
 When the bot is removed from a guild, that guild's auto-publish settings are deleted.
 
-## config command
-Path: `/autopublish config`
+## /autopublish config
 Change which announcement channels are published automatically.
 
 **Parameters**

@@ -2,8 +2,7 @@
 AI query tools powered by GROQ's API, with optional DDGS web search grounding.
 Command group name: `ai`
 
-## ask command
-Path: `/ai ask`
+## /ai ask
 
 Ask a free AI model a question, with an optional web search for grounding.
 

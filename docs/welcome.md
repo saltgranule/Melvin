@@ -8,8 +8,7 @@ All commands require Manage Server and are guild only.
 Settings are stored with the rest of Melvin's module settings, in `data/modules.db`. Uploaded images are saved in `data/config_images`, and replacing or removing an image deletes the old file.
 When the bot is removed from a guild, that guild's welcome settings and image are deleted.
 
-## config command
-Path: `/welcome config`
+## /welcome config
 Change welcome message settings for this server.
 
 **Parameters**
@@ -41,8 +40,7 @@ These are replaced in the message text when it is sent.
 | `{member}` | A mention of the new member. |
 | `{member_count}` | The guild's member count. |
 
-## preview command
-Path: `/welcome preview`
+## /welcome preview
 Preview what the configured welcome notification looks like.
 
 **Parameters**

@@ -222,7 +222,7 @@ return self.bot.get_channel(int(channel_id)) if channel_id else None
 ``` Reads are cached, so it's fine to read settings in busy listeners like `on_message`.
 
 **4. Document it**
-Add a `## config command` section to the cog's docs page with a table of its settings, following `docs/thanks.md`.
+Add a `## /<module> config` section to the cog's docs page with a table of its settings, following `docs/thanks.md`.
 
 ## Reacting to changes
 Most cogs just read their settings when they need them, so changes apply on their own. Some settings have to change something on Discord the moment they're saved, like the style cog setting Melvin's name.
@@ -251,6 +251,34 @@ async def cog_load(self) -> None:
 The welcome cog does the same with its `welcome_channels` table, mapping each column to one of its settings.
 
 The function receives each row of the old table, and returns the guild id with a dictionary of setting keys and values. Empty values are skipped.
+
+## Documenting commands
+Every cog has a page in `docs/` named after its command group, like `docs/thanks.md` for `/thanks`. Commands that aren't in a group, like `/help`, go in `docs/melvin.md`. The website lists every page in `docs/` on its own.
+
+**Headings**
+Each command's heading is its full path, the same as it's typed in Discord. The website turns each heading into a link to that part of the page, and `/help` links every command to its heading, so a heading that doesn't match its command leaves a broken link.
+
+| Command | Heading | Link |
+|------|------|--------------|
+| `/thanks config` | `## /thanks config` | `/docs/thanks#thanks-config` |
+| `/mod role add` | `### /mod role add` | `/docs/mod#mod-role-add` |
+| `/latency` | `## /latency` | `/docs/melvin#latency` |
+
+Commands in a subgroup go under a heading for the subgroup, like `## /mod role`, followed by a sentence on what it covers. Anything that isn't a command, like Storage or the thanks trigger phrases, gets a plain heading instead.
+
+**Under each heading**
+Start with the command's description, then add these sections in order, leaving out any that don't apply.
+
+| Section | What it covers |
+|------|--------------|
+| `**Parameters**` | A table of each parameter's name, type, whether it's required, and a description, or None. |
+| `**Permissions**` | What the user needs, and whether it's guild only. |
+| `**Behavior**` | What the command does, including its checks and replies. |
+| `**Settings**` | For config commands, a table of each setting and its default. |
+| `**Example**` | An input and the output it gives. |
+| `**Error handling**` | What happens when something goes wrong. |
+
+`docs/info.md` uses all of these except Settings, and `docs/thanks.md` has a config command.
 
 ## Adding a dashboard section
 Server pages have a sidebar of sections, which only has Modules for now. To add one:
@@ -322,4 +350,4 @@ In the template, give the chart's element the `status-chart` class and pass the 
 - It has a `config` command that replies through `open_config`, with the Manage Server check and the shared error handler.
 - It reads settings with `module_config`, never from its own table.
 - Old settings are moved with `migrate_legacy`, if there were any.
-- Its docs page has a `config command` section.
+- Its docs page has a heading for every command, written as its full path, like `## /thanks config`.

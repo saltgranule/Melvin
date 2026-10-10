@@ -2,8 +2,7 @@
 Commands for viewing user information.
 Command group name: `info`
 
-## avatar command
-Path: `/info avatar`
+## /info avatar
 View a user's avatar.
 
 **Parameters**
@@ -25,8 +24,7 @@ Mentions in the reply are suppressed, so the response will not ping the target.
 Input: `/info avatar user: @Alex`
 Output: A layout showing "Alex's Avatar", the avatar image, and link buttons for each available format.
 
-## banner command
-Path: `/info banner`
+## /info banner
 View a user's profile banner.
 
 **Parameters**
@@ -52,8 +50,7 @@ Output: A layout showing "Alex's Banner", the banner image, and link buttons for
 **Error handling**
 If the target has no profile banner, the command replies with an ephemeral error message instead of a banner view.
 If type Server is used outside a server, the command replies with an ephemeral error message.
-## role command
-Path: `/info role`
+## /info role
 View information about a role.
 
 **Parameters**
@@ -84,8 +81,7 @@ Mentions in the reply are suppressed.
 Input: `/info role role: @Moderator`
 Output: A layout showing "@Moderator | {id}", the role details, its place in the hierarchy, and a View Members button.
 
-## server command
-Path: `/info server`
+## /info server
 View information about the current server.
 
 **Permissions**

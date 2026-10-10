@@ -2,8 +2,7 @@
 Administrative and developer utilities. These are for the bot's developers and don't change anything in your guild.
 Command group name: `private`
 
-## sync command
-Path: `/private sync`
+## /private sync
 Sync the application command tree.
 
 **Parameters**

@@ -48,9 +48,9 @@ Cog-wide:
 
 All of these replies are ephemeral.
 
-## role command group
+## /mod role
 
-Path: `/mod role`
+Give roles to members, or take them away.
 
 ### /mod role add
 
@@ -100,9 +100,9 @@ Also rejects role/hierarchy violations against both the command user and the bot
 
 If all checks pass, logs a case as `role_remove`, removes the role, and confirms with the role, member, and case ID.
 
-## case command group
+## /mod case
 
-Path: `/mod case`
+View and remove moderation cases.
 
 ### /mod case view
 
@@ -144,9 +144,7 @@ Looks up the case ID within the current guild.
 
 If no matching case exists, replies with an error naming the case ID. Otherwise deletes the row and confirms with the case ID, action type, and affected user.
 
-## warn command
-
-Path: `/mod warn`
+## /mod warn
 
 Warn a member.
 
@@ -167,9 +165,7 @@ Rejects bot targets, self-warns, warning the guild owner, and warning someone wh
 
 Logs a case as `warn`, attempts a DM to the target, and confirms with the member and case ID.
 
-## kick command
-
-Path: `/mod kick`
+## /mod kick
 
 Kick a member.
 
@@ -192,9 +188,7 @@ Logs a case as `kick`, attempts a DM to the target before the kick happens, then
 
 Confirms with the member and case ID.
 
-## ban command
-
-Path: `/mod ban`
+## /mod ban
 
 Ban a member.
 
@@ -217,9 +211,7 @@ Logs a case as `ban`, attempts a DM to the target before the ban happens, then p
 
 Confirms with the member and case ID.
 
-## unban command
-
-Path: `/mod unban`
+## /mod unban
 
 Unban a user.
 
@@ -242,9 +234,7 @@ If not banned, replies with an error. If the ban check itself fails for some oth
 
 Otherwise unbans the user with the reason attributed to the command user, then logs a case as `unban` and confirms with the user and case ID.
 
-## mute command
-
-Path: `/mod mute`
+## /mod mute
 
 Mute a member using Discord's timeout feature.
 
@@ -270,9 +260,7 @@ Applies a timeout until the parsed duration has elapsed, with the reason attribu
 
 Confirms with the member and case ID.
 
-## unmute command
-
-Path: `/mod unmute`
+## /mod unmute
 
 Remove a member's timeout early.
 
@@ -295,9 +283,7 @@ Checks the role hierarchy between the command user and the target, replying with
 
 Otherwise clears the timeout with the reason attributed to the command user, then logs a case as `unmute`, attempts a DM to the target, and confirms with the member and case ID.
 
-## lock command
-
-Path: `/mod lock`
+## /mod lock
 
 Lock a channel or thread, preventing regular members from sending messages.
 
@@ -322,9 +308,7 @@ For channels: checks the `@everyone` role's `send_messages` overwrite, replying 
 
 Confirms with the channel or thread that was locked. No case is logged for this command.
 
-## unlock command
-
-Path: `/mod unlock`
+## /mod unlock
 
 Unlock a channel or thread.
 
@@ -349,8 +333,7 @@ For channels: checks the `@everyone` role's `send_messages` overwrite, replying 
 
 Confirms with the channel or thread that was unlocked. No case is logged for this command.
 
-## config command
-Path: `/mod config`
+## /mod config
 Change moderation settings for this server.
 
 **Parameters**

@@ -4,8 +4,7 @@ Install and usage statistics for the bot.
 ## Storage
 Stats are stored in a SQLite database at `data/stats.db`, in two tables. The `command_logs` table holds one row per completed command, with the command name, user id, guild id, and timestamp. The `daily_snapshots` table holds the guild and user install counts, recorded once a day. Both tables are created automatically when the cog loads, if they do not already exist.
 
-## stats command
-Path: `/stats`
+## /stats
 Display statistics about Melvin.
 
 **Parameters**

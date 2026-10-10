@@ -5,8 +5,7 @@ Command group name: `audit`
 ## Storage
 Settings are stored with the rest of Melvin's module settings, in `data/modules.db`. See the modules documentation for details.
 
-## config command
-Path: `/audit config`
+## /audit config
 Change audit log settings for this server.
 
 **Parameters**

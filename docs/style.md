@@ -2,8 +2,7 @@
 Change how the bot's display name looks in a guild, using Discord's display name styles.
 Command group name: `style`
 
-## config command
-Path: `/style config`
+## /style config
 Change Melvin's name style for this server.
 
 **Parameters**

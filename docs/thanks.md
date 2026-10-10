@@ -71,8 +71,7 @@ Here are a few scenarios where the cog might not work as expected or could fail:
 
 Phrases with additional words between the negation and trigger (like "definitely do not give thanks") will not be caught by the negation check.
 
-## config command
-Path: `/thanks config`
+## /thanks config
 Change thanks settings for this server.
 
 **Permissions**

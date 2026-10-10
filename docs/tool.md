@@ -17,8 +17,7 @@ The encode and decode commands share the same list of formats.
 
 Text is converted to and from UTF-8 for every format except Morse and Unicode, which work on characters directly.
 
-## encode command
-Path: `/tool encode`
+## /tool encode
 Encode text into another format.
 
 **Parameters**
@@ -37,8 +36,7 @@ If encoding passes, the command replies with the encoded text.
 Input: `/tool encode format: Hex text: Hi`
 Output: `**48 69** was the Hex encoded result.`
 
-## decode command
-Path: `/tool decode`
+## /tool decode
 Decode text from another format.
 
 **Parameters**
@@ -77,8 +75,7 @@ Picking a format replaces the reply with the decoded result, or an error message
 All replies are ephemeral, meaning only the user who opened the option can see them. Mentions in the result are suppressed.
 The select menu stops responding after a few minutes. Opening the option on the message again shows a new one.
 
-## speak command
-Path: `/tool speak`
+## /tool speak
 Speak through Melvin. Sends a message as the bot, with an optional attachment.
 
 **Parameters**
@@ -101,8 +98,7 @@ In both cases, mentions in the text are suppressed, so the message will not ping
 **Error handling**
 If the command is run by a user without the Manage Messages permission **inside a server**, a gated response is shown instead. This response is ephemeral, meaning only the user who ran the command can see it.
 
-## urban command
-Path: `/tool urban`
+## /tool urban
 Look up a word on Urban Dictionary.
 
 **Parameters**

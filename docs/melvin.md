@@ -1,8 +1,7 @@
 # Melvin Core Documentation
 Commands that aren't part of a cog group, and the status page.
 
-## latency command
-Path: `/latency`
+## /latency
 View the bot's latency.
 
 **Parameters**
@@ -16,8 +15,7 @@ If a shard isn't connected yet, its latency shows as N/A. If the API request fai
 Input: `/latency`
 Output: `**Latency**`, followed by `Shard 0, 42ms` and `API, 120ms`.
 
-## help command
-Path: `/help`
+## /help
 Take a peek at Melvin's commands.
 
 **Parameters**
@@ -27,8 +25,7 @@ None.
 The command defers its response, then replies with the help banner and the commands of the first command group, each with its description.
 A select menu underneath switches between command groups. Only groups that have commands are listed, and in a guild, groups from modules turned off with `/modules` are left out.
 
-## melvin command
-Path: `/melvin`
+## /melvin
 Here's Melvin.
 
 **Parameters**
