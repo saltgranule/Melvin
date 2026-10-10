@@ -1,4 +1,5 @@
 import base64
+import contextlib
 import logging
 import random
 import re
@@ -10,14 +11,21 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from globals import BROWSER, THUMBS_DOWN_WHITE, THUMBS_UP_WHITE
+from globals import BROWSER, THUMBS_DOWN_WHITE, THUMBS_UP_WHITE, WEBSITE_URL
 from module_registry import Module
-from ui import ErrorUI, GalleryWithItem, GatedUI, Paginator, ResponseUI
+from ui import (
+    ErrorUI,
+    GalleryWithItem,
+    GatedUI,
+    Paginator,
+    ResponseUI,
+    SmallSeparator,
+)
 
 MODULE = Module(
     "tool",
     "Tools",
-    "Encoding, decoding, speak, 8ball, and Urban Dictionary.",
+    "Encoding, decoding, speak, 8ball, Urban Dictionary, and Wikipedia.",
 )
 
 if TYPE_CHECKING:
@@ -30,6 +38,13 @@ URBAN_DEFINE = "https://www.urbandictionary.com/define.php?term="
 # raw text is cut before links are added, so each page stays under discord's limit
 URBAN_DEFINITION_LIMIT = 1200
 URBAN_EXAMPLE_LIMIT = 600
+
+WIKI_SUMMARY = "https://en.wikipedia.org/api/rest_v1/page/summary/"
+WIKI_RANDOM = "https://en.wikipedia.org/api/rest_v1/page/random/summary"
+WIKI_SEARCH = "https://en.wikipedia.org/w/rest.php/v1/search/title"
+# metadata so we dont get throttled
+WIKI_HEADERS = {"User-Agent": f"Melvin ({WEBSITE_URL})"}
+WIKI_EXTRACT_LIMIT = 1500
 
 EIGHTBALL = [
     "It is certain.",
@@ -254,6 +269,114 @@ def _urban_page(entry: dict) -> str:
     return "\n".join(lines)
 
 
+async def _wiki_fetch(
+    url: str,
+    params: dict[str, str] | None = None,
+    timeout: float = 10,
+) -> dict | None:
+    async with (
+        aiohttp.ClientSession(headers=WIKI_HEADERS) as session,
+        session.get(
+            url,
+            params=params,
+            timeout=aiohttp.ClientTimeout(total=timeout),
+        ) as response,
+    ):
+        if response.status == 404:
+            return None
+        response.raise_for_status()
+        return await response.json()
+
+
+async def _wiki_random() -> dict | None:
+    for _ in range(3):
+        page = await _wiki_fetch(WIKI_RANDOM)
+        if page is not None and page.get("type") == "standard":
+            return page
+    return None
+
+
+class WikiView(discord.ui.LayoutView):
+    def __init__(self, page: dict, *, random_mode: bool) -> None:
+        super().__init__(timeout=300)
+        self.message: discord.Message | None = None
+        self.random_mode = random_mode
+        self.show(page)
+
+    def show(self, page: dict) -> None:
+        self.clear_items()
+
+        heading = f"### {discord.utils.escape_markdown(page['title'])}"
+        if page.get("description"):
+            description = discord.utils.escape_markdown(page["description"])
+            heading += f"\n-# **{description}**"
+
+        extract = page.get("extract", "").strip()
+        if len(extract) > WIKI_EXTRACT_LIMIT:
+            extract = extract[:WIKI_EXTRACT_LIMIT].rstrip() + "..."
+        body = discord.ui.TextDisplay(
+            discord.utils.escape_markdown(extract) or "No summary available.",
+        )
+
+        thumbnail = page.get("thumbnail")
+        container = discord.ui.Container(
+            discord.ui.Section(
+                heading,
+                accessory=discord.ui.Button(
+                    label="Wikipedia",
+                    emoji=BROWSER,
+                    style=discord.ButtonStyle.link,
+                    url=page["content_urls"]["desktop"]["page"],
+                ),
+            ),
+            SmallSeparator(),
+            discord.ui.Section(body, accessory=discord.ui.Thumbnail(thumbnail["source"]))
+            if thumbnail
+            else body,
+            SmallSeparator(),
+        )
+
+        if self.random_mode:
+            another = discord.ui.Button(
+                label="Another",
+                style=discord.ButtonStyle.secondary,
+            )
+            another.callback = self.another
+            container.add_item(discord.ui.ActionRow(another))
+
+        self.add_item(container)
+
+    async def another(self, interaction: discord.Interaction) -> None:
+        await interaction.response.defer()
+        try:
+            page = await _wiki_random()
+        except aiohttp.ClientError, TimeoutError:
+            log.exception("Wikipedia random lookup failed")
+            page = None
+
+        if page is None:
+            await interaction.followup.send(
+                view=ErrorUI("**Melvin couldn't reach Wikipedia, try again later.**"),
+                ephemeral=True,
+            )
+            return
+
+        self.show(page)
+        await interaction.edit_original_response(
+            view=self,
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
+
+    async def on_timeout(self) -> None:
+        for item in self.walk_children():
+            if isinstance(item, discord.ui.Button) and not item.url:
+                item.disabled = True
+
+        if self.message:
+            with contextlib.suppress(discord.HTTPException):
+                await self.message.edit(view=self)
+
+
 class ToolCog(
     commands.GroupCog,
     name="tool",
@@ -438,6 +561,93 @@ class ToolCog(
                 url=URBAN_DEFINE + urllib.parse.quote(entries[0]["word"]),
             ),
         )
+        view.message = await interaction.followup.send(
+            view=view,
+            allowed_mentions=discord.AllowedMentions.none(),
+            wait=True,
+        )
+
+    async def wiki_autocomplete(
+        self,
+        _interaction: discord.Interaction,
+        current: str,
+    ) -> list[app_commands.Choice[str]]:
+        if not current.strip():
+            return []
+        try:
+            # discord stops waiting for suggestions after three seconds
+            data = await _wiki_fetch(
+                WIKI_SEARCH,
+                params={"q": current, "limit": "25"},
+                timeout=2.5,
+            )
+        except aiohttp.ClientError, TimeoutError:
+            return []
+        return [
+            app_commands.Choice(name=page["title"], value=page["title"])
+            for page in (data or {}).get("pages", [])
+            if len(page["title"]) <= 100
+        ]
+
+    @app_commands.command(
+        name="wiki",
+        description="Look up a Wikipedia article, or get a random one.",
+    )
+    @app_commands.describe(
+        query="The article to look up. Leave it empty for a random article.",
+    )
+    @app_commands.autocomplete(query=wiki_autocomplete)
+    async def wiki(
+        self,
+        interaction: discord.Interaction,
+        query: str | None = None,
+    ) -> None:
+        await interaction.response.defer()
+
+        query = (query or "").strip()
+        page = None
+        try:
+            if query:
+                page = await _wiki_fetch(
+                    WIKI_SUMMARY + urllib.parse.quote(query, safe=""),
+                )
+            else:
+                page = await _wiki_random()
+        except aiohttp.ClientError, TimeoutError:
+            log.exception("Wikipedia lookup failed")
+            failed = True
+        else:
+            # a random lookup only comes back empty when every try missed
+            failed = page is None and not query
+
+        if failed:
+            await interaction.followup.send(
+                view=ErrorUI("**Melvin couldn't reach Wikipedia, try again later.**"),
+                ephemeral=True,
+            )
+            return
+
+        if page is None or page.get("type") == "mainpage":
+            await interaction.followup.send(
+                view=ErrorUI(
+                    f"**No Wikipedia article found for `{query.replace('`', '')}`.**",
+                ),
+                ephemeral=True,
+            )
+            return
+
+        if page.get("type") == "disambiguation":
+            await interaction.followup.send(
+                view=ErrorUI(
+                    f"**`{page['title'].replace('`', '')}` could mean a few "
+                    "different things, try something more specific or pick one "
+                    "of the suggestions.**",
+                ),
+                ephemeral=True,
+            )
+            return
+
+        view = WikiView(page, random_mode=not query)
         view.message = await interaction.followup.send(
             view=view,
             allowed_mentions=discord.AllowedMentions.none(),

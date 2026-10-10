@@ -123,6 +123,31 @@ Output: A layout titled "chud" showing the first definition, with buttons to pag
 If no definitions are found, the command replies with an ephemeral error message.
 If Urban Dictionary cannot be reached or does not respond within ten seconds, the command replies with an ephemeral error message.
 
+## /tool wiki
+Look up a Wikipedia article, or get a random one.
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|----------|--------------|
+| query | string | no | The article to look up. Leave it empty for a random article. |
+
+**Behavior**
+While typing the query, Melvin suggests up to 25 matching article titles from Wikipedia. Picking a suggestion is the easiest way to land on the right article, but any text can be sent.
+The command defers its response and looks the article up on English Wikipedia. Redirects are followed, so a query like `nyc` shows the article for New York City.
+The reply shows the article's title, its short description, the opening summary, and the lead image if it has one. A link button next to the title opens the full article. Summaries longer than 1500 characters are cut, ending with "...".
+If the query is left empty, the command shows a random article instead, with an `Another` button underneath that swaps it for a new random article. Anyone who can see the reply can press it. The button stops responding after five minutes and is disabled.
+Mentions in the reply are suppressed.
+
+**Example**
+Input: `/tool wiki query: Octopus`
+Output: A layout titled "Octopus" with its summary, the lead image, and a button to open the article.
+
+**Error handling**
+If no article matches the query, the command replies with an ephemeral error message.
+If the query matches a disambiguation page, such as `Python`, the command replies with an ephemeral error message asking for something more specific.
+If Wikipedia cannot be reached or does not respond within ten seconds, the command replies with an ephemeral error message.
+
 ## /tool 8ball
 Ask the magic 8ball a question.
 
