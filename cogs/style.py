@@ -60,7 +60,7 @@ MODULE = Module(
         Setting(
             "colors",
             "Colors",
-            "One hex color, or two joined by a dash for the gradient effect, like F4A261-FFFFFF.",
+            "One hex color, or two joined by a dash for the gradient, eg. F4A261-FFFFFF.",
             "color",
             default="FFFFFF",
             placeholder="F4A261-FFFFFF",

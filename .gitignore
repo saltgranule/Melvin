@@ -12,6 +12,7 @@ __pycache__/
 
 # databases, uploaded images and files the bot writes for the website
 data/
+showreel/
 *.db
 
 # node
