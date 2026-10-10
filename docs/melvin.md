@@ -22,8 +22,8 @@ Take a peek at Melvin's commands.
 None.
 
 **Behavior**
-The command defers its response, then replies with the help banner and the commands of the first command group, each with its description.
-A select menu underneath switches between command groups. Only groups that have commands are listed, and in a guild, groups from modules turned off with `/modules` are left out.
+The command defers its response, then replies with a page of commands, starting with the Melvin page for `/help`, `/latency`, and `/melvin`. Each command is listed with its description, and links to its section of the docs on the website. A Docs button next to the page's title links to the whole docs page.
+A select menu underneath switches between pages. The other pages are one per command group, in alphabetical order, titled with the module's label where there is one. Only groups that have commands are listed, the private commands are left out, and in a guild, groups from modules turned off with `/modules` are left out too.
 
 ## /melvin
 Here's Melvin.

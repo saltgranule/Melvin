@@ -122,3 +122,19 @@ Output: A layout titled "chud" showing the first definition, with buttons to pag
 **Error handling**
 If no definitions are found, the command replies with an ephemeral error message.
 If Urban Dictionary cannot be reached or does not respond within ten seconds, the command replies with an ephemeral error message.
+
+## /tool 8ball
+Ask the magic 8ball a question.
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|----------|--------------|
+| prompt | string | yes | The question for the 8ball. |
+
+**Behavior**
+The command replies with the question and one of nine answers, picked at random. `@everyone` and `@here` in the question don't ping anyone.
+
+**Example**
+Input: `/tool 8ball prompt: Will it rain tomorrow?`
+Output: `**Will it rain tomorrow?**`, followed by an answer like `Without a doubt.`

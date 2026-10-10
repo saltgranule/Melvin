@@ -96,7 +96,7 @@ class ModCog(
 Don't use `app_commands.guild_only` for this. The bot wide setting in `main.py` overrides it, so the commands would still show up in DMs.
 
 **What isn't a module**
-Commands outside a group, like `/help`, `/latency`, and `/melvin`, can't be turned off. Neither can the stats, private, and debug cogs, since they don't declare a `MODULE`.
+Commands outside a group, like `/help`, `/latency`, and `/melvin`, can't be turned off. Neither can the stats and private cogs, since they don't declare a `MODULE`.
 
 **Importing cog files**
 The website imports each cog file to read its `MODULE`, without loading the cog or connecting to Discord. Anything that needs the bot, a token, or an API key should be in `__init__` or `cog_load`, not at the top level of the file. Constants and imports at the top level are fine.
@@ -265,6 +265,8 @@ Each command's heading is its full path, the same as it's typed in Discord. The 
 | `/latency` | `## /latency` | `/docs/melvin#latency` |
 
 Commands in a subgroup go under a heading for the subgroup, like `## /mod role`, followed by a sentence on what it covers. Anything that isn't a command, like Storage or the thanks trigger phrases, gets a plain heading instead.
+
+The links are built by `docs_url` in `ui/views.py`, from the website address in `globals.py`. Cogs whose commands are only for developers, like private, are listed in `HIDDEN_COGS` there, so `/help` leaves them out.
 
 **Under each heading**
 Start with the command's description, then add these sections in order, leaving out any that don't apply.

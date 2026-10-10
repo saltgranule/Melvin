@@ -71,6 +71,22 @@ Here are a few scenarios where the cog might not work as expected or could fail:
 
 Phrases with additional words between the negation and trigger (like "definitely do not give thanks") will not be caught by the negation check.
 
+## /thanks count
+Check how many times a user has been thanked.
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|----------|--------------|
+| user | user | no | The user to check. Defaults to you. |
+
+**Behavior**
+The command replies with how many times the user has been thanked, across every server. Users who have never been thanked show 0.
+
+**Example**
+Input: `/thanks count user: @Alex`
+Output: `**Alex's thanks**`, followed by `Thanked 12 times.`
+
 ## /thanks config
 Change thanks settings for this server.
 
