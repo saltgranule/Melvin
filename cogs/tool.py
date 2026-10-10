@@ -654,8 +654,8 @@ class ToolCog(
             wait=True,
         )
 
-    @app_commands.command(name="8ball", description="game of fate")
-    @app_commands.describe(prompt="the prompt for the 8ball")
+    @app_commands.command(name="8ball", description="Game of fate")
+    @app_commands.describe(prompt="he prompt for the 8ball")
     async def eightball(self, interaction: discord.Interaction, prompt: str) -> None:
         await interaction.response.defer(ephemeral=False)
         answer = random.choice(EIGHTBALL)
