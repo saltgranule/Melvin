@@ -1,21 +1,26 @@
 # Private Cog Documentation
-Administrative and developer utilities. These are for the bot's developers and don't change anything in your guild.
+Administrative and developer utilities. These are only for the bot's developers, and are left out of `/help`.
 Command group name: `private`
 
-## /private sync
-Sync the application command tree.
+## /private populate
+Fill this server's stats with made up data.
 
 **Parameters**
-None.
+
+| Name | Type | Required | Description |
+|------|------|----------|--------------|
+| density | choice | yes | How much activity to make up, Low, Medium, or High. |
 
 **Permissions**
-Only the bot's owner can run this. Anyone else gets a "Gated" reply pointing them to the support server.
+Only the bot's owner can run this. Anyone else gets a "Gated" reply pointing them to the support server. Guild only.
 
 **Behavior**
-The command re-registers all of the bot's slash commands with Discord, then replies with how many were synced. All replies are ephemeral.
+The command makes up 30 days of hourly messages, voice minutes, and member counts, then replaces the server's stats with them, so the Server Stats page has something to show. Activity follows a daily curve, is a bit higher on weekends, and the member count slowly grows with the odd dip.
+Real stats for the server are overwritten, so this is meant for test servers. All replies are ephemeral.
 
-**Error handling**
-If Discord rejects the sync, the command replies with the error.
+**Example**
+Input: `/private populate density: Medium`
+Output: `**Server Stats Populated**`, followed by `Replaced this server's stats with 720 hours of medium density data.`
 
 ## Developer logs
 The bot posts some events to a private log channel in its own development server, to help spot problems.
