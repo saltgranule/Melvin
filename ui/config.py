@@ -280,12 +280,13 @@ class SettingModal(discord.ui.Modal):
             self.config_view.module,
             self.setting.key,
         )
+        if self.upload.values and self.upload.values[0].size > module_config.MAX_IMAGE_BYTES:
+            await _reply_error(interaction, "Images must be 8 MB or smaller.")
+            return
+
         try:
             if self.upload.values:
                 attachment = self.upload.values[0]
-                if attachment.size > module_config.MAX_IMAGE_BYTES:
-                    msg = "Images must be 8 MB or smaller."
-                    raise module_config.ConfigError(msg)
                 data = await attachment.read()
                 await module_config.replace_image(
                     guild_id,

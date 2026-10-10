@@ -700,6 +700,7 @@ def _toggle_reply(
     guild_id: int,
     message: str | None,
     status: int,
+    *,
     enabled: bool | None = None,
 ) -> Response | tuple[Response, int]:
     # the page's script asks for json, a plain form post goes back to the page
@@ -754,7 +755,7 @@ async def toggle_module(guild_id: int, module: str) -> Response | tuple[Response
         log.exception("Failed to save module %s for guild %s", module, guild_id)
         return _toggle_reply(guild_id, "Couldn't save that, please try again.", 500)
 
-    return _toggle_reply(guild_id, None, 200, enabled)
+    return _toggle_reply(guild_id, None, 200, enabled=enabled)
 
 
 def _check_value(

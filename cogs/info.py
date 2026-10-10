@@ -101,7 +101,7 @@ class AssetView(discord.ui.LayoutView):
         self.add_item(container)
 
 
-def _role_color(role: discord.Role, enhanced: bool) -> str:
+def _role_color(role: discord.Role, *, enhanced: bool) -> str:
     if enhanced and role.tertiary_color is not None:
         return (
             f"{role.color}-{role.secondary_color}-{role.tertiary_color} | Holographic"
@@ -165,7 +165,7 @@ class RoleInfoView(discord.ui.LayoutView):
 
         details = "\n".join(
             (
-                f"**Appearance:** {_role_color(role, enhanced)}",
+                f"**Appearance:** {_role_color(role, enhanced=enhanced)}",
                 f"**Hoisted:** {'Yes' if role.hoist else 'No'}",
                 f"**Mentionable:** {'Yes' if role.mentionable else 'No'}",
                 f"**Number of Members:** {len(role.members)}",

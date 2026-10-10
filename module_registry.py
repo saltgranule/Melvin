@@ -93,7 +93,7 @@ class _View(Mapping):
             self._data = self._build()
         return self._data
 
-    def __getitem__(self, key: str):
+    def __getitem__(self, key: str) -> object:
         return self._get()[key]
 
     def __iter__(self) -> Iterator[str]:

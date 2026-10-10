@@ -341,6 +341,7 @@ class ToolCog(
         interaction: discord.Interaction,
         text: str,
         attachment: discord.Attachment | None = None,
+        *,
         containerized: bool = True,
     ) -> None:
         await interaction.response.defer(ephemeral=False)

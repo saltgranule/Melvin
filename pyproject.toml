@@ -1,0 +1,71 @@
+[tool.pyright]
+pythonVersion = "3.14"
+
+[tool.ty.rules]
+all = "ignore"
+
+[tool.ty.environment]
+python-version = "3.14"
+
+[tool.ruff]
+target-version = "py314"
+line-length    = 88
+extend-exclude = [
+    ".local/skills",
+    ".cache",
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    ".venv",
+    "env",
+    "lib/python*",
+]
+
+[tool.ruff.lint]
+select  = ["ALL"]
+preview = true
+ignore  = [
+    "D",
+    "DOC",
+    "typing-only-first-party-import",
+    "typing-only-third-party-import",
+    "too-many-statements-in-try-clause",
+    "suspicious-non-cryptographic-random-usage",
+    "too-many-locals",
+    "too-many-branches",
+    "too-many-public-methods",
+    "BLE",
+    "pandas-use-of-dot-values",
+    "missing-copyright-notice",
+    "raise-vanilla-args",
+    "raw-string-in-exception",
+    "no-self-use",
+    "magic-value-comparison",
+    "line-too-long",
+    "camelcase-imported-as-lowercase",
+    "commented-out-code",
+    "too-many-return-statements",
+    "complex-structure",
+    "suppressible-exception",
+    "too-many-arguments",
+    "too-many-positional-arguments",
+    "too-many-statements",
+]
