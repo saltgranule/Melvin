@@ -32,7 +32,7 @@ Here's Melvin.
 None.
 
 **Behavior**
-The command defers its response, then replies with a short description of the bot and how many guilds it's in, against its current goal of 100.
+The command defers its response, then replies with a short description of the bot and a short clip of it.
 Link buttons are shown underneath for adding the bot, the support server, the website, the status page, and the GitHub repo.
 
 ## Status page

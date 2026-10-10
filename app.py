@@ -182,6 +182,8 @@ def get_repo_meta() -> dict:
 
 
 BOT_STATS_FILE = DATA_DIR / "bot_stats.json"
+# best idea to hide index stats until interval
+MIN_GUILDS_FOR_STATS = 70
 
 
 def get_bot_stats() -> dict[str, int]:
@@ -254,11 +256,12 @@ def render_doc(slug: str) -> dict | None:
 
 @app.route("/")
 def home() -> str:
+    stats = get_bot_stats()
     return render_template(
         "index.html",
         active="home",
         repo=get_repo_meta(),
-        stats=get_bot_stats(),
+        stats=stats if stats["guild_count"] >= MIN_GUILDS_FOR_STATS else None,
     )
 
 

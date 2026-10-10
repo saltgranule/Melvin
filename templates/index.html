@@ -39,10 +39,12 @@
                     </a>
                     {% endif %}
                 </div>
+                {% if stats %}
                 <div class="bot-stats">
                     <span>{{ stats.guild_count }} guilds</span>
                     <span>{{ stats.member_count }} members</span>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>

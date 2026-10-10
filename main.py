@@ -23,7 +23,7 @@ from globals import (
     DisplayNameEffect,
     DisplayNameFont,
 )
-from ui import ErrorUI, HelpView, InfoUI, ResponseUI
+from ui import ErrorUI, GalleryWithItem, HelpView, InfoUI, SmallSeparator
 
 logging.basicConfig(level=logging.INFO)
 intents = discord.Intents.default()
@@ -243,12 +243,7 @@ async def help_command(interaction: discord.Interaction) -> None:
 @bot.tree.command(name="melvin", description="Here's Melvin.")
 async def melvin_command(interaction: discord.Interaction) -> None:
     await interaction.response.defer()
-    current_guilds = len(bot.guilds)
-    goal_guilds = 100
 
-    view = ResponseUI(
-        f"{MELVIN_EMOJI} **Melvin**\n-# **a demonstration of community driven consistency towards the discord bot space. Open to contributions. {current_guilds}/{goal_guilds} guilds{'.' if goal_guilds > current_guilds else '! 🎉'}**",
-    )
     row = discord.ui.ActionRow()
     invite = discord.ui.Button(
         label="Add Me",
@@ -286,7 +281,18 @@ async def melvin_command(interaction: discord.Interaction) -> None:
     row.add_item(web)
     row.add_item(status_btn)
     row.add_item(github)
-    view.container.add_item(row)
+
+    view = discord.ui.LayoutView()
+    view.add_item(
+        discord.ui.Container(
+            discord.ui.TextDisplay(
+                f"{MELVIN_EMOJI} **Melvin**\n-# **an open source, community managed discord bot, stable and paywall free.**",
+            ),
+            GalleryWithItem(f"{WEBSITE_URL}/static/media/short.gif"),
+            SmallSeparator(),
+            row,
+        ),
+    )
 
     await interaction.followup.send(view=view)
 
