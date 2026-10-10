@@ -58,6 +58,8 @@ def _fake_stats(density: str) -> list[tuple[int, int, int, int]]:
     return rows
 
 
+@app_commands.allowed_installs(guilds=True, users=False)
+@app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
 class PrivateCog(
     commands.GroupCog,
     name="private",
@@ -90,33 +92,12 @@ class PrivateCog(
         except discord.Forbidden, discord.HTTPException:
             pass
 
-    @app_commands.command(name="sync", description="Sync the application command tree.")
-    async def sync(self, interaction: discord.Interaction) -> None:
-        await interaction.response.defer(ephemeral=True)
-        if not await self.bot.is_owner(interaction.user):
-            view = GatedUI()
-            await interaction.followup.send(view=view, ephemeral=True)
-            return
-        try:
-            synced = await self.bot.tree.sync()
-        except discord.HTTPException as e:
-            view = ErrorUI(message=f"**{e}**")
-            await interaction.followup.send(view=view, ephemeral=True)
-            return
-        view = PositiveUI(
-            title="Tree Sync Complete",
-            subtitle=f"**Synced {len(synced)} command(s).**",
-        )
-        await interaction.followup.send(view=view, ephemeral=True)
-
     @app_commands.command(
         name="populate",
         description="Fill this server's stats with made up data.",
     )
     @app_commands.describe(density="How much activity to make up.")
     @app_commands.choices(density=DENSITY_CHOICES)
-    # server only, since stats are per server
-    @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
     async def populate(
         self,
         interaction: discord.Interaction,
@@ -128,6 +109,8 @@ class PrivateCog(
             await interaction.followup.send(view=view, ephemeral=True)
             return
         if interaction.guild_id is None:
+            view = ErrorUI("**This command only works in a server.**")
+            await interaction.followup.send(view=view, ephemeral=True)
             return
 
         rows = _fake_stats(density.value)
