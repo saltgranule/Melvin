@@ -19,7 +19,14 @@ from command_engine import (
     send_kwargs,
     tag_kind,
 )
-from command_store import COMMAND_LIMIT, Command, CommandExists, CommandLimit, CommandMissing, clean_name
+from command_store import (
+    COMMAND_LIMIT,
+    Command,
+    CommandExists,
+    CommandLimit,
+    CommandMissing,
+    clean_name,
+)
 from globals import MELVIN_EMOJI
 from helpers.commands import (
     CommandError,
@@ -68,25 +75,35 @@ PREFIX_LENGTH = 3
 CONTENT_LENGTH = 4000
 AUTOCOMPLETE_LIMIT = 25
 PER_PAGE = 15
-NAME_ERROR = "**Names use letters, numbers, hyphens, and underscores, up to 32 characters.**"
+NAME_ERROR = (
+    "**Names use letters, numbers, hyphens, and underscores, up to 32 characters.**"
+)
 LIMIT_ERROR = f"**A server can have up to {COMMAND_LIMIT} commands.**"
 
 
 def _can_manage(interaction: discord.Interaction) -> bool:
     member = interaction.user
-    return isinstance(member, discord.Member) and member.guild_permissions.manage_messages
+    return (
+        isinstance(member, discord.Member) and member.guild_permissions.manage_messages
+    )
 
 
 def _may_change_roles(member: discord.Member) -> bool:
-    return member.guild_permissions.administrator or member.guild_permissions.manage_roles
+    return (
+        member.guild_permissions.administrator or member.guild_permissions.manage_roles
+    )
 
 
-async def _respond(interaction: discord.Interaction, view: discord.ui.LayoutView) -> None:
+async def _respond(
+    interaction: discord.Interaction, view: discord.ui.LayoutView
+) -> None:
     await interaction.response.send_message(view=view, ephemeral=True)
 
 
 async def _deny(interaction: discord.Interaction) -> None:
-    await _respond(interaction, ErrorUI("**You need Manage Messages to edit commands.**"))
+    await _respond(
+        interaction, ErrorUI("**You need Manage Messages to edit commands.**")
+    )
 
 
 def _not_found(name: str) -> ErrorUI:
@@ -113,7 +130,7 @@ def _describe_effect(verb: str, target: str, role: str) -> str:
 
 
 class CommandEditModal(discord.ui.Modal):
-    def __init__(self, cog: "CustomCommandsCog", name: str, raw: str) -> None:
+    def __init__(self, cog: CustomCommandsCog, name: str, raw: str) -> None:
         super().__init__(title=f"Edit {name}"[:45])
         self.cog = cog
         self.command = name
@@ -131,7 +148,9 @@ class CommandEditModal(discord.ui.Modal):
             ),
         )
         self.delete_box = discord.ui.Checkbox()
-        self.add_item(discord.ui.Label(text="Delete this command", component=self.delete_box))
+        self.add_item(
+            discord.ui.Label(text="Delete this command", component=self.delete_box)
+        )
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         if not _can_manage(interaction):
@@ -144,7 +163,10 @@ class CommandEditModal(discord.ui.Modal):
                 return
             await _respond(
                 interaction,
-                PositiveUI(title="Command deleted", subtitle=f"**`{self.command}`** has been removed."),
+                PositiveUI(
+                    title="Command deleted",
+                    subtitle=f"**`{self.command}`** has been removed.",
+                ),
             )
             return
 
@@ -160,13 +182,19 @@ class CommandEditModal(discord.ui.Modal):
             return
 
         try:
-            await command_store.update(interaction.guild_id, self.command, {"content": raw})
+            await command_store.update(
+                interaction.guild_id, self.command, {"content": raw}
+            )
         except CommandMissing:
-            await _respond(interaction, ErrorUI(f"**`{self.command}` no longer exists.**"))
+            await _respond(
+                interaction, ErrorUI(f"**`{self.command}` no longer exists.**")
+            )
             return
         await _respond(
             interaction,
-            PositiveUI(title="Command updated", subtitle=f"**`{self.command}`** has new text."),
+            PositiveUI(
+                title="Command updated", subtitle=f"**`{self.command}`** has new text."
+            ),
         )
 
 
@@ -204,7 +232,9 @@ class CustomCommandsCog(
         )
         return [app_commands.Choice(name=name, value=name) for name in names]
 
-    async def _bind(self, guild: discord.Guild, command: Command, raw: str) -> list[str]:
+    async def _bind(
+        self, guild: discord.Guild, command: Command, raw: str
+    ) -> list[str]:
         if command.args:
             return await bind_args(guild, parse_args(command.args), raw)
         return split_args(raw) if raw.strip() else []
@@ -277,7 +307,9 @@ class CustomCommandsCog(
         name="The command to post.",
         args="Values for its arguments.",
     )
-    async def run(self, interaction: discord.Interaction, name: str, args: str = "") -> None:
+    async def run(
+        self, interaction: discord.Interaction, name: str, args: str = ""
+    ) -> None:
         tag = clean_name(name)
         command = await command_store.fetch(interaction.guild_id, tag) if tag else None
         if command is None:
@@ -285,15 +317,21 @@ class CustomCommandsCog(
             return
 
         async def send(**kwargs: object) -> None:
-            await interaction.response.send_message(**kwargs, allowed_mentions=NO_MENTIONS)
+            await interaction.response.send_message(
+                **kwargs, allowed_mentions=NO_MENTIONS
+            )
 
         try:
-            await self._execute(interaction.guild, interaction.user, command, args, send)
+            await self._execute(
+                interaction.guild, interaction.user, command, args, send
+            )
         except CommandError as error:
             await _respond(interaction, ErrorUI(f"**{error}**"))
 
     @run.autocomplete("name")
-    async def run_name(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+    async def run_name(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[app_commands.Choice[str]]:
         return await self._name_autocomplete(interaction, current)
 
     @app_commands.command(name="create", description="Save a new custom command.")
@@ -338,7 +376,9 @@ class CustomCommandsCog(
         except CommandExists:
             await _respond(
                 interaction,
-                ErrorUI(f"**`{command}` already exists. Use /command edit to change it.**"),
+                ErrorUI(
+                    f"**`{command}` already exists. Use /command edit to change it.**"
+                ),
             )
             return
         except CommandLimit:
@@ -347,7 +387,10 @@ class CustomCommandsCog(
 
         await _respond(
             interaction,
-            PositiveUI(title="Command created", subtitle=f"**`{command}`** can now be used with /command run."),
+            PositiveUI(
+                title="Command created",
+                subtitle=f"**`{command}`** can now be used with /command run.",
+            ),
         )
 
     @app_commands.command(
@@ -382,7 +425,9 @@ class CustomCommandsCog(
             return
 
         if all(option is None for option in (content, args, permission, new_name)):
-            await interaction.response.send_modal(CommandEditModal(self, command, existing.content))
+            await interaction.response.send_modal(
+                CommandEditModal(self, command, existing.content)
+            )
             return
 
         changes: dict[str, str] = {}
@@ -429,11 +474,15 @@ class CustomCommandsCog(
 
         await _respond(
             interaction,
-            PositiveUI(title="Command updated", subtitle=f"**`{command}`** was changed."),
+            PositiveUI(
+                title="Command updated", subtitle=f"**`{command}`** was changed."
+            ),
         )
 
     @edit.autocomplete("name")
-    async def edit_name(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+    async def edit_name(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[app_commands.Choice[str]]:
         return await self._name_autocomplete(interaction, current)
 
     @app_commands.command(
@@ -444,14 +493,18 @@ class CustomCommandsCog(
         name="The command to look at.",
         args="Values to preview with. Empty uses sample values.",
     )
-    async def view(self, interaction: discord.Interaction, name: str, args: str = "") -> None:
+    async def view(
+        self, interaction: discord.Interaction, name: str, args: str = ""
+    ) -> None:
         tag = clean_name(name)
         command = await command_store.fetch(interaction.guild_id, tag) if tag else None
         if command is None:
             await _respond(interaction, _not_found(name))
             return
 
-        if not _can_manage(interaction) and (problem := access_error(interaction.user, command.permission)):
+        if not _can_manage(interaction) and (
+            problem := access_error(interaction.user, command.permission)
+        ):
             await _respond(interaction, ErrorUI(f"**{problem}**"))
             return
 
@@ -466,8 +519,12 @@ class CustomCommandsCog(
             await _respond(interaction, ErrorUI(f"**{error}**"))
             return
 
-        created = discord.utils.format_dt(datetime.fromtimestamp(command.created_at, UTC), style="F")
-        changed = discord.utils.format_dt(datetime.fromtimestamp(command.updated_at, UTC), style="R")
+        created = discord.utils.format_dt(
+            datetime.fromtimestamp(command.created_at, UTC), style="F"
+        )
+        changed = discord.utils.format_dt(
+            datetime.fromtimestamp(command.updated_at, UTC), style="R"
+        )
         await _respond(
             interaction,
             InfoUI(
@@ -496,7 +553,9 @@ class CustomCommandsCog(
             )
 
     @view.autocomplete("name")
-    async def view_name(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+    async def view_name(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[app_commands.Choice[str]]:
         return await self._name_autocomplete(interaction, current)
 
     @app_commands.command(name="delete", description="Delete a custom command.")
@@ -504,22 +563,34 @@ class CustomCommandsCog(
     @app_commands.checks.has_permissions(manage_messages=True)
     async def delete(self, interaction: discord.Interaction, name: str) -> None:
         command = clean_name(name)
-        if command is None or not await command_store.delete(interaction.guild_id, command):
+        if command is None or not await command_store.delete(
+            interaction.guild_id, command
+        ):
             await _respond(interaction, _not_found(name))
             return
         await _respond(
             interaction,
-            PositiveUI(title="Command deleted", subtitle=f"**`{command}`** has been removed."),
+            PositiveUI(
+                title="Command deleted", subtitle=f"**`{command}`** has been removed."
+            ),
         )
 
     @delete.autocomplete("name")
-    async def delete_name(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+    async def delete_name(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[app_commands.Choice[str]]:
         return await self._name_autocomplete(interaction, current)
 
-    @app_commands.command(name="copy", description="Make a copy of a command under a new name.")
-    @app_commands.describe(name="The command to copy.", new_name="The name for the copy.")
+    @app_commands.command(
+        name="copy", description="Make a copy of a command under a new name."
+    )
+    @app_commands.describe(
+        name="The command to copy.", new_name="The name for the copy."
+    )
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def copy(self, interaction: discord.Interaction, name: str, new_name: str) -> None:
+    async def copy(
+        self, interaction: discord.Interaction, name: str, new_name: str
+    ) -> None:
         source = clean_name(name)
         target = clean_name(new_name)
         if target is None:
@@ -530,7 +601,9 @@ class CustomCommandsCog(
             return
 
         try:
-            await command_store.copy(interaction.guild_id, source, target, interaction.user.id)
+            await command_store.copy(
+                interaction.guild_id, source, target, interaction.user.id
+            )
         except CommandMissing:
             await _respond(interaction, _not_found(name))
             return
@@ -543,14 +616,21 @@ class CustomCommandsCog(
 
         await _respond(
             interaction,
-            PositiveUI(title="Command copied", subtitle=f"**`{source}`** is now also **`{target}`**."),
+            PositiveUI(
+                title="Command copied",
+                subtitle=f"**`{source}`** is now also **`{target}`**.",
+            ),
         )
 
     @copy.autocomplete("name")
-    async def copy_name(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+    async def copy_name(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[app_commands.Choice[str]]:
         return await self._name_autocomplete(interaction, current)
 
-    @app_commands.command(name="list", description="List or search this server's commands.")
+    @app_commands.command(
+        name="list", description="List or search this server's commands."
+    )
     @app_commands.describe(query="Part of a name.")
     async def list_commands(
         self,
@@ -573,7 +653,14 @@ class CustomCommandsCog(
         if query.strip():
             title += f" matching `{discord.utils.escape_markdown(query)}`"
         title += "\n-# /command view or /command edit shows one."
-        view = Paginator(title, names, data_name="Commands", per_page=PER_PAGE, container=True, timeout=300)
+        view = Paginator(
+            title,
+            names,
+            data_name="Commands",
+            per_page=PER_PAGE,
+            container=True,
+            timeout=300,
+        )
         await interaction.response.send_message(view=view, ephemeral=True)
         view.message = await interaction.original_response()
 
@@ -584,7 +671,11 @@ class CustomCommandsCog(
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
-        if message.author.bot or message.guild is None or not isinstance(message.author, discord.Member):
+        if (
+            message.author.bot
+            or message.guild is None
+            or not isinstance(message.author, discord.Member)
+        ):
             return
 
         prefix = await self._prefix(message.guild.id)
@@ -604,7 +695,9 @@ class CustomCommandsCog(
             return
 
         async def send(**kwargs: object) -> None:
-            await message.reply(**kwargs, mention_author=False, allowed_mentions=NO_MENTIONS)
+            await message.reply(
+                **kwargs, mention_author=False, allowed_mentions=NO_MENTIONS
+            )
 
         try:
             await self._execute(
@@ -627,7 +720,9 @@ class CustomCommandsCog(
             await command_store.delete_guild(guild.id)
             await module_config.clear_module(guild.id, "tags")
         except Exception:
-            log.exception("failed to clean up custom commands for departed guild %s", guild.id)
+            log.exception(
+                "failed to clean up custom commands for departed guild %s", guild.id
+            )
 
 
 async def setup(bot: commands.Bot) -> None:

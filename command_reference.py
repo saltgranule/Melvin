@@ -10,7 +10,12 @@ FUNCTION_GROUPS = (
         (
             ("upper", "{text}", "Capital letters.", "$upper{hello} → HELLO"),
             ("lower", "{text}", "Lower case.", "$lower{HELLO} → hello"),
-            ("title", "{text}", "Capitalises each word.", "$title{hi there} → Hi There"),
+            (
+                "title",
+                "{text}",
+                "Capitalises each word.",
+                "$title{hi there} → Hi There",
+            ),
             ("trim", "{text}", "Removes spaces at the ends.", "$trim{  hi  } → hi"),
             ("reverse", "{text}", "Backwards.", "$reverse{abc} → cba"),
             ("len", "{text}", "Number of characters.", "$len{hello} → 5"),
@@ -77,7 +82,12 @@ FUNCTION_GROUPS = (
                 "Random whole number in the range, inclusive.",
                 "$rand{1-6} → 3",
             ),
-            ("pick", "{a|b|c}", "One option at random.", "$pick{red|green} → red or green"),
+            (
+                "pick",
+                "{a|b|c}",
+                "One option at random.",
+                "$pick{red|green} → red or green",
+            ),
             (
                 "shuffle",
                 "{a|b|c}",
@@ -104,7 +114,7 @@ FUNCTION_GROUPS = (
             (
                 "until",
                 "{seconds}",
-                "Relative time from now, like \"in an hour\".",
+                'Relative time from now, like "in an hour".',
                 "$until{3600}",
             ),
         ),
@@ -143,23 +153,35 @@ VARIABLES = (
     ("$serverid", "The ID of this server."),
     ("$members", "How many members the server has."),
     ("$time", "Date and time, in each reader's timezone."),
-    ("$time:R", "Relative, like \"in 2 hours\". Also t, T, d, D, f, F."),
+    ("$time:R", 'Relative, like "in 2 hours". Also t, T, d, D, f, F.'),
 )
 
 EMBED_KEYS = (
     ("title:", "Up to 256 characters.", "title: Welcome"),
-    ("description:", "Up to 4096 characters. Can span lines.", "description: Read the rules."),
+    (
+        "description:",
+        "Up to 4096 characters. Can span lines.",
+        "description: Read the rules.",
+    ),
     ("url:", "Link on the title.", "url: https://example.com"),
     ("color:", "Side bar color, as hex.", "color: #F4A261"),
     ("image:", "Large picture, as a link.", "image: https://example.com/a.png"),
-    ("thumbnail:", "Small corner picture, as a link.", "thumbnail: https://example.com/a.png"),
+    (
+        "thumbnail:",
+        "Small corner picture, as a link.",
+        "thumbnail: https://example.com/a.png",
+    ),
     ("footer:", "Bottom text. Up to 2048 characters.", "footer: Ask a mod"),
     ("field:", "A box. Up to 25. Name | value.", "field: Rule one | Be kind"),
 )
 
 CONTAINER_KEYS = (
     ("color:", "Side bar color, as hex.", "color: #F4A261"),
-    ("button:", "Link button. Up to 5. Label | link.", "button: Rules | https://example.com"),
+    (
+        "button:",
+        "Link button. Up to 5. Label | link.",
+        "button: Rules | https://example.com",
+    ),
     ("{separator}", "Small divider.", "{separator}"),
     ("{separator:large}", "Large divider.", "{separator:large}"),
 )
@@ -194,7 +216,7 @@ USAGE = (
         [
             "{if $1 == word}yes{elif $1 == other}maybe{else}no{endif}",
             "Compare with ==, !=, <, >, <=, >=. A single = is an error.",
-            "Put text with spaces in quotes: $1 == \"two words\"",
+            'Put text with spaces in quotes: $1 == "two words"',
             "On its own, true unless empty or 0.",
         ],
     ),
@@ -222,14 +244,25 @@ def build() -> dict:
             {
                 "title": title,
                 "entries": [
-                    {"name": name, "usage": usage, "description": text, "example": example}
+                    {
+                        "name": name,
+                        "usage": usage,
+                        "description": text,
+                        "example": example,
+                    }
                     for name, usage, text, example in items
                 ],
             }
             for title, items in FUNCTION_GROUPS
         ],
         "variables": [{"name": name, "description": text} for name, text in VARIABLES],
-        "embed": [{"key": key, "description": text, "example": example} for key, text, example in EMBED_KEYS],
-        "container": [{"key": key, "description": text, "example": example} for key, text, example in CONTAINER_KEYS],
+        "embed": [
+            {"key": key, "description": text, "example": example}
+            for key, text, example in EMBED_KEYS
+        ],
+        "container": [
+            {"key": key, "description": text, "example": example}
+            for key, text, example in CONTAINER_KEYS
+        ],
         "usage": [{"title": title, "lines": lines} for title, lines in USAGE],
     }

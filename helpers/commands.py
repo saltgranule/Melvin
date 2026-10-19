@@ -95,7 +95,11 @@ async def _convert(spec: ArgSpec, token: str, guild: discord.Guild) -> str:
             msg = f"`{spec.name}` has to be a whole number."
             raise CommandError(msg)
         number = int(token)
-        if spec.low is not None and spec.high is not None and not spec.low <= number <= spec.high:
+        if (
+            spec.low is not None
+            and spec.high is not None
+            and not spec.low <= number <= spec.high
+        ):
             msg = f"`{spec.name}` has to be between {spec.low} and {spec.high}."
             raise CommandError(msg)
         return str(number)
@@ -173,7 +177,9 @@ def access_error(member: discord.Member, permission: str) -> str | None:
     perms = member.guild_permissions
     if perms.administrator or getattr(perms, permission):
         return None
-    return f"You need the {permission.replace('_', ' ').title()} permission to use this."
+    return (
+        f"You need the {permission.replace('_', ' ').title()} permission to use this."
+    )
 
 
 def describe_permission(permission: str) -> str:

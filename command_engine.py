@@ -60,7 +60,9 @@ NAME_REF = re.compile(r"\$([a-z][a-z0-9_]{0,31})")
 TIME_STYLE = re.compile(r":([tTdDfFR])")
 ESCAPED_KEY = re.compile(r"\\[A-Za-z]+\s*:")
 LEGACY_FUNCTION = re.compile(r"\$(rand|pick|shuffle|roll|upper|lower)\[([^\]\n]*)\]")
-LEGACY_MARKER = re.compile(r"^([ \t]*)\[(embed|container)\][ \t]*$", re.MULTILINE | re.IGNORECASE)
+LEGACY_MARKER = re.compile(
+    r"^([ \t]*)\[(embed|container)\][ \t]*$", re.MULTILINE | re.IGNORECASE
+)
 LEGACY_SEPARATOR = re.compile(
     r"^([ \t]*)\[separator(:(?:small|large))?\][ \t]*$",
     re.MULTILINE | re.IGNORECASE,
@@ -395,7 +397,11 @@ def _check_blocks(raw: str) -> None:
 def _operand(text: str, run: Run) -> str:
     stripped = text.strip()
     name = NAME_REF.fullmatch(stripped)
-    if name is not None and name[1] not in run.variables and name[1] not in BUILTIN_NAMES:
+    if (
+        name is not None
+        and name[1] not in run.variables
+        and name[1] not in BUILTIN_NAMES
+    ):
         return ""
     value = expand(stripped, run).strip()
     if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
@@ -419,7 +425,10 @@ def _truth(condition: str, run: Run) -> bool:
 def _is_statement(line: str) -> bool:
     stripped = line.strip()
     match = STATEMENT_START.match(stripped)
-    return match is not None and _matching_brace(stripped, match.end() - 1) == len(stripped) - 1
+    return (
+        match is not None
+        and _matching_brace(stripped, match.end() - 1) == len(stripped) - 1
+    )
 
 
 def _is_directive(line: str) -> bool:
@@ -472,7 +481,9 @@ def resolve_blocks(raw: str, run: Run) -> str:
             frames.append({"parent": parent, "taken": taken, "on": taken})
         elif keyword == "elif":
             frame = frames[-1]
-            frame["on"] = frame["parent"] and not frame["taken"] and _truth(condition, run)
+            frame["on"] = (
+                frame["parent"] and not frame["taken"] and _truth(condition, run)
+            )
             frame["taken"] = frame["taken"] or frame["on"]
         elif keyword == "else":
             frame = frames[-1]
@@ -561,7 +572,10 @@ def expand(text: str, run: Run, depth: int = 0) -> str:
             if name in FUNCTIONS and end < length and text[end] == "{":
                 close = _matching_brace(text, end)
                 if close is not None:
-                    args = [expand(part, run, depth + 1) for part in _split_top(text[end + 1 : close])]
+                    args = [
+                        expand(part, run, depth + 1)
+                        for part in _split_top(text[end + 1 : close])
+                    ]
                     out.append(FUNCTIONS[name](run, args))
                     index = close + 1
                     continue
@@ -581,7 +595,6 @@ def expand(text: str, run: Run, depth: int = 0) -> str:
         out.append("$")
         index += 1
     return "".join(out)
-
 
 
 def _int(value: str, name: str) -> int:
@@ -651,7 +664,7 @@ def _fn_math(run: Run, args: list[str]) -> str:
         return "error"
     try:
         result = _evaluate(ast.parse(expression, mode="eval"))
-    except (ValueError, SyntaxError, ZeroDivisionError, OverflowError, TypeError):
+    except ValueError, SyntaxError, ZeroDivisionError, OverflowError, TypeError:
         return "error"
     if abs(result) > PLAIN_NUMBER_LIMIT:
         return "error"
@@ -679,7 +692,9 @@ def _fn_round(run: Run, args: list[str]) -> str:
     digits = min(max(digits, 0), ROUND_MAX_DIGITS)
     if abs(number) >= PLAIN_NUMBER_LIMIT:
         return _plain(number)
-    rounded = Decimal(repr(number)).quantize(Decimal(1).scaleb(-digits), rounding=ROUND_HALF_UP)
+    rounded = Decimal(repr(number)).quantize(
+        Decimal(1).scaleb(-digits), rounding=ROUND_HALF_UP
+    )
     return _plain(float(rounded))
 
 
@@ -840,7 +855,6 @@ FUNCTIONS = {
 }
 
 
-
 def _color_value(value: int | None) -> discord.Color | None:
     return discord.Color(value) if value is not None else None
 
@@ -854,7 +868,9 @@ def render(
 
     if body.kind == "embed":
         embed = discord.Embed(
-            title=_cut(expanded(body.title), EMBED_TITLE_LENGTH) if body.title else None,
+            title=_cut(expanded(body.title), EMBED_TITLE_LENGTH)
+            if body.title
+            else None,
             description=(
                 _cut(expanded(body.description), EMBED_DESCRIPTION_LENGTH)
                 if body.description
@@ -872,7 +888,9 @@ def render(
         for name, value in body.embed_fields:
             embed.add_field(
                 name=_text_or(_cut(expanded(name), EMBED_FIELD_NAME_LENGTH), "\u200b"),
-                value=_text_or(_cut(expanded(value), EMBED_FIELD_VALUE_LENGTH), "\u200b"),
+                value=_text_or(
+                    _cut(expanded(value), EMBED_FIELD_VALUE_LENGTH), "\u200b"
+                ),
                 inline=False,
             )
         return None, embed, None
@@ -894,7 +912,9 @@ def render(
                 discord.ui.ActionRow(
                     *(
                         discord.ui.Button(
-                            label=_text_or(_cut(expanded(label), BUTTON_LABEL_LENGTH), "Link"),
+                            label=_text_or(
+                                _cut(expanded(label), BUTTON_LABEL_LENGTH), "Link"
+                            ),
                             style=discord.ButtonStyle.link,
                             url=url,
                         )
@@ -936,7 +956,9 @@ def preview_data(raw: str, run: Run) -> dict:
                 for kind, value in body.items
             ],
             color=f"#{body.color:06X}" if body.color is not None else None,
-            buttons=[{"label": expand(label, run), "url": url} for label, url in body.buttons],
+            buttons=[
+                {"label": expand(label, run), "url": url} for label, url in body.buttons
+            ],
         )
     else:
         data["text"] = expand(body.text, run)
@@ -954,7 +976,6 @@ def send_kwargs(
     if embed is not None:
         kwargs["embed"] = embed
     return kwargs
-
 
 
 SAMPLE_VALUES = {

@@ -26,7 +26,7 @@ RETIRED_COLUMNS = ("actions", "cooldown")
 EDITABLE = ("content", "args", "permission")
 
 _db_ready = False
-_cache: dict[tuple[int, str], tuple[float, "Command | None"]] = {}
+_cache: dict[tuple[int, str], tuple[float, Command | None]] = {}
 
 
 class CommandMissing(LookupError):
@@ -156,7 +156,9 @@ async def fetch(guild_id: int, name: str) -> Command | None:
 
     await init_db()
     async with aiosqlite.connect(DB_PATH) as conn:
-        async with conn.execute(_SELECT + " WHERE guild_id = ? AND name = ?", (guild_id, name)) as cursor:
+        async with conn.execute(
+            _SELECT + " WHERE guild_id = ? AND name = ?", (guild_id, name)
+        ) as cursor:
             row = await cursor.fetchone()
     command = Command(*row) if row else None
     _cache[key] = (time.monotonic(), command)
@@ -171,7 +173,9 @@ async def lookup(guild_id: int, name: str) -> str | None:
 async def count_commands(guild_id: int) -> int:
     await init_db()
     async with aiosqlite.connect(DB_PATH) as conn:
-        async with conn.execute("SELECT COUNT(*) FROM tags WHERE guild_id = ?", (guild_id,)) as cursor:
+        async with conn.execute(
+            "SELECT COUNT(*) FROM tags WHERE guild_id = ?", (guild_id,)
+        ) as cursor:
             (total,) = await cursor.fetchone()
     return total
 
@@ -179,23 +183,26 @@ async def count_commands(guild_id: int) -> int:
 async def list_commands(guild_id: int, query: str = "") -> list[Command]:
     await init_db()
     needle = query.strip().lower()
-    async with aiosqlite.connect(DB_PATH) as conn:
-        async with conn.execute(
+    async with (
+        aiosqlite.connect(DB_PATH) as conn,
+        conn.execute(
             _SELECT
             + """
             WHERE guild_id = ? AND (? = '' OR instr(name, ?) > 0)
             ORDER BY (instr(name, ?) = 1) DESC, name
             """,
             (guild_id, needle, needle, needle),
-        ) as cursor:
-            return [Command(*row) for row in await cursor.fetchall()]
+        ) as cursor,
+    ):
+        return [Command(*row) for row in await cursor.fetchall()]
 
 
 async def autocomplete_names(guild_id: int, current: str, limit: int) -> list[str]:
     await init_db()
     needle = current.strip().lower()
-    async with aiosqlite.connect(DB_PATH) as conn:
-        async with conn.execute(
+    async with (
+        aiosqlite.connect(DB_PATH) as conn,
+        conn.execute(
             """
             SELECT name FROM tags
             WHERE guild_id = ? AND (? = '' OR instr(name, ?) > 0)
@@ -203,8 +210,9 @@ async def autocomplete_names(guild_id: int, current: str, limit: int) -> list[st
             LIMIT ?
             """,
             (guild_id, needle, needle, needle, limit),
-        ) as cursor:
-            return [name for (name,) in await cursor.fetchall()]
+        ) as cursor,
+    ):
+        return [name for (name,) in await cursor.fetchall()]
 
 
 async def create(
@@ -220,7 +228,9 @@ async def create(
     now = time.time()
     try:
         async with aiosqlite.connect(DB_PATH) as conn:
-            async with conn.execute("SELECT COUNT(*) FROM tags WHERE guild_id = ?", (guild_id,)) as cursor:
+            async with conn.execute(
+                "SELECT COUNT(*) FROM tags WHERE guild_id = ?", (guild_id,)
+            ) as cursor:
                 (total,) = await cursor.fetchone()
             if total >= COMMAND_LIMIT:
                 raise CommandLimit(COMMAND_LIMIT)
