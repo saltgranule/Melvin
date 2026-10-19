@@ -9,6 +9,7 @@ import threading
 import time
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime
 
 from flask import (
     Blueprint,
@@ -29,7 +30,19 @@ import http_client
 import module_config
 import module_settings
 import server_stats
+import command_reference
+import command_store
 from globals import ADD_BOT_URL, DATA_DIR
+from command_engine import check_command, preview_data, sample_run, tag_kind
+from command_store import CommandExists, CommandLimit, CommandMissing, clean_name
+from helpers.commands import (
+    PERMISSIONS,
+    CommandError,
+    clean_args,
+    clean_permission,
+    describe_permission,
+    snowflake,
+)
 
 log = logging.getLogger(__name__)
 
@@ -671,8 +684,7 @@ async def modules(guild_id: int) -> str | Response:
     toggled = request.args.get("toggled")
     saved_message = (
         f"{module_settings.MODULES[toggled][0]} turned "
-        f"{'off' if toggled in disabled else 'on'}. "
-        "Changes apply in Discord within a few seconds."
+        f"{'off' if toggled in disabled else 'on'}."
         if toggled in module_settings.MODULES
         else None
     )
@@ -951,6 +963,17 @@ async def module_config_page(
         unavailable=context is None,
         saved=request.args.get("saved") == "1" and not posting,
         errors=errors,
+        commands=(
+            await _commands_block(
+                guild_id,
+                module,
+                request.args.get("q", "").strip()[:32],
+                request.args.get("notice"),
+                request.args.get("problem"),
+            )
+            if module == COMMAND_MODULE
+            else None
+        ),
     )
     return (page, 400) if errors else page
 
@@ -1078,3 +1101,432 @@ async def server_stats_page(guild_id: int) -> str | Response:
         },
         start_label=series["start_label"],
     )
+
+
+COMMAND_MODULE = "tags"
+COMMAND_CONTENT_LENGTH = 4000
+COMMAND_FIELDS = ("content", "args", "permission")
+COMMAND_NOTICES = {
+    "saved": "Saved!",
+    "created": "Created!",
+    "renamed": "Renamed!",
+    "copied": "Copied!",
+    "deleted": "Deleted!",
+}
+NAME_RULES = "Use letters, numbers, hyphens, and underscores. Up to 32."
+
+
+def _commands_module(module: str) -> None:
+    if module != COMMAND_MODULE:
+        abort(404)
+
+
+def _command_context(match: dict, guild_id: int, *, fresh: bool) -> dict | None:
+    user = current_user()
+    try:
+        return guild_context(
+            guild_id,
+            user["id"],
+            fresh=fresh,
+            bot_owner=bool(match.get("bot_owner")),
+        )
+    except DiscordError, KeyError:
+        log.exception("Couldn't load channels and roles for guild %s", guild_id)
+        return None
+
+
+def _command_permission_options(context: dict | None, current: str) -> list[tuple[str, str]]:
+    options = [("none", "Everyone")]
+    options += [(perm, perm.replace("_", " ").title()) for perm in PERMISSIONS]
+    if context is not None:
+        options += [(f"role:{role_id}", f"@{name}") for role_id, name in context["roles"]]
+    if current.startswith("role:") and current not in dict(options):
+        options.append((current, "Unknown role"))
+    return options
+
+
+def _check_command_values(
+    values: dict[str, str],
+    context: dict | None,
+) -> tuple[dict[str, str], dict[str, str]]:
+    cleaned: dict[str, str] = {}
+    errors: dict[str, str] = {}
+
+    try:
+        cleaned["args"] = clean_args(values["args"])
+    except CommandError as error:
+        errors["args"] = str(error)
+
+    content = values["content"].strip()
+    if not content:
+        errors["content"] = "Add some text."
+    elif len(content) > COMMAND_CONTENT_LENGTH:
+        errors["content"] = f"At most {COMMAND_CONTENT_LENGTH} characters."
+    elif "args" not in errors and (problem := check_command(content, values["args"])):
+        errors["content"] = problem
+    cleaned["content"] = content
+
+    permission = values["permission"]
+    try:
+        if permission.startswith("role:"):
+            role_id = permission[5:]
+            if not role_id.isdigit():
+                msg = "Not a valid role."
+                raise CommandError(msg)
+            if context is not None and role_id not in dict(context["roles"]):
+                msg = "That role isn't in this server."
+                raise CommandError(msg)
+            cleaned["permission"] = permission
+        else:
+            cleaned["permission"] = clean_permission(permission)
+    except CommandError as error:
+        errors["permission"] = str(error)
+
+    return cleaned, errors
+
+
+def _command_values(form: object) -> dict[str, str]:
+    return {key: form.get(key, "") for key in COMMAND_FIELDS}
+
+
+def _values_from_command(command: command_store.Command) -> dict[str, str]:
+    return {
+        "content": command.content,
+        "args": command.args,
+        "permission": command.permission,
+    }
+
+
+TAG_KIND_LABELS = {"text": "Text", "embed": "Embed", "container": "Container"}
+
+
+def _command_row(command: command_store.Command, guild_id: int, module: str) -> dict:
+    def page(**extra: str) -> str:
+        return url_for("dashboard.command_page", guild_id=guild_id, module=module, name=command.name, **extra)
+
+    def action(endpoint: str) -> str:
+        return url_for(endpoint, guild_id=guild_id, module=module, name=command.name)
+
+    return {
+        "name": command.name,
+        "kind": TAG_KIND_LABELS[tag_kind(command.content)],
+        "permission": "A role" if command.permission.startswith("role:") else describe_permission(command.permission),
+        "args": len(command.args.split()),
+        "updated": datetime.fromtimestamp(command.updated_at, UTC).strftime("%d %b %Y"),
+        "url": page(),
+        "rename_url": action("dashboard.command_rename"),
+        "copy_url": action("dashboard.command_copy"),
+        "delete_url": action("dashboard.command_delete"),
+    }
+
+
+async def _commands_block(
+    guild_id: int,
+    module: str,
+    query: str,
+    notice: str | None,
+    problem: str | None = None,
+) -> dict:
+    await command_store.init_db()
+    found = await command_store.list_commands(guild_id, query)
+    total = len(found) if not query else await command_store.count_commands(guild_id)
+    return {
+        "query": query,
+        "rows": [_command_row(command, guild_id, module) for command in found],
+        "total": total,
+        "notice": COMMAND_NOTICES.get(notice or ""),
+        "problem": problem,
+        "new_url": url_for("dashboard.command_new", guild_id=guild_id, module=module),
+        "config_url": url_for("dashboard.module_config_page", guild_id=guild_id, module=module),
+    }
+
+
+def _effect_text(verb: str, target: str, role: str, role_names: dict[str, str]) -> str:
+    role_id = snowflake(role)
+    role_label = (
+        f"@{role_names[str(role_id)]}"
+        if role_id is not None and str(role_id) in role_names
+        else role.strip()
+    )
+    target_label = "a member" if snowflake(target) is not None else target.strip()
+    if verb == "addrole":
+        return f"Give the {role_label} role to {target_label}"
+    return f"Take the {role_label} role from {target_label}"
+
+
+def _render_command_editor(
+    guild_id: int,
+    match: dict,
+    module: str,
+    *,
+    command: command_store.Command | None,
+    values: dict[str, str],
+    errors: dict[str, str],
+    context: dict | None,
+    name_value: str,
+    notice: str | None = None,
+    problem: str | None = None,
+    status: int = 200,
+) -> tuple[str, int]:
+    page = render_template(
+        "dashboard_command.html",
+        active="dashboard",
+        guild=_guild_header(match),
+        sections=_sidebar(guild_id, "dashboard.modules"),
+        module=module,
+        command=command,
+        values=values,
+        errors=errors,
+        name_value=name_value,
+        permission_options=_command_permission_options(context, values["permission"]),
+        unavailable=context is None,
+        notice=notice,
+        problem=problem or (next(iter(errors.values())) if errors else None),
+        reference=command_reference.build(),
+        content_limit=COMMAND_CONTENT_LENGTH,
+        back_url=url_for("dashboard.module_config_page", guild_id=guild_id, module=module),
+        action=(
+            url_for("dashboard.command_page", guild_id=guild_id, module=module, name=command.name)
+            if command
+            else url_for("dashboard.command_new", guild_id=guild_id, module=module)
+        ),
+        delete_url=(
+            url_for("dashboard.command_delete", guild_id=guild_id, module=module, name=command.name)
+            if command
+            else None
+        ),
+        preview_url=url_for("dashboard.command_preview", guild_id=guild_id, module=module),
+    )
+    return page, status
+
+
+@bp.route("/<int:guild_id>/modules/<module>/commands/new", methods=["GET", "POST"])
+async def command_new(guild_id: int, module: str) -> str | Response | tuple[str, int]:
+    _commands_module(module)
+    posting = request.method == "POST"
+    if posting:
+        _check_csrf()
+    match = _require_guild(guild_id, strict=posting)
+    await command_store.init_db()
+    context = _command_context(match, guild_id, fresh=posting)
+
+    if not posting:
+        blank = {"content": "", "args": "", "permission": "none"}
+        return _render_command_editor(
+            guild_id,
+            match,
+            module,
+            command=None,
+            values=blank,
+            errors={},
+            context=context,
+            name_value="",
+        )
+
+    values = _command_values(request.form)
+    name_value = request.form.get("name", "").strip()
+    cleaned, errors = _check_command_values(values, context)
+    name = clean_name(name_value)
+    if name is None:
+        errors["name"] = NAME_RULES
+
+    if not errors:
+        content = str(cleaned.pop("content"))
+        try:
+            await command_store.create(
+                guild_id,
+                name,
+                content,
+                int(current_user()["id"]),
+                **cleaned,
+            )
+        except CommandExists:
+            errors["name"] = f"{name} already exists."
+        except CommandLimit:
+            errors["name"] = f"A server can have up to {command_store.COMMAND_LIMIT} commands."
+        else:
+            return redirect(
+                url_for(
+                    "dashboard.command_page",
+                    guild_id=guild_id,
+                    module=module,
+                    name=name,
+                    notice="created",
+                ),
+            )
+
+    return _render_command_editor(
+        guild_id,
+        match,
+        module,
+        command=None,
+        values=values,
+        errors=errors,
+        context=context,
+        name_value=name_value,
+        status=400,
+    )
+
+
+@bp.route("/<int:guild_id>/modules/<module>/commands/<name>", methods=["GET", "POST"])
+async def command_page(guild_id: int, module: str, name: str) -> str | Response | tuple[str, int]:
+    _commands_module(module)
+    command_name = clean_name(name)
+    if command_name is None:
+        abort(404)
+
+    posting = request.method == "POST"
+    if posting:
+        _check_csrf()
+    match = _require_guild(guild_id, strict=posting)
+    await command_store.init_db()
+    command = await command_store.fetch(guild_id, command_name)
+    if command is None:
+        abort(404)
+    context = _command_context(match, guild_id, fresh=posting)
+
+    if not posting:
+        return _render_command_editor(
+            guild_id,
+            match,
+            module,
+            command=command,
+            values=_values_from_command(command),
+            errors={},
+            context=context,
+            name_value=command.name,
+            notice=COMMAND_NOTICES.get(request.args.get("notice") or ""),
+            problem=request.args.get("problem"),
+        )
+
+    values = _command_values(request.form)
+    name_value = request.form.get("name", "").strip()
+    cleaned, errors = _check_command_values(values, context)
+    new_name = clean_name(name_value)
+    if new_name is None:
+        errors["name"] = NAME_RULES
+    elif new_name != command_name and await command_store.fetch(guild_id, new_name):
+        errors["name"] = f"{new_name} already exists."
+
+    if not errors:
+        try:
+            if new_name != command_name:
+                await command_store.rename(guild_id, command_name, new_name)
+            await command_store.update(guild_id, new_name, cleaned)
+        except CommandMissing:
+            abort(404)
+        except CommandExists:
+            errors["name"] = f"{new_name} already exists."
+        else:
+            return redirect(
+                url_for(
+                    "dashboard.command_page",
+                    guild_id=guild_id,
+                    module=module,
+                    name=new_name,
+                    notice="saved" if new_name == command_name else "renamed",
+                ),
+            )
+
+    return _render_command_editor(
+        guild_id,
+        match,
+        module,
+        command=command,
+        values=values,
+        errors=errors,
+        context=context,
+        name_value=name_value,
+        status=400,
+    )
+
+
+@bp.route("/<int:guild_id>/modules/<module>/commands/preview", methods=["POST"])
+async def command_preview(guild_id: int, module: str) -> Response | tuple[Response, int]:
+    _commands_module(module)
+    _check_csrf()
+    match = _require_guild(guild_id)
+    context = _command_context(match, guild_id, fresh=False)
+    role_names = context["role_names"] if context else {}
+
+    spec = request.form.get("args", "")
+    try:
+        clean_args(spec)
+        run = sample_run(spec, request.form.get("sample", ""))
+        data = preview_data(request.form.get("content", ""), run)
+    except CommandError as error:
+        return jsonify(error=str(error)), 400
+    data["effects"] = [
+        _effect_text(verb, target, role, role_names) for verb, target, role in run.effects
+    ]
+    return jsonify(data)
+
+
+def _back_to_commands(guild_id: int, module: str, **extra: str) -> Response:
+    return redirect(url_for("dashboard.module_config_page", guild_id=guild_id, module=module, **extra))
+
+
+@bp.route("/<int:guild_id>/modules/<module>/commands/<name>/rename", methods=["POST"])
+async def command_rename(guild_id: int, module: str, name: str) -> Response:
+    _commands_module(module)
+    _check_csrf()
+    command_name = clean_name(name)
+    if command_name is None:
+        abort(404)
+    _require_guild(guild_id, strict=True)
+
+    new_name = clean_name(request.form.get("new_name", ""))
+    if new_name is None:
+        return _back_to_commands(guild_id, module, problem=NAME_RULES)
+    try:
+        await command_store.rename(guild_id, command_name, new_name)
+    except CommandMissing:
+        abort(404)
+    except CommandExists:
+        return _back_to_commands(
+            guild_id,
+            module,
+            problem=f"{new_name} already exists.",
+        )
+    return _back_to_commands(guild_id, module, notice="renamed")
+
+
+@bp.route("/<int:guild_id>/modules/<module>/commands/<name>/copy", methods=["POST"])
+async def command_copy(guild_id: int, module: str, name: str) -> Response:
+    _commands_module(module)
+    _check_csrf()
+    command_name = clean_name(name)
+    if command_name is None:
+        abort(404)
+    _require_guild(guild_id, strict=True)
+
+    new_name = clean_name(request.form.get("new_name", ""))
+    if new_name is None:
+        return _back_to_commands(guild_id, module, problem=NAME_RULES)
+    try:
+        await command_store.copy(guild_id, command_name, new_name, int(current_user()["id"]))
+    except CommandMissing:
+        abort(404)
+    except CommandExists:
+        return _back_to_commands(guild_id, module, problem=f"{new_name} already exists.")
+    except CommandLimit:
+        return _back_to_commands(
+            guild_id,
+            module,
+            problem=f"A server can have up to {command_store.COMMAND_LIMIT} commands.",
+        )
+    return _back_to_commands(guild_id, module, notice="copied")
+
+
+@bp.route("/<int:guild_id>/modules/<module>/commands/<name>/delete", methods=["POST"])
+async def command_delete(guild_id: int, module: str, name: str) -> Response:
+    _commands_module(module)
+    _check_csrf()
+    command_name = clean_name(name)
+    if command_name is None:
+        abort(404)
+    _require_guild(guild_id, strict=True)
+    await command_store.init_db()
+    if not await command_store.delete(guild_id, command_name):
+        abort(404)
+    return _back_to_commands(guild_id, module, notice="deleted")

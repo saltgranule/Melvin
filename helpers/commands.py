@@ -1,4 +1,5 @@
 import re
+import shlex
 from dataclasses import dataclass
 
 import discord
@@ -8,7 +9,6 @@ ARG = re.compile(
     r"(?::(?P<low>-?\d+)-(?P<high>-?\d+))?",
 )
 ARG_KINDS = ("word", "text", "number", "member", "role", "channel")
-ACTION_VERBS = ("addrole", "removerole")
 PERMISSIONS = (
     "administrator",
     "manage_guild",
@@ -21,8 +21,6 @@ PERMISSIONS = (
 )
 SNOWFLAKE = re.compile(r"<(?:@[!&]?|#)?(\d{15,21})>|(\d{15,21})")
 ARGS_LENGTH = 500
-ACTIONS_LENGTH = 1000
-MAX_COOLDOWN = 86400
 
 
 class CommandError(ValueError):
@@ -36,6 +34,13 @@ class ArgSpec:
     optional: bool
     low: int | None
     high: int | None
+
+
+def split_args(text: str) -> list[str]:
+    try:
+        return shlex.split(text)
+    except ValueError:
+        return text.split()
 
 
 def snowflake(text: str) -> int | None:
@@ -61,7 +66,7 @@ def parse_args(spec: str) -> list[ArgSpec]:
             msg = f"`{name}` is used more than once."
             raise CommandError(msg)
         if any(existing.kind == "text" for existing in specs):
-            msg = "`text` has to be the last argument, since it takes the rest of the message."
+            msg = "`text` has to be last, since it takes the rest."
             raise CommandError(msg)
 
         low = high = None
@@ -82,22 +87,6 @@ def parse_args(spec: str) -> list[ArgSpec]:
     return specs
 
 
-def parse_actions(text: str) -> list[tuple[str, str, str]]:
-    actions = []
-    for line in text.splitlines():
-        if not line.strip():
-            continue
-        parts = line.split()
-        if len(parts) != 3 or parts[0].lower() not in ACTION_VERBS:
-            msg = (
-                "Each action line looks like `addrole <member> <role>` or "
-                "`removerole <member> <role>`, using $user, $1, a mention, or an ID."
-            )
-            raise CommandError(msg)
-        actions.append((parts[0].lower(), parts[1], parts[2]))
-    return actions
-
-
 async def _convert(spec: ArgSpec, token: str, guild: discord.Guild) -> str:
     if spec.kind == "word":
         return token
@@ -106,9 +95,7 @@ async def _convert(spec: ArgSpec, token: str, guild: discord.Guild) -> str:
             msg = f"`{spec.name}` has to be a whole number."
             raise CommandError(msg)
         number = int(token)
-        if spec.low is not None and spec.high is not None and not (
-            spec.low <= number <= spec.high
-        ):
+        if spec.low is not None and spec.high is not None and not spec.low <= number <= spec.high:
             msg = f"`{spec.name}` has to be between {spec.low} and {spec.high}."
             raise CommandError(msg)
         return str(number)
@@ -140,13 +127,7 @@ async def _convert(spec: ArgSpec, token: str, guild: discord.Guild) -> str:
     return channel.mention
 
 
-async def bind_args(
-    guild: discord.Guild,
-    specs: list[ArgSpec],
-    raw: str,
-) -> list[str]:
-    from cogs.tags import split_args
-
+async def bind_args(guild: discord.Guild, specs: list[ArgSpec], raw: str) -> list[str]:
     tokens = split_args(raw) if raw.strip() else []
     values: list[str] = []
     index = 0
@@ -224,19 +205,3 @@ def clean_permission(permission: str) -> str:
             return f"role:{value}"
     msg = "Permission is `none`, a permission like `manage_messages`, or a role."
     raise CommandError(msg)
-
-
-def clean_cooldown(cooldown: int) -> int:
-    if not 0 <= cooldown <= MAX_COOLDOWN:
-        msg = f"Cooldown has to be between 0 and {MAX_COOLDOWN} seconds."
-        raise CommandError(msg)
-    return cooldown
-
-
-def clean_actions(actions: str) -> str:
-    if len(actions) > ACTIONS_LENGTH:
-        msg = f"Actions can be at most {ACTIONS_LENGTH} characters."
-        raise CommandError(msg)
-    return "\n".join(
-        f"{verb} {target} {role}" for verb, target, role in parse_actions(actions)
-    )

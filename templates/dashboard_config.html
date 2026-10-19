@@ -12,10 +12,10 @@
             Modules
         </a>
         <h1 class="status-heading">{{ module.label}} settings</h1>
-        <p class="dashboard-notice">{{ module.description }} You can also change these with /{{ module.key }} config in Discord.</p>
+        <p class="dashboard-notice">{{ module.description }} You can also change these with /{{ 'command' if module.key == 'tags' else module.key }} config in Discord.</p>
 
         {% if saved %}
-        {{ banner("success", "Saved. Changes apply in Discord within a few seconds.") }}
+        {{ banner("success", "Saved!") }}
         {% endif %}
         {% if errors %}
         {{ banner("error", "Nothing was saved, please fix the settings marked below.") }}
@@ -97,8 +97,15 @@
             </div>
         </form>
         {% endif %}
+
+        {% if commands %}
+        {% include "_commands_section.html" %}
+        {% endif %}
     </main>
 </div>
 
 <script src="{{ url_for('static', filename='js/dropdown.js') }}"></script>
+{% if commands %}
+<script src="{{ url_for('static', filename='js/commands.js') }}"></script>
+{% endif %}
 {% endblock %}

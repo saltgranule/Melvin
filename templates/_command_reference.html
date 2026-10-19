@@ -1,0 +1,101 @@
+<section class="command-reference" aria-labelledby="command-reference-heading">
+    <h2 class="dashboard-field-label" id="command-reference-heading">Reference</h2>
+    <label for="reference-filter" class="visually-hidden">Filter the reference</label>
+    <input type="search" id="reference-filter" class="dashboard-input command-reference-filter"
+           placeholder="Filter, like rand or embed" autocomplete="off">
+    <p class="command-reference-empty" id="reference-empty" hidden>No matches.</p>
+
+    <details class="command-ref-section" data-ref-section>
+        <summary>Functions</summary>
+        <div class="command-ref-body">
+            {% for group in reference.groups %}
+            <details class="command-ref-group" data-ref-group>
+                <summary>{{ group.title }} <span class="command-ref-count">{{ group.entries | length }}</span></summary>
+                <ul class="command-ref-list">
+                    {% for item in group.entries %}
+                    <li class="command-ref-item" data-ref-item data-search="{{ item.name }} {{ group.title }} {{ item.description }}">
+                        <div class="command-ref-head">
+                            <code class="command-ref-code">${{ item.name }}{{ item.usage }}</code>
+                            <button type="button" class="command-ref-insert" data-insert="${{ item.name }}{{ item.usage }}">Insert</button>
+                        </div>
+                        <p class="command-ref-text">{{ item.description }}</p>
+                        <p class="command-ref-example"><code>{{ item.example }}</code></p>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </details>
+            {% endfor %}
+        </div>
+    </details>
+
+    <details class="command-ref-section" data-ref-section>
+        <summary>Embeds</summary>
+        <div class="command-ref-body">
+            <p class="command-ref-text">Start with {embed}, then one key per line.</p>
+            <ul class="command-ref-list">
+                {% for key in reference.embed %}
+                <li class="command-ref-item" data-ref-item data-search="{{ key.key }} embed {{ key.description }}">
+                    <div class="command-ref-head">
+                        <code class="command-ref-code">{{ key.key }}</code>
+                        <button type="button" class="command-ref-insert" data-insert="{{ key.example }}">Insert</button>
+                    </div>
+                    <p class="command-ref-text">{{ key.description }}</p>
+                    <p class="command-ref-example"><code>{{ key.example }}</code></p>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </details>
+
+    <details class="command-ref-section" data-ref-section>
+        <summary>Components</summary>
+        <div class="command-ref-body">
+            <p class="command-ref-text">Start with {container}. Other lines are text.</p>
+            <ul class="command-ref-list">
+                {% for key in reference.container %}
+                <li class="command-ref-item" data-ref-item data-search="{{ key.key }} container components {{ key.description }}">
+                    <div class="command-ref-head">
+                        <code class="command-ref-code">{{ key.key }}</code>
+                        <button type="button" class="command-ref-insert" data-insert="{{ key.example }}">Insert</button>
+                    </div>
+                    <p class="command-ref-text">{{ key.description }}</p>
+                    <p class="command-ref-example"><code>{{ key.example }}</code></p>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </details>
+
+    <details class="command-ref-section" data-ref-section>
+        <summary>Variables</summary>
+        <div class="command-ref-body">
+            <ul class="command-ref-list">
+                {% for variable in reference.variables %}
+                <li class="command-ref-item" data-ref-item data-search="{{ variable.name }} variable {{ variable.description }}">
+                    <div class="command-ref-head">
+                        <code class="command-ref-code">{{ variable.name }}</code>
+                        <button type="button" class="command-ref-insert" data-insert="{{ variable.name }}">Insert</button>
+                    </div>
+                    <p class="command-ref-text">{{ variable.description }}</p>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </details>
+
+    <details class="command-ref-section" data-ref-section>
+        <summary>Usage</summary>
+        <div class="command-ref-body">
+            {% for section in reference.usage %}
+            <div class="command-ref-usage" data-ref-item data-search="{{ section.title }} usage {{ section.lines | join(' ') }}">
+                <h3 class="command-ref-usage-title">{{ section.title }}</h3>
+                <ul class="command-ref-usage-lines">
+                    {% for line in section.lines %}
+                    <li>{{ line }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endfor %}
+        </div>
+    </details>
+</section>
