@@ -15,8 +15,8 @@ from discord import app_commands
 from discord.ext import commands, tasks
 
 import module_settings
-from helpers import durations
 from globals import BROWSER, DATA_DIR, THUMBS_DOWN_WHITE, THUMBS_UP_WHITE, WEBSITE_URL
+from helpers import durations
 from module_registry import Module
 from ui import (
     ErrorUI,
@@ -404,7 +404,11 @@ class WikiView(discord.ui.LayoutView):
 
 
 def _preview(text: str) -> str:
-    return text if len(text) <= REMINDER_PREVIEW_LENGTH else text[: REMINDER_PREVIEW_LENGTH - 3] + "..."
+    return (
+        text
+        if len(text) <= REMINDER_PREVIEW_LENGTH
+        else text[: REMINDER_PREVIEW_LENGTH - 3] + "..."
+    )
 
 
 class ToolCog(
@@ -760,7 +764,9 @@ class ToolCog(
 
         if not rows:
             await interaction.response.send_message(
-                view=InfoUI(title="Reminders", subtitle="**You have no reminders set.**"),
+                view=InfoUI(
+                    title="Reminders", subtitle="**You have no reminders set.**"
+                ),
                 ephemeral=True,
             )
             return
@@ -797,7 +803,9 @@ class ToolCog(
             )
             return
         await interaction.response.send_message(
-            view=PositiveUI(title=f"Reminder #{reminder_id} cancelled", subtitle="**Removed.**"),
+            view=PositiveUI(
+                title=f"Reminder #{reminder_id} cancelled", subtitle="**Removed.**"
+            ),
             ephemeral=True,
         )
 
@@ -844,7 +852,7 @@ class ToolCog(
         if channel is None:
             try:
                 channel = await self.bot.fetch_channel(channel_id)
-            except (discord.NotFound, discord.Forbidden):
+            except discord.NotFound, discord.Forbidden:
                 return
         if not isinstance(channel, discord.abc.Messageable):
             return
@@ -866,7 +874,6 @@ class ToolCog(
             )
         except discord.Forbidden:
             return
-
 
 
 async def setup(bot: commands.Bot) -> None:

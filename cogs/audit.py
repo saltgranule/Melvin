@@ -470,7 +470,9 @@ class AuditCog(
             )
 
     @commands.Cog.listener()
-    async def on_guild_update(self, before: discord.Guild, after: discord.Guild) -> None:
+    async def on_guild_update(
+        self, before: discord.Guild, after: discord.Guild
+    ) -> None:
         changes = []
         if before.name != after.name:
             changes.append(f"**Name:** {before.name} | {after.name}")

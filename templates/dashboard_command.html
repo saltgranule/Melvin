@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_banner.html" import banner %}
+{% from "_dropdown.html" import dropdown %}
+{% block content %}
+<div class="docs-layout dashboard-layout">
+    {% include "_dashboard_sidebar.html" %}
+
+    <main class="dashboard-main command-page">
+        <a href="{{ back_url }}" class="dashboard-back">
+            {{ icon("arrow-circle-left", 14) }}
+            Commands
+        </a>
+
+        {% if notice %}{{ banner("success", notice) }}{% endif %}
+        {% if problem %}{{ banner("error", problem) }}{% endif %}
+        {% if unavailable %}
+        {{ banner("error", "Couldn't load this server's roles, so role permissions can't be picked right now.") }}
+        {% endif %}
+
+        <div class="command-layout">
+        <div class="command-editor">
+        <form method="post" action="{{ action }}" class="dashboard-form command-form" id="command-form">
+            <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+
+            <div class="command-title-field">
+                <label for="command-name" class="command-title-label">Name</label>
+                <div class="command-title-row">
+                    <input type="text" name="name" id="command-name" class="command-title-input" value="{{ name_value }}"
+                           maxlength="32" autocomplete="off" spellcheck="false" required
+                           aria-describedby="command-name-description" placeholder="my-command">
+                </div>
+                <p class="dashboard-field-description" id="command-name-description">Letters, numbers, hyphens, and underscores. Up to 32.</p>
+                {% if errors.name %}<p class="dashboard-field-error" role="alert">{{ errors.name }}</p>{% endif %}
+            </div>
+
+            <div class="dashboard-field">
+                <div class="command-content-head">
+                    <label for="command-content" class="dashboard-field-label">Content</label>
+                    <span class="command-content-meta">
+                        <a href="#command-preview-heading" class="command-jump">Preview</a>
+                        <span class="command-count" id="command-count" aria-live="off">0 / {{ content_limit }}</span>
+                    </span>
+                </div>
+                <p class="dashboard-field-description" id="command-content-description">
+                    Plain text, or start with {embed} or {container}. Tap a button to insert it.
+                </p>
+                <div class="command-toolbar" role="toolbar" aria-label="Insert into content">
+                    <button type="button" class="command-chip" data-insert="{embed}&#10;title: Title&#10;description: Text">Embed</button>
+                    <button type="button" class="command-chip" data-insert="{container}&#10;Text here&#10;button: Label | https://example.com">Container</button>
+                    <button type="button" class="command-chip" data-insert="{if $1 == word}yes{else}no{endif}">If</button>
+                    <button type="button" class="command-chip" data-insert="$1">Argument</button>
+                    <button type="button" class="command-chip" data-insert="$user">User</button>
+                    <button type="button" class="command-chip" data-insert="$rand{1-6}">Random</button>
+                    <button type="button" class="command-chip" data-insert="$addrole{$user|ROLE_ID}">Give role</button>
+                    <button type="button" class="command-chip" data-insert="$removerole{$user|ROLE_ID}">Take role</button>
+                </div>
+                <textarea name="content" id="command-content" class="dashboard-input dashboard-tag-content" rows="10"
+                          maxlength="{{ content_limit }}" aria-describedby="command-content-description">{{ values.content }}</textarea>
+                {% if errors.content %}<p class="dashboard-field-error" role="alert">{{ errors.content }}</p>{% endif %}
+            </div>
+
+            <div class="dashboard-field">
+                <label for="command-args" class="dashboard-field-label">Arguments</label>
+                <p class="dashboard-field-description" id="command-args-description">
+                    Like amount:number:1-100 reason?:text. Use them as $1, $2, and so on.
+                </p>
+                <input type="text" name="args" id="command-args" class="dashboard-input" value="{{ values.args }}"
+                       maxlength="500" placeholder="amount:number:1-100 reason?:text" aria-describedby="command-args-description">
+                {% if errors.args %}<p class="dashboard-field-error" role="alert">{{ errors.args }}</p>{% endif %}
+            </div>
+
+            <div class="dashboard-field">
+                <span class="dashboard-field-label" id="command-permission-label">Who can use it</span>
+                {{ dropdown("command-permission", "permission", permission_options, [values.permission]) }}
+                {% if errors.permission %}<p class="dashboard-field-error" role="alert">{{ errors.permission }}</p>{% endif %}
+            </div>
+
+            <div class="dashboard-form-actions command-actions">
+                <button type="submit" class="btn btn-primary">{% if command %}Save{% else %}Create{% endif %}</button>
+                <a href="{{ back_url }}" class="btn btn-light">Cancel</a>
+                <span class="command-dirty" id="command-dirty" hidden>Unsaved</span>
+            </div>
+        </form>
+
+        {% if delete_url %}
+        <form method="post" action="{{ delete_url }}" class="command-delete" data-confirm="Delete {{ command.name }}? This can't be undone.">
+            <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-dark btn-small">Delete command</button>
+        </form>
+        {% endif %}
+        </div>
+
+        <aside class="command-side">
+            <section aria-labelledby="command-preview-heading">
+                <h2 class="dashboard-field-label" id="command-preview-heading">Preview</h2>
+                <p class="dashboard-field-description">
+                    Nothing is posted and no roles change.
+                </p>
+                <label for="command-sample" class="command-side-label">Sample values</label>
+                <div class="dashboard-input-row">
+                    <input type="text" id="command-sample" class="dashboard-input" maxlength="500" autocomplete="off"
+                           placeholder="Arguments, separated by spaces">
+                    <button type="button" class="btn btn-dark btn-small" id="command-preview-refresh">Refresh</button>
+                </div>
+
+                <div class="command-preview" id="command-preview" aria-live="polite" data-url="{{ preview_url }}">
+                    <noscript><p class="dashboard-field-description">The preview needs JavaScript.</p></noscript>
+                </div>
+                <div class="command-effects" id="command-effects" aria-live="polite"></div>
+            </section>
+
+            {% include "_command_reference.html" %}
+        </aside>
+        </div>
+    </main>
+</div>
+
+<script src="{{ url_for('static', filename='js/commands.js') }}"></script>
+{% endblock %}

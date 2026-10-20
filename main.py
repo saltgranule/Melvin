@@ -100,7 +100,9 @@ class MelvinTree(app_commands.CommandTree):
         elif isinstance(error, app_commands.CommandOnCooldown):
             msg = "**You are being rate limited.**"
         else:
-            name = interaction.command.qualified_name if interaction.command else "unknown"
+            name = (
+                interaction.command.qualified_name if interaction.command else "unknown"
+            )
             log.error("Unhandled error in /%s", name, exc_info=error)
             msg = ERROR_MESSAGE
 

@@ -10,7 +10,6 @@
             <h1 class="status-heading">Modules</h1>
             {% include "_dashboard_user.html" %}
         </div>
-        <p class="dashboard-notice">Changes apply in Discord within a few seconds.</p>
 
         <div class="docs-search dashboard-search">
             {{ icon("magnifying-glass", 14, "docs-search-icon") }}
@@ -79,8 +78,7 @@
 
         function showSaved(label, enabled) {
             errorBox.hidden = true;
-            successBox.querySelector(".banner-text").textContent = label + " turned " + (enabled ? "on" : "off") +
-                ". Changes apply in Discord within a few seconds.";
+            successBox.querySelector(".banner-text").textContent = label + " turned " + (enabled ? "on" : "off") + ".";
             successBox.hidden = false;
         }
 

@@ -1,0 +1,101 @@
+{% from "_icons.html" import icon %}
+{% from "_banner.html" import banner %}
+{% set menu_icons = {
+    "pencil": '<path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="M13.5 6.5l4 4"/>',
+    "tag": '<path d="M3 3h8l10 10-8 8L3 11V3Z"/><circle cx="7.5" cy="7.5" r="1.25"/>',
+    "copy": '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+    "trash": '<path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4h6v3"/>',
+    "x": '<path d="M6 6l12 12M18 6L6 18"/>',
+} %}
+{% macro menu_icon(name) -%}
+<svg class="command-menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">{{ menu_icons[name] | safe }}</svg>
+{%- endmacro %}
+<section class="dashboard-commands" aria-labelledby="commands-heading">
+    <h2 class="dashboard-commands-heading" id="commands-heading">Commands</h2>
+
+    {% if commands.notice %}{{ banner("success", commands.notice) }}{% endif %}
+    {% if commands.problem %}{{ banner("error", commands.problem) }}{% endif %}
+
+    <div class="dashboard-tag-toolbar">
+        <form method="get" action="{{ commands.config_url }}" class="docs-search dashboard-search" role="search">
+            {{ icon("magnifying-glass", 14, "docs-search-icon") }}
+            <input type="search" name="q" value="{{ commands.query }}" class="docs-search-input"
+                   placeholder="Search commands..." aria-label="Search commands" maxlength="32" autocomplete="off">
+        </form>
+        <a href="{{ commands.new_url }}" class="btn btn-primary">New command</a>
+    </div>
+
+    <p class="dashboard-notice" aria-live="polite">
+        {% if commands.query %}
+        {{ commands.rows | length }} of {{ commands.total }} match "{{ commands.query }}"
+        {% else %}
+        {{ commands.total }} command{{ '' if commands.total == 1 else 's' }}
+        {% endif %}
+    </p>
+
+    {% if commands.rows %}
+    <ul class="dashboard-tag-list command-list">
+        {% for row in commands.rows %}
+        <li class="dashboard-tag-row command-row">
+            <a href="{{ row.url }}" class="dashboard-tag-name">{{ row.name }}</a>
+            <span class="dashboard-tag-kind">{{ row.kind }}</span>
+            <span class="dashboard-tag-meta">
+                {{ row.permission }}
+                {% if row.args %}· {{ row.args }} argument{{ '' if row.args == 1 else 's' }}{% endif %}
+                · {{ row.updated }}
+            </span>
+
+            <details class="command-menu">
+                <summary class="command-menu-toggle" aria-label="Actions for {{ row.name }}" title="Actions">
+                    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                        <circle cx="3" cy="8" r="1.6" fill="currentColor"/>
+                        <circle cx="8" cy="8" r="1.6" fill="currentColor"/>
+                        <circle cx="13" cy="8" r="1.6" fill="currentColor"/>
+                    </svg>
+                </summary>
+                <div class="command-menu-panel" role="group" aria-label="Actions for {{ row.name }}">
+                    <div class="command-menu-head">
+                        <span class="command-menu-title">{{ row.name }}</span>
+                        <button type="button" class="command-menu-close" data-menu-close aria-label="Close actions" title="Close">{{ menu_icon("x") }}</button>
+                    </div>
+                    <div class="command-menu-actions">
+                        <a href="{{ row.url }}" class="command-menu-item" aria-label="Edit {{ row.name }}" title="Edit">{{ menu_icon("pencil") }}</a>
+                        <button type="button" class="command-menu-item" data-prompt data-title="Rename {{ row.name }}"
+                                data-label="Rename" data-action="{{ row.rename_url }}" data-value="{{ row.name }}"
+                                aria-label="Rename {{ row.name }}" title="Rename">{{ menu_icon("tag") }}</button>
+                        <button type="button" class="command-menu-item" data-prompt data-title="Copy {{ row.name }}"
+                                data-label="Copy" data-action="{{ row.copy_url }}" data-value="{{ row.name }}-copy"
+                                aria-label="Copy {{ row.name }}" title="Copy">{{ menu_icon("copy") }}</button>
+                        <form method="post" action="{{ row.delete_url }}" class="command-menu-form"
+                              data-confirm="Delete {{ row.name }}? This can't be undone.">
+                            <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+                            <button type="submit" class="command-menu-item command-menu-danger"
+                                    aria-label="Delete {{ row.name }}" title="Delete">{{ menu_icon("trash") }}</button>
+                        </form>
+                    </div>
+                </div>
+            </details>
+        </li>
+        {% endfor %}
+    </ul>
+    {% elif commands.query %}
+    <p class="docs-search-empty">Nothing matches that search.</p>
+    {% else %}
+    <p class="dashboard-notice">No commands yet.</p>
+    {% endif %}
+
+    <dialog class="command-dialog" id="command-dialog" aria-labelledby="command-dialog-title">
+        <form method="post" class="command-dialog-form" id="command-dialog-form">
+            <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+            <h3 class="command-dialog-title" id="command-dialog-title">Rename</h3>
+            <label for="command-dialog-name" class="visually-hidden">New name</label>
+            <input type="text" name="new_name" id="command-dialog-name" class="dashboard-input"
+                   maxlength="32" autocomplete="off" spellcheck="false" required>
+            <p class="dashboard-field-description">Letters, numbers, hyphens, and underscores.</p>
+            <div class="dashboard-form-actions">
+                <button type="submit" class="btn btn-primary" id="command-dialog-submit">Save</button>
+                <button type="button" class="btn btn-light" id="command-dialog-cancel">Cancel</button>
+            </div>
+        </form>
+    </dialog>
+</section>

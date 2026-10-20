@@ -81,6 +81,11 @@ a {
     display: none;
 }
 
+.banner.is-leaving {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
 .banner-icon {
     flex: 0 0 auto;
     margin-top: 2px;
@@ -1917,5 +1922,824 @@ textarea.dashboard-input {
 
     .navbar-link {
         font-size: 13px;
+    }
+}
+.dashboard-tag-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.dashboard-tag-toolbar .docs-search {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.dashboard-tag-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--raised);
+    overflow: hidden;
+}
+
+.dashboard-tag-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) auto;
+    grid-template-areas:
+        "name kind"
+        "meta meta";
+    gap: 4px 12px;
+    padding: 12px 16px;
+}
+
+.dashboard-tag-row + .dashboard-tag-row {
+    border-top: 1px solid var(--border);
+}
+
+.dashboard-tag-name {
+    grid-area: name;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.dashboard-tag-name:hover,
+.dashboard-tag-name:focus-visible {
+    text-decoration: underline;
+}
+
+.dashboard-tag-kind {
+    grid-area: kind;
+    font-size: 12px;
+    color: var(--text-muted);
+    align-self: center;
+}
+
+.dashboard-tag-meta {
+    grid-area: meta;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.dashboard-tag-content {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+.dashboard-tag-preview {
+    margin-top: 8px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    min-height: 56px;
+}
+
+.dashboard-tag-preview-text {
+    margin: 0;
+    font-family: inherit;
+    font-size: 14px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: var(--text);
+}
+
+.dashboard-tag-preview-block .btn {
+    margin-top: 12px;
+}
+
+.dashboard-tag-action {
+    margin-top: 16px;
+}
+
+.dashboard-tag-action .dashboard-field-description {
+    margin-bottom: 6px;
+}
+
+@media (max-width: 640px) {
+    .dashboard-tag-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+.dashboard-commands {
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+}
+
+.dashboard-commands-heading {
+    font-size: 22px;
+    margin-bottom: 8px;
+}
+
+.command-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+    gap: 40px;
+    align-items: start;
+}
+
+.command-editor,
+.command-side {
+    min-width: 0;
+}
+
+.command-form {
+    max-width: none;
+}
+
+.command-side {
+    position: sticky;
+    top: 16px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.command-side-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+
+.command-side .dashboard-field-label,
+.command-side .dashboard-field-description {
+    display: block;
+    margin-bottom: 8px;
+}
+
+.command-side .dashboard-input-row {
+    margin-bottom: 16px;
+}
+
+.command-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    min-height: 120px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    overflow-wrap: anywhere;
+}
+
+.command-bubble,
+.command-container-text {
+    white-space: pre-wrap;
+    font-size: 15px;
+    line-height: 1.45;
+    color: var(--text);
+}
+
+.command-embed,
+.command-container {
+    border-left: 4px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    background: var(--raised);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.command-container {
+    border-left-width: 4px;
+}
+
+.command-embed-title {
+    font-weight: 700;
+    color: var(--text);
+}
+
+.command-embed-link {
+    font-size: 13px;
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+}
+
+.command-embed-description {
+    white-space: pre-wrap;
+    font-size: 14px;
+    color: var(--text);
+}
+
+.command-embed-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.command-embed-field-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+}
+
+.command-embed-field-value {
+    white-space: pre-wrap;
+    font-size: 14px;
+    color: var(--text);
+}
+
+.command-embed-media,
+.command-embed-footer {
+    font-size: 12px;
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+}
+
+.command-separator {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 4px 0;
+}
+
+.command-separator-large {
+    margin: 12px 0;
+}
+
+.command-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.command-button {
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+
+.command-effects {
+    margin-top: 12px;
+}
+
+.command-effects-heading {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.command-effects-list {
+    margin: 0 0 8px;
+    padding-left: 20px;
+    font-size: 14px;
+}
+
+@media (max-width: 1100px) {
+    .command-layout {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 32px;
+    }
+
+    .command-side {
+        position: static;
+        max-height: none;
+        overflow: visible;
+        padding-right: 0;
+    }
+
+    .command-reference {
+        max-height: none;
+        overflow: visible;
+    }
+
+    .command-jump {
+        display: inline;
+    }
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.command-title-field {
+    margin-bottom: 28px;
+}
+
+.command-title-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+
+.command-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 4px;
+}
+
+.command-title-row:focus-within {
+    border-bottom-color: var(--primary);
+}
+
+.command-title-input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    font-family: inherit;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    padding: 0;
+    outline: none;
+}
+
+.command-title-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.command-content-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.command-content-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.command-jump {
+    display: none;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-decoration: underline;
+}
+
+.command-jump:hover,
+.command-jump:focus-visible {
+    color: var(--text);
+}
+
+.command-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.command-count.is-near {
+    color: var(--tertiary);
+}
+
+.command-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.command-chip {
+    font: inherit;
+    font-size: 13px;
+    min-height: 32px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+}
+
+.command-chip:hover,
+.command-chip:focus-visible {
+    border-color: var(--primary);
+}
+
+.command-actions {
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.command-preview.is-loading {
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+}
+
+.command-dirty {
+    font-size: 13px;
+    color: var(--tertiary);
+    align-self: center;
+}
+
+.command-delete {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+.command-reference {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.command-reference-filter {
+    margin: 8px 0 12px;
+}
+
+.command-reference-empty {
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.command-ref-section {
+    border-top: 1px solid var(--border);
+    padding: 8px 0;
+}
+
+.command-ref-section > summary,
+.command-ref-group > summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text);
+    padding: 6px 0;
+    list-style-position: inside;
+}
+
+.command-ref-group {
+    margin-left: 8px;
+}
+
+.command-ref-count {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin-left: 4px;
+}
+
+.command-ref-body {
+    padding: 4px 0 8px 8px;
+}
+
+.command-ref-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.command-ref-item {
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+}
+
+.command-ref-item[hidden],
+.command-ref-group[hidden],
+.command-ref-section[hidden] {
+    display: none;
+}
+
+.command-ref-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.command-ref-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    color: var(--text);
+    overflow-wrap: anywhere;
+}
+
+.command-ref-insert {
+    font: inherit;
+    font-size: 12px;
+    background: none;
+    border: 0;
+    color: var(--primary);
+    cursor: pointer;
+    padding: 2px 4px;
+    flex-shrink: 0;
+}
+
+.command-ref-insert:hover,
+.command-ref-insert:focus-visible {
+    text-decoration: underline;
+}
+
+.command-ref-text {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 4px 0;
+}
+
+.command-ref-example code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    color: var(--text);
+    background: var(--surface);
+    padding: 1px 4px;
+    border-radius: 4px;
+    overflow-wrap: anywhere;
+}
+
+.command-ref-usage {
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+}
+
+.command-ref-usage-title {
+    font-size: 14px;
+    margin: 0 0 4px;
+}
+
+.command-ref-usage-lines {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.command-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+        "name kind menu"
+        "meta meta menu";
+    align-items: center;
+}
+
+.command-row .dashboard-tag-name {
+    grid-area: name;
+}
+
+.command-row .dashboard-tag-kind {
+    grid-area: kind;
+}
+
+.command-row .dashboard-tag-meta {
+    grid-area: meta;
+}
+
+.command-menu {
+    grid-area: menu;
+    position: relative;
+}
+
+.command-menu-toggle {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+
+.command-menu-toggle::-webkit-details-marker {
+    display: none;
+}
+
+.command-menu-toggle:hover,
+.command-menu[open] .command-menu-toggle,
+.command-menu-toggle:focus-visible {
+    background: var(--surface);
+    color: var(--text);
+}
+
+.command-list {
+    overflow: visible;
+}
+
+.command-menu-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 20;
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--raised);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.command-menu-head {
+    display: none;
+}
+
+.command-menu-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.command-menu-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.command-menu-close:hover,
+.command-menu-close:focus-visible {
+    background: var(--surface);
+    color: var(--text);
+}
+
+.command-menu-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.command-menu-form {
+    margin: 0;
+}
+
+.command-menu-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: var(--text);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.command-menu-item:hover,
+.command-menu-item:focus-visible {
+    background: var(--surface);
+}
+
+.command-menu-danger {
+    color: var(--tertiary);
+}
+
+.command-dialog {
+    width: min(360px, calc(100vw - 32px));
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--raised);
+    color: var(--text);
+}
+
+.command-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.command-dialog-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.command-dialog-title {
+    margin: 0;
+    font-size: 18px;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+    .command-title-input {
+        font-size: 24px;
+    }
+
+    .command-chip {
+        min-height: 36px;
+        padding: 6px 14px;
+    }
+
+    .command-actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        margin: 0 -20px;
+        padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px));
+        background: var(--raised);
+        border-top: 1px solid var(--border);
+        flex-wrap: nowrap;
+    }
+
+    .command-actions .btn-primary {
+        flex: 1 1 auto;
+    }
+
+    .command-dirty {
+        display: none;
+    }
+
+    .command-menu-toggle {
+        width: 40px;
+        height: 40px;
+    }
+
+    .command-menu[open]::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 19;
+        background: rgba(0, 0, 0, 0.45);
+        cursor: pointer;
+    }
+
+    .command-menu-panel {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        top: auto;
+        bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+        padding: 12px;
+    }
+
+    .command-menu-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 4px;
+        padding: 0 0 10px 6px;
+        border-bottom: 1px solid var(--border);
+        font-size: 16px;
+    }
+
+    .command-menu-actions {
+        justify-content: space-around;
+    }
+
+    .command-menu-item {
+        width: 60px;
+        height: 60px;
+        border-radius: 14px;
+    }
+
+    .command-menu-item .command-menu-icon,
+    .command-menu-close .command-menu-icon {
+        width: 22px;
+        height: 22px;
+    }
+
+    .command-dialog .dashboard-input {
+        font-size: 16px;
+    }
+
+    .command-ref-insert {
+        min-height: 32px;
+    }
+
+    .command-form .dashboard-input,
+    .command-side .dashboard-input {
+        font-size: 16px;
+    }
+
+    .command-side .dashboard-input-row {
+        flex-wrap: wrap;
+    }
+
+    .command-side .dashboard-input-row .dashboard-input {
+        flex: 1 1 160px;
     }
 }
