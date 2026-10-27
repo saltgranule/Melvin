@@ -155,11 +155,13 @@ async def fetch(guild_id: int, name: str) -> Command | None:
         return cached[1]
 
     await init_db()
-    async with aiosqlite.connect(DB_PATH) as conn:
-        async with conn.execute(
+    async with (
+        aiosqlite.connect(DB_PATH) as conn,
+        conn.execute(
             _SELECT + " WHERE guild_id = ? AND name = ?", (guild_id, name)
-        ) as cursor:
-            row = await cursor.fetchone()
+        ) as cursor,
+    ):
+        row = await cursor.fetchone()
     command = Command(*row) if row else None
     _cache[key] = (time.monotonic(), command)
     return command
@@ -172,11 +174,13 @@ async def lookup(guild_id: int, name: str) -> str | None:
 
 async def count_commands(guild_id: int) -> int:
     await init_db()
-    async with aiosqlite.connect(DB_PATH) as conn:
-        async with conn.execute(
+    async with (
+        aiosqlite.connect(DB_PATH) as conn,
+        conn.execute(
             "SELECT COUNT(*) FROM tags WHERE guild_id = ?", (guild_id,)
-        ) as cursor:
-            (total,) = await cursor.fetchone()
+        ) as cursor,
+    ):
+        (total,) = await cursor.fetchone()
     return total
 
 
