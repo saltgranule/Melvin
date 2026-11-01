@@ -163,6 +163,25 @@ class ModCog(
             await conn.execute("DELETE FROM mod_cases WHERE case_id = ?", (case_id,))
             await conn.commit()
 
+    async def _log_action(
+        self,
+        interaction: discord.Interaction,
+        action: str,
+        **details: object,
+    ) -> None:
+        audit = self.bot.get_cog("audit")
+        if audit is None:
+            log.warning("Audit cog is not loaded; %s was not logged.", action)
+            return
+        if interaction.guild is None:
+            return
+        await audit.log_moderation(
+            interaction.guild,
+            action,
+            moderator=interaction.user,
+            **details,
+        )
+
     async def handle_dm(
         self,
         user: discord.User | discord.Member,
@@ -248,6 +267,13 @@ class ModCog(
             return
 
         user_id, action_type = case
+        await self._log_action(
+            interaction,
+            "case_remove",
+            target=discord.Object(id=user_id),
+            removed_action=action_type,
+            case_id=case_id,
+        )
         await _success(
             interaction,
             "Case Removed",
@@ -276,6 +302,13 @@ class ModCog(
 
         case_id = await self._add_case(interaction, member.id, "warn", reason)
         await self.handle_dm(member, "warning", case_id, interaction.guild.name, reason)
+        await self._log_action(
+            interaction,
+            "warn",
+            target=member,
+            reason=reason,
+            case_id=case_id,
+        )
         await _success(
             interaction,
             "Warning",
@@ -313,6 +346,13 @@ class ModCog(
             await _error(interaction, "Failed to kick that member.")
             return
 
+        await self._log_action(
+            interaction,
+            "kick",
+            target=member,
+            reason=reason,
+            case_id=case_id,
+        )
         await _success(
             interaction,
             "Kicked",
@@ -351,6 +391,13 @@ class ModCog(
             await _error(interaction, "Failed to ban that member.")
             return
 
+        await self._log_action(
+            interaction,
+            "ban",
+            target=member,
+            reason=reason,
+            case_id=case_id,
+        )
         await _success(
             interaction,
             "Banned",
@@ -394,6 +441,13 @@ class ModCog(
             return
 
         case_id = await self._add_case(interaction, user.id, "unban", reason)
+        await self._log_action(
+            interaction,
+            "unban",
+            target=user,
+            reason=reason,
+            case_id=case_id,
+        )
         await _success(
             interaction,
             "Unbanned",
@@ -441,6 +495,14 @@ class ModCog(
 
         case_id = await self._add_case(interaction, member.id, "mute", reason)
         await self.handle_dm(member, "mute", case_id, interaction.guild.name, reason)
+        await self._log_action(
+            interaction,
+            "mute",
+            target=member,
+            reason=reason,
+            case_id=case_id,
+            duration=duration,
+        )
         await _success(
             interaction,
             "Muted",
@@ -488,6 +550,13 @@ class ModCog(
 
         case_id = await self._add_case(interaction, member.id, "unmute", reason)
         await self.handle_dm(member, "unmute", case_id, interaction.guild.name, reason)
+        await self._log_action(
+            interaction,
+            "unmute",
+            target=member,
+            reason=reason,
+            case_id=case_id,
+        )
         await _success(
             interaction,
             "Unmuted",
@@ -562,6 +631,12 @@ class ModCog(
             locked=True,
         )
         if target is not None:
+            await self._log_action(
+                interaction,
+                "lock",
+                target=target,
+                reason=reason,
+            )
             await _success(interaction, "Locked", f"{target.mention} has been locked.")
 
     @app_commands.command(name="unlock", description="Unlock a channel.")
@@ -587,6 +662,12 @@ class ModCog(
             locked=False,
         )
         if target is not None:
+            await self._log_action(
+                interaction,
+                "unlock",
+                target=target,
+                reason=reason,
+            )
             await _success(
                 interaction,
                 "Unlocked",
@@ -643,6 +724,14 @@ class ModCog(
             await _error(interaction, "Failed to add that role.")
             return
 
+        await self._log_action(
+            interaction,
+            "role_add",
+            target=member,
+            role=role,
+            reason=reason,
+            case_id=case_id,
+        )
         await _success(
             interaction,
             "Role Added",
@@ -694,6 +783,14 @@ class ModCog(
             await _error(interaction, "Failed to remove that role.")
             return
 
+        await self._log_action(
+            interaction,
+            "role_remove",
+            target=member,
+            role=role,
+            reason=reason,
+            case_id=case_id,
+        )
         await _success(
             interaction,
             "Role Removed",

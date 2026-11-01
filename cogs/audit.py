@@ -1,6 +1,10 @@
+import asyncio
 import logging
-from typing import TYPE_CHECKING
+from collections.abc import Callable, Sequence
+from datetime import datetime, timedelta
 
+import aiohttp
+import aiosqlite
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -10,10 +14,6 @@ import module_settings
 from globals import DATA_DIR, PRIMARY, SECONDARY, TERTIARY
 from module_registry import Module, Setting
 from ui import LargeSeparator, open_config
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
-    from datetime import datetime
 
 MODULE = Module(
     "audit",
@@ -35,7 +35,13 @@ MODULE = Module(
         Setting(
             "member_channel",
             "Member channel",
-            "Joins, leaves, bans, and member or profile changes. Uses the audit channel if not set.",
+            "Joins, leaves, and member or profile changes. Uses the audit channel if not set.",
+            "channel",
+        ),
+        Setting(
+            "moderation_channel",
+            "Moderation channel",
+            "Bans, kicks, unbans, and timeouts. Uses the audit channel if not set.",
             "channel",
         ),
         Setting(
@@ -45,9 +51,9 @@ MODULE = Module(
             "channel",
         ),
         Setting(
-            "other_channel",
-            "Other channel",
-            "Voice channel activity and anything else. Uses the audit channel if not set.",
+            "voice_channel",
+            "Voice channel",
+            "Voice channel activity. Uses the audit channel if not set.",
             "channel",
         ),
     ),
@@ -56,11 +62,23 @@ MODULE = Module(
 LOG_CHANNEL_SETTINGS = {
     "message": "message_channel",
     "member": "member_channel",
+    "moderation": "moderation_channel",
     "server": "server_channel",
-    "other": "other_channel",
+    "voice": "voice_channel",
 }
 
 log = logging.getLogger(__name__)
+
+WEBHOOK_TABLE = """
+    CREATE TABLE IF NOT EXISTS audit_webhooks (
+        guild_id INTEGER NOT NULL,
+        category TEXT NOT NULL,
+        channel_id INTEGER NOT NULL,
+        webhook_id INTEGER NOT NULL,
+        token TEXT NOT NULL,
+        PRIMARY KEY (guild_id, category)
+    )
+"""
 
 HOLOGRAPHIC_VALUES = (11127295, 16759788, 16761760)
 NO_CONTENT = "[No content, likely an embed or attachment.]"
@@ -68,6 +86,21 @@ NO_CONTENT = "[No content, likely an embed or attachment.]"
 UPDATED = discord.Color.from_str(PRIMARY)
 ADDED = discord.Color.from_str(SECONDARY)
 REMOVED = discord.Color.from_str(TERTIARY)
+
+MOD_ACTIONS = {
+    "warn": ("Member Warned", UPDATED),
+    "kick": ("Member Kicked", REMOVED),
+    "ban": ("Member Banned", REMOVED),
+    "unban": ("Member Unbanned", ADDED),
+    "mute": ("Member Muted", UPDATED),
+    "unmute": ("Member Unmuted", ADDED),
+    "lock": ("Channel Locked", UPDATED),
+    "unlock": ("Channel Unlocked", ADDED),
+    "role_add": ("Role Added", ADDED),
+    "role_remove": ("Role Removed", REMOVED),
+    "case_remove": ("Case Removed", UPDATED),
+}
+AUTO_ROLE_REASON = "/mod config auto-role"
 
 
 def _describe_style(role: discord.Role) -> str:
@@ -121,6 +154,18 @@ def _thumbnail(user: discord.abc.User) -> discord.ui.Thumbnail:
     return discord.ui.Thumbnail(media=user.display_avatar.url)
 
 
+def _moderator_line(entry: discord.AuditLogEntry | None) -> str:
+    if entry is None or entry.user is None:
+        return ""
+    return f"\n**Moderator:** {entry.user.mention} | {entry.user.id}"
+
+
+def _reason_sections(entry: discord.AuditLogEntry | None) -> Sequence[Sequence[str]]:
+    if entry is None or not entry.reason:
+        return ()
+    return _changes([f"**Reason:** {_clean(entry.reason, 300)}"])
+
+
 @app_commands.allowed_installs(guilds=True, users=False)
 @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
 class AuditCog(
@@ -132,14 +177,45 @@ class AuditCog(
         super().__init__()
         self.bot = bot
         self.db_path = DATA_DIR / "logging.db"
+        self.session: aiohttp.ClientSession | None = None
+        self._webhook_locks: dict[tuple[int, str], asyncio.Lock] = {}
+        self._webhook_cache: dict[tuple[int, str], tuple[int, discord.Webhook]] = {}
 
     async def cog_load(self) -> None:
+        self.session = aiohttp.ClientSession()
         await module_config.migrate_legacy(
             self.db_path,
             "log_channels",
             "audit",
             lambda row: (int(row[0]), {"log_channel": row[1]}),
         )
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(WEBHOOK_TABLE)
+            await db.commit()
+        await module_config.init_db()
+        async with aiosqlite.connect(module_config.DB_PATH) as db:
+            async with db.execute(
+                "SELECT guild_id, value FROM guild_settings "
+                "WHERE module = 'audit' AND key = 'other_channel'",
+            ) as cursor:
+                legacy = await cursor.fetchall()
+        for guild_id, value in legacy:
+            if value and not await module_config.get(
+                guild_id, "audit", "voice_channel"
+            ):
+                await module_config.set_values(
+                    guild_id, "audit", {"voice_channel": value}
+                )
+        if legacy:
+            async with aiosqlite.connect(module_config.DB_PATH) as db:
+                await db.execute(
+                    "DELETE FROM guild_settings WHERE module = 'audit' AND key = 'other_channel'",
+                )
+                await db.commit()
+
+    async def cog_unload(self) -> None:
+        if self.session is not None:
+            await self.session.close()
 
     @app_commands.command(
         name="config",
@@ -160,6 +236,138 @@ class AuditCog(
         channel_id = values[LOG_CHANNEL_SETTINGS[category]] or values["log_channel"]
         channel = self.bot.get_channel(int(channel_id)) if channel_id else None
         return channel if isinstance(channel, discord.TextChannel) else None
+
+    def _webhook_lock(self, guild_id: int, category: str) -> asyncio.Lock:
+        return self._webhook_locks.setdefault((guild_id, category), asyncio.Lock())
+
+    async def _get_webhook_row(
+        self,
+        guild_id: int,
+        category: str,
+    ) -> tuple[int, int, str] | None:
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute(
+                "SELECT channel_id, webhook_id, token FROM audit_webhooks "
+                "WHERE guild_id = ? AND category = ?",
+                (guild_id, category),
+            )
+            row = await cursor.fetchone()
+        return (int(row[0]), int(row[1]), str(row[2])) if row else None
+
+    async def _set_webhook_row(
+        self,
+        guild_id: int,
+        category: str,
+        channel_id: int,
+        webhook_id: int,
+        token: str,
+    ) -> None:
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                "INSERT OR REPLACE INTO audit_webhooks "
+                "(guild_id, category, channel_id, webhook_id, token) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (guild_id, category, channel_id, webhook_id, token),
+            )
+            await db.commit()
+
+    async def _clear_webhook_row(self, guild_id: int, category: str) -> None:
+        self._webhook_cache.pop((guild_id, category), None)
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                "DELETE FROM audit_webhooks WHERE guild_id = ? AND category = ?",
+                (guild_id, category),
+            )
+            await db.commit()
+
+    def _partial_webhook(self, webhook_id: int, token: str) -> discord.Webhook:
+        if self.session is None:
+            msg = "AuditCog session used before cog_load."
+            raise RuntimeError(msg)
+        return discord.Webhook.partial(webhook_id, token, session=self.session)
+
+    async def _delete_remote_webhook(self, webhook_id: int, token: str) -> None:
+        try:
+            await self._partial_webhook(webhook_id, token).delete()
+        except discord.NotFound, discord.Forbidden:
+            pass
+        except discord.HTTPException:
+            log.warning("Couldn't delete old audit webhook %s", webhook_id)
+
+    async def new_webhook(
+        self,
+        channel: discord.TextChannel,
+        category: str,
+    ) -> discord.Webhook | None:
+        guild_id = channel.guild.id
+        old = await self._get_webhook_row(guild_id, category)
+        if old is not None:
+            await self._delete_remote_webhook(old[1], old[2])
+            await self._clear_webhook_row(guild_id, category)
+
+        try:
+            webhook = await channel.create_webhook(
+                name=f"{category.title()} Logs",
+                reason="Audit log destination changed or first use.",
+            )
+        except discord.Forbidden, discord.HTTPException:
+            log.warning("Couldn't create audit webhook in channel %s", channel.id)
+            return None
+
+        if webhook.token is None:
+            return None
+        await self._set_webhook_row(
+            guild_id,
+            category,
+            channel.id,
+            webhook.id,
+            webhook.token,
+        )
+        self._webhook_cache[(guild_id, category)] = (channel.id, webhook)
+        return webhook
+
+    async def _ensure_webhook(
+        self,
+        channel: discord.TextChannel,
+        category: str,
+    ) -> discord.Webhook | None:
+        key = (channel.guild.id, category)
+        cached = self._webhook_cache.get(key)
+        if cached is not None and cached[0] == channel.id:
+            return cached[1]
+        async with self._webhook_lock(channel.guild.id, category):
+            cached = self._webhook_cache.get(key)
+            if cached is not None and cached[0] == channel.id:
+                return cached[1]
+            row = await self._get_webhook_row(channel.guild.id, category)
+            if row is not None and row[0] == channel.id:
+                webhook = self._partial_webhook(row[1], row[2])
+                self._webhook_cache[key] = (channel.id, webhook)
+                return webhook
+            return await self.new_webhook(channel, category)
+
+    async def send_via_webhook(
+        self,
+        channel: discord.TextChannel,
+        category: str,
+        view: discord.ui.LayoutView,
+    ) -> None:
+        for _ in range(2):
+            webhook = await self._ensure_webhook(channel, category)
+            if webhook is None:
+                return
+            try:
+                await webhook.send(
+                    view=view,
+                    allowed_mentions=discord.AllowedMentions.none(),
+                )
+                return
+            except discord.NotFound:
+                async with self._webhook_lock(channel.guild.id, category):
+                    await self._clear_webhook_row(channel.guild.id, category)
+            except discord.HTTPException:
+                log.warning("Couldn't send audit log to channel %s", channel.id)
+                return
 
     async def _log(
         self,
@@ -192,13 +400,7 @@ class AuditCog(
 
         view = discord.ui.LayoutView()
         view.add_item(discord.ui.Container(*items, accent_color=color))
-        try:
-            await channel.send(
-                view=view,
-                allowed_mentions=discord.AllowedMentions.none(),
-            )
-        except discord.HTTPException:
-            pass
+        await self.send_via_webhook(channel, category, view)
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
@@ -213,6 +415,26 @@ class AuditCog(
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member) -> None:
+        kick = await self._recent_entry(
+            member.guild,
+            discord.AuditLogAction.kick,
+            member.id,
+        )
+        if kick is not None:
+            if await self._is_mod_duplicate(member.guild, kick):
+                return
+            await self._log(
+                member.guild.id,
+                REMOVED,
+                "Member Kicked",
+                f"**{member} was kicked.**\n**Member #{member.guild.member_count}.**"
+                f"{_moderator_line(kick)}",
+                accessory=_thumbnail(member),
+                sections=_reason_sections(kick),
+                category="moderation",
+            )
+            return
+
         await self._log(
             member.guild.id,
             REMOVED,
@@ -235,22 +457,21 @@ class AuditCog(
             )
 
         if before.roles != after.roles:
-            before_roles, after_roles = set(before.roles), set(after.roles)
-            if added := after_roles - before_roles:
-                changes.append(
-                    f"**Roles added:** {', '.join(r.mention for r in added)}",
-                )
-            if removed := before_roles - after_roles:
-                changes.append(
-                    f"**Roles removed:** {', '.join(r.mention for r in removed)}",
-                )
-
-        if before.timed_out_until != after.timed_out_until:
-            changes.append(
-                f"**Timed out until:** {discord.utils.format_dt(after.timed_out_until, style='f')}"
-                if after.timed_out_until is not None
-                else "**Timeout removed.**",
+            role_entry = await self._recent_entry(
+                after.guild,
+                discord.AuditLogAction.member_role_update,
+                after.id,
             )
+            if not await self._is_mod_duplicate(after.guild, role_entry):
+                before_roles, after_roles = set(before.roles), set(after.roles)
+                if added := after_roles - before_roles:
+                    changes.append(
+                        f"**Roles added:** {', '.join(r.mention for r in added)}",
+                    )
+                if removed := before_roles - after_roles:
+                    changes.append(
+                        f"**Roles removed:** {', '.join(r.mention for r in removed)}",
+                    )
 
         if changes:
             await self._log(
@@ -262,6 +483,120 @@ class AuditCog(
                 sections=_changes(changes),
                 category="member",
             )
+
+        if before.timed_out_until != after.timed_out_until:
+            await self._log_timeout(after)
+
+    async def _recent_entry(
+        self,
+        guild: discord.Guild,
+        action: discord.AuditLogAction,
+        target_id: int,
+        match: Callable[[discord.AuditLogEntry], bool] | None = None,
+    ) -> discord.AuditLogEntry | None:
+        since = discord.utils.utcnow() - timedelta(seconds=15)
+        try:
+            async for entry in guild.audit_logs(limit=10, action=action, after=since):
+                if getattr(entry.target, "id", None) != target_id:
+                    continue
+                if match is not None and not match(entry):
+                    continue
+                return entry
+        except discord.HTTPException:
+            return None
+        return None
+
+    async def _is_mod_duplicate(
+        self,
+        guild: discord.Guild,
+        entry: discord.AuditLogEntry | None,
+    ) -> bool:
+        if entry is None or entry.user is None or self.bot.user is None:
+            return False
+        if entry.user.id != self.bot.user.id or entry.reason == AUTO_ROLE_REASON:
+            return False
+        return await module_settings.is_enabled(guild.id, "mod")
+
+    async def log_moderation(
+        self,
+        guild: discord.Guild,
+        action: str,
+        *,
+        moderator: discord.abc.User,
+        target: discord.abc.Snowflake,
+        reason: str | None = None,
+        case_id: int | None = None,
+        role: discord.Role | None = None,
+        duration: str | None = None,
+        removed_action: str | None = None,
+    ) -> None:
+        title, color = MOD_ACTIONS[action]
+        if isinstance(target, (discord.abc.GuildChannel, discord.Thread)):
+            target_text = f"{target.mention} | {target.id}"
+            thumbnail = None
+        else:
+            target_text = f"<@{target.id}> | {target.id}"
+            thumbnail = (
+                target if isinstance(target, (discord.User, discord.Member)) else None
+            )
+
+        lines = [
+            f"**Target:** {target_text}",
+            f"**Moderator:** {moderator.mention} | {moderator.id}",
+        ]
+        if role is not None:
+            lines.append(f"**Role:** {role.mention} | {role.id}")
+        if duration is not None:
+            lines.append(f"**Duration:** {duration}")
+        if removed_action is not None:
+            lines.append(f"**Removed action:** {removed_action.upper()}")
+        if case_id is not None:
+            lines.append(f"**Case:** {case_id}")
+
+        sections = [[f"### Reason\n{_clean(reason, 300)}"]] if reason else []
+        await self._log(
+            guild.id,
+            color,
+            title,
+            "\n".join(lines),
+            accessory=_thumbnail(thumbnail) if thumbnail is not None else None,
+            sections=sections,
+            category="moderation",
+        )
+
+    async def _log_timeout(self, member: discord.Member) -> None:
+        if member.timed_out_until is not None:
+            title = "Member Timed Out"
+            line = f"**Timed out until:** {discord.utils.format_dt(member.timed_out_until, style='f')}"
+        else:
+            title = "Timeout Removed"
+            line = "**Timeout removed.**"
+
+        entry = await self._recent_entry(
+            member.guild,
+            discord.AuditLogAction.member_update,
+            member.id,
+            match=lambda e: (
+                hasattr(e.after, "timed_out_until")
+                and e.after.timed_out_until == member.timed_out_until
+            ),
+        )
+        if await self._is_mod_duplicate(member.guild, entry):
+            return
+
+        changes = [line]
+        if entry is not None and entry.reason:
+            changes.append(f"**Reason:** {_clean(entry.reason, 300)}")
+
+        await self._log(
+            member.guild.id,
+            UPDATED,
+            title,
+            f"**Member:** {member.mention} | {member.id}{_moderator_line(entry)}",
+            accessory=_thumbnail(member),
+            sections=_changes(changes),
+            category="moderation",
+        )
 
     @commands.Cog.listener()
     async def on_user_update(self, before: discord.User, after: discord.User) -> None:
@@ -373,7 +708,7 @@ class AuditCog(
             title,
             f"**Member:** {member.mention} | {member.id}\n{line}",
             accessory=_thumbnail(member),
-            category="other",
+            category="voice",
         )
 
     @commands.Cog.listener()
@@ -497,24 +832,32 @@ class AuditCog(
         guild: discord.Guild,
         user: discord.User | discord.Member,
     ) -> None:
+        entry = await self._recent_entry(guild, discord.AuditLogAction.ban, user.id)
+        if await self._is_mod_duplicate(guild, entry):
+            return
         await self._log(
             guild.id,
             REMOVED,
             "Member Banned",
-            f"**User:** {user} | {user.id}",
+            f"**User:** {user} | {user.id}{_moderator_line(entry)}",
             accessory=_thumbnail(user),
-            category="member",
+            sections=_reason_sections(entry),
+            category="moderation",
         )
 
     @commands.Cog.listener()
     async def on_member_unban(self, guild: discord.Guild, user: discord.User) -> None:
+        entry = await self._recent_entry(guild, discord.AuditLogAction.unban, user.id)
+        if await self._is_mod_duplicate(guild, entry):
+            return
         await self._log(
             guild.id,
             ADDED,
             "Member Unbanned",
-            f"**User:** {user} | {user.id}",
+            f"**User:** {user} | {user.id}{_moderator_line(entry)}",
             accessory=_thumbnail(user),
-            category="member",
+            sections=_reason_sections(entry),
+            category="moderation",
         )
 
 
