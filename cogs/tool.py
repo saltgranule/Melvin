@@ -765,7 +765,8 @@ class ToolCog(
         if not rows:
             await interaction.response.send_message(
                 view=InfoUI(
-                    title="Reminders", subtitle="**You have no reminders set.**"
+                    title="Reminders",
+                    subtitle="**You have no reminders set.**",
                 ),
                 ephemeral=True,
             )
@@ -804,7 +805,8 @@ class ToolCog(
             return
         await interaction.response.send_message(
             view=PositiveUI(
-                title=f"Reminder #{reminder_id} cancelled", subtitle="**Removed.**"
+                title=f"Reminder #{reminder_id} cancelled",
+                subtitle="**Removed.**",
             ),
             ephemeral=True,
         )

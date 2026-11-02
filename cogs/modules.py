@@ -1,6 +1,6 @@
 import contextlib
 import logging
-import re
+from typing import TYPE_CHECKING
 
 import discord
 from discord import app_commands
@@ -9,6 +9,9 @@ from discord.ext import commands
 import module_settings
 from globals import ERROR_MESSAGE, MELVIN_CHECK_EMOJI, MELVIN_CROSS_EMOJI, MELVIN_EMOJI
 from ui import ErrorUI, Paginator
+
+if TYPE_CHECKING:
+    import re
 
 log = logging.getLogger(__name__)
 

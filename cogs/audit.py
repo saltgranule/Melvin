@@ -1,7 +1,7 @@
 import asyncio
 import logging
-from collections.abc import Callable, Sequence
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
 
 import aiohttp
 import aiosqlite
@@ -14,6 +14,9 @@ import module_settings
 from globals import DATA_DIR, PRIMARY, SECONDARY, TERTIARY
 from module_registry import Module, Setting
 from ui import LargeSeparator, open_config
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
 
 MODULE = Module(
     "audit",
@@ -210,18 +213,24 @@ class AuditCog(
             await db.execute(WEBHOOK_TABLE)
             await db.commit()
         await module_config.init_db()
-        async with aiosqlite.connect(module_config.DB_PATH) as db:
-            async with db.execute(
+        async with (
+            aiosqlite.connect(module_config.DB_PATH) as db,
+            db.execute(
                 "SELECT guild_id, value FROM guild_settings "
                 "WHERE module = 'audit' AND key = 'other_channel'",
-            ) as cursor:
-                legacy = await cursor.fetchall()
+            ) as cursor,
+        ):
+            legacy = await cursor.fetchall()
         for guild_id, value in legacy:
             if value and not await module_config.get(
-                guild_id, "audit", "voice_channel"
+                guild_id,
+                "audit",
+                "voice_channel",
             ):
                 await module_config.set_values(
-                    guild_id, "audit", {"voice_channel": value}
+                    guild_id,
+                    "audit",
+                    {"voice_channel": value},
                 )
         if legacy:
             async with aiosqlite.connect(module_config.DB_PATH) as db:
@@ -350,7 +359,7 @@ class AuditCog(
             webhook.id,
             webhook.token,
         )
-        self._webhook_cache[(guild_id, category)] = (channel.id, webhook)
+        self._webhook_cache[guild_id, category] = (channel.id, webhook)
         return webhook
 
     async def _ensure_webhook(
@@ -837,7 +846,9 @@ class AuditCog(
 
     @commands.Cog.listener()
     async def on_guild_update(
-        self, before: discord.Guild, after: discord.Guild
+        self,
+        before: discord.Guild,
+        after: discord.Guild,
     ) -> None:
         changes = []
         if before.name != after.name:

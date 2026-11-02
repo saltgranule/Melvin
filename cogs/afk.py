@@ -131,7 +131,7 @@ class AfkCog(
         }
         due = [m for m in members if (channel_id, m.id) not in self._last_notice]
         for member in due:
-            self._last_notice[(channel_id, member.id)] = now
+            self._last_notice[channel_id, member.id] = now
         return due
 
     @app_commands.command(name="set", description="Go AFK in this server.")
