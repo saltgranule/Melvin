@@ -31,6 +31,7 @@ MODULE = Module(
             "Starboard channel",
             "Where starred messages go.",
             "channel",
+            group="Channels",
         ),
         Setting(
             "sources",
@@ -38,6 +39,7 @@ MODULE = Module(
             "Only count reactions here. Empty means everywhere.",
             "channels",
             channel_type="any",
+            group="Channels",
         ),
         Setting(
             "emojis",
@@ -46,6 +48,7 @@ MODULE = Module(
             "emojis",
             default="⭐",
             max_length=300,
+            group="Stars",
         ),
         Setting(
             "any_emoji",
@@ -54,6 +57,7 @@ MODULE = Module(
             "choice",
             default="off",
             choices=(("off", "Off"), ("on", "On")),
+            group="Stars",
         ),
         Setting(
             "threshold",
@@ -63,6 +67,7 @@ MODULE = Module(
             default="3",
             minimum=1,
             maximum=100,
+            group="Stars",
         ),
         Setting(
             "self_star",
@@ -71,6 +76,7 @@ MODULE = Module(
             "choice",
             default="off",
             choices=(("off", "Off"), ("on", "On")),
+            group="Stars",
         ),
         Setting(
             "auto_react",
@@ -79,6 +85,7 @@ MODULE = Module(
             "choice",
             default="off",
             choices=(("off", "Off"), ("on", "On")),
+            group="Stars",
         ),
     ),
 )

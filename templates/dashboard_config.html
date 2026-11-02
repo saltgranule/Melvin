@@ -12,7 +12,7 @@
             Modules
         </a>
         <h1 class="status-heading">{{ module.label}} settings</h1>
-        <p class="dashboard-notice">{{ module.description }} You can also change these with /{{ 'command' if module.key == 'tags' else module.key }} config in Discord.</p>
+        <p class="dashboard-notice">{{ module.description }} You can also change these with /{{ module.key }} config in Discord.</p>
 
         {% if saved %}
         {{ banner("success", "Saved!") }}
@@ -30,65 +30,70 @@
         <form method="post" enctype="multipart/form-data" class="dashboard-form">
             <input type="hidden" name="csrf" value="{{ csrf_token() }}">
 
-            {% for field in fields %}
-            {% set setting = field.setting %}
-            {% set id = "setting-" ~ setting.key %}
-            <div class="dashboard-field">
-                <label for="{{ id }}" class="dashboard-field-label">{{ setting.label }}</label>
-                <p class="dashboard-field-description" id="{{ id }}-description">{{ setting.description }}</p>
+            {% for group in groups %}
+            <section class="dashboard-group">
+                <h2 class="dashboard-group-title">{{ group.title }}</h2>
+                {% for field in group.fields %}
+                {% set setting = field.setting %}
+                {% set id = "setting-" ~ setting.key %}
+                <div class="dashboard-field">
+                    <label for="{{ id }}" class="dashboard-field-label">{{ setting.label }}</label>
+                    <p class="dashboard-field-description" id="{{ id }}-description">{{ setting.description }}</p>
 
-                {% if setting.kind == "channels" %}
-                {% if field.options %}
-                {{ dropdown(id, setting.key, field.options, field.selected, multiple=true, locked=field.locked) }}
-                {% else %}
-                <p class="dashboard-field-description">This server doesn't have any channels Melvin can see.</p>
-                {% endif %}
+                    {% if setting.kind == "channels" %}
+                    {% if field.options %}
+                    {{ dropdown(id, setting.key, field.options, field.selected, multiple=true, locked=field.locked) }}
+                    {% else %}
+                    <p class="dashboard-field-description">This server doesn't have any channels Melvin can see.</p>
+                    {% endif %}
 
-                {% elif setting.kind in ["channel", "role", "choice"] %}
-                {% set options = field.options if setting.kind == "choice" else [("", "None")] + field.options | list %}
-                {% set current = field.value or "" %}
-                {% if current not in options | map(attribute=0) | list and options %}
-                {% set current = options[0][0] %}
-                {% endif %}
-                {{ dropdown(id, setting.key, options, [current], locked=field.locked) }}
+                    {% elif setting.kind in ["channel", "role", "choice"] %}
+                    {% set options = field.options if setting.kind == "choice" else [("", "None")] + field.options | list %}
+                    {% set current = field.value or "" %}
+                    {% if current not in options | map(attribute=0) | list and options %}
+                    {% set current = options[0][0] %}
+                    {% endif %}
+                    {{ dropdown(id, setting.key, options, [current], locked=field.locked) }}
 
-                {% elif setting.kind == "image" %}
-                {% if field.value %}
-                <img src="{{ url_for('dashboard.config_image', guild_id=guild.id, module=module.key, key=setting.key) }}"
-                     alt="The current {{ setting.label | lower }}" class="dashboard-image-preview">
-                <label class="dashboard-checkbox">
-                    <input type="checkbox" name="{{ setting.key }}__remove" {% if field.locked %}disabled{% endif %}>
-                    Remove the current image
-                </label>
-                {% endif %}
-                <input type="file" name="{{ setting.key }}" id="{{ id }}" class="dashboard-input"
-                       accept="image/png,image/jpeg,image/gif,image/webp" aria-describedby="{{ id }}-description"
-                       {% if field.locked %}disabled{% endif %}>
+                    {% elif setting.kind == "image" %}
+                    {% if field.value %}
+                    <img src="{{ url_for('dashboard.config_image', guild_id=guild.id, module=module.key, key=setting.key) }}"
+                         alt="The current {{ setting.label | lower }}" class="dashboard-image-preview">
+                    <label class="dashboard-checkbox">
+                        <input type="checkbox" name="{{ setting.key }}__remove" {% if field.locked %}disabled{% endif %}>
+                        Remove the current image
+                    </label>
+                    {% endif %}
+                    <input type="file" name="{{ setting.key }}" id="{{ id }}" class="dashboard-input"
+                           accept="image/png,image/jpeg,image/gif,image/webp" aria-describedby="{{ id }}-description"
+                           {% if field.locked %}disabled{% endif %}>
 
-                {% elif setting.max_length > 100 %}
-                <textarea name="{{ setting.key }}" id="{{ id }}" class="dashboard-input" rows="4"
-                          maxlength="{{ setting.max_length }}" placeholder="{{ setting.placeholder }}"
-                          aria-describedby="{{ id }}-description" {% if field.locked %}disabled{% endif %}>{{ field.value or "" }}</textarea>
+                    {% elif setting.max_length > 100 %}
+                    <textarea name="{{ setting.key }}" id="{{ id }}" class="dashboard-input" rows="4"
+                              maxlength="{{ setting.max_length }}" placeholder="{{ setting.placeholder }}"
+                              aria-describedby="{{ id }}-description" {% if field.locked %}disabled{% endif %}>{{ field.value or "" }}</textarea>
 
-                {% else %}
-                <div class="dashboard-input-row">
-                    {% for color in field.colors %}
-                    <span class="dashboard-swatch" style="background: #{{ color }}" aria-hidden="true"></span>
-                    {% endfor %}
-                    <input type="{{ 'url' if setting.kind == 'url' else 'text' }}" name="{{ setting.key }}" id="{{ id }}"
-                           class="dashboard-input" value="{{ field.value or '' }}" placeholder="{{ setting.placeholder }}"
-                           maxlength="{{ 512 if setting.kind == 'url' else setting.max_length }}"
-                           aria-describedby="{{ id }}-description" {% if field.locked %}disabled{% endif %}>
+                    {% else %}
+                    <div class="dashboard-input-row">
+                        {% for color in field.colors %}
+                        <span class="dashboard-swatch" style="background: #{{ color }}" aria-hidden="true"></span>
+                        {% endfor %}
+                        <input type="{{ 'url' if setting.kind == 'url' else 'text' }}" name="{{ setting.key }}" id="{{ id }}"
+                               class="dashboard-input" value="{{ field.value or '' }}" placeholder="{{ setting.placeholder }}"
+                               maxlength="{{ 512 if setting.kind == 'url' else setting.max_length }}"
+                               aria-describedby="{{ id }}-description" {% if field.locked %}disabled{% endif %}>
+                    </div>
+                    {% endif %}
+
+                    {% if field.locked %}
+                    <p class="dashboard-field-description">You need {{ setting.permission.replace("_", " ").title() }} to change this.</p>
+                    {% endif %}
+                    {% if field.error %}
+                    <p class="dashboard-field-error" role="alert">{{ field.error }}</p>
+                    {% endif %}
                 </div>
-                {% endif %}
-
-                {% if field.locked %}
-                <p class="dashboard-field-description">You need {{ setting.permission.replace("_", " ").title() }} to change this.</p>
-                {% endif %}
-                {% if field.error %}
-                <p class="dashboard-field-error" role="alert">{{ field.error }}</p>
-                {% endif %}
-            </div>
+                {% endfor %}
+            </section>
             {% endfor %}
 
             <div class="dashboard-form-actions">
@@ -97,15 +102,8 @@
             </div>
         </form>
         {% endif %}
-
-        {% if commands %}
-        {% include "_commands_section.html" %}
-        {% endif %}
     </main>
 </div>
 
 <script src="{{ url_for('static', filename='js/dropdown.js') }}"></script>
-{% if commands %}
-<script src="{{ url_for('static', filename='js/commands.js') }}"></script>
-{% endif %}
 {% endblock %}

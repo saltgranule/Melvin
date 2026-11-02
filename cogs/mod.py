@@ -24,6 +24,7 @@ MODULE = Module(
             "Given to members when they join. Leave empty for none.",
             "role",
             permission="manage_roles",
+            group="Roles",
         ),
     ),
 )

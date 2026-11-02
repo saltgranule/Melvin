@@ -25,6 +25,7 @@ class Setting:
     channel_type: str = "text"
     minimum: int = 0
     maximum: int = 0
+    group: str = "Settings"
 
 
 @dataclass(frozen=True)

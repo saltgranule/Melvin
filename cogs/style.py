@@ -53,6 +53,7 @@ MODULE = Module(
             "choice",
             default="cherry_bomb",
             choices=FONTS,
+            group="Appearance",
         ),
         Setting(
             "effect",
@@ -61,6 +62,7 @@ MODULE = Module(
             "choice",
             default="gradient",
             choices=EFFECTS,
+            group="Appearance",
         ),
         Setting(
             "colors",
@@ -69,6 +71,7 @@ MODULE = Module(
             "color",
             default="FFFFFF",
             placeholder="F4A261-FFFFFF",
+            group="Appearance",
         ),
     ),
 )

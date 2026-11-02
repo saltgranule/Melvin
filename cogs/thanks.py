@@ -24,6 +24,7 @@ MODULE = Module(
             "choice",
             default="on",
             choices=(("on", "On"), ("off", "Off")),
+            group="Behavior",
         ),
         Setting(
             "cooldown",
@@ -37,6 +38,7 @@ MODULE = Module(
                 ("300", "5 minutes"),
                 ("600", "10 minutes"),
             ),
+            group="Behavior",
         ),
     ),
 )

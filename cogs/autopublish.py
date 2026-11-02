@@ -20,6 +20,7 @@ MODULE = Module(
             "Pick announcement channels, anything else is skipped.",
             "channels",
             channel_type="any",
+            group="Publishing",
         ),
         Setting(
             "bots",
@@ -28,6 +29,7 @@ MODULE = Module(
             "choice",
             default="off",
             choices=(("off", "Skip them"), ("on", "Publish them")),
+            group="Publishing",
         ),
     ),
 )

@@ -21,6 +21,7 @@ MODULE = Module(
             "Welcome channel",
             "The channel welcome messages are sent in. Nothing is sent until one is set.",
             "channel",
+            group="Welcome message",
         ),
         Setting(
             "message",
@@ -31,8 +32,15 @@ MODULE = Module(
             default="Welcome, {member}!",
             max_length=2000,
             placeholder="Welcome, {member}! We're at {member_count} members now.",
+            group="Welcome message",
         ),
-        Setting("image", "Image", "Shown under the message.", "image"),
+        Setting(
+            "image",
+            "Image",
+            "Shown under the message.",
+            "image",
+            group="Welcome message",
+        ),
         Setting(
             "bots",
             "Bot welcomes",
@@ -40,6 +48,7 @@ MODULE = Module(
             "choice",
             default="off",
             choices=(("off", "Skip bots"), ("on", "Welcome bots")),
+            group="Welcome message",
         ),
         Setting(
             "button1_label",
@@ -48,6 +57,7 @@ MODULE = Module(
             "text",
             default="Link 1",
             max_length=80,
+            group="Link buttons",
         ),
         Setting(
             "button1_url",
@@ -55,6 +65,7 @@ MODULE = Module(
             "Where the first button goes. Leave empty for no button.",
             "url",
             placeholder="https://",
+            group="Link buttons",
         ),
         Setting(
             "button2_label",
@@ -63,6 +74,7 @@ MODULE = Module(
             "text",
             default="Link 2",
             max_length=80,
+            group="Link buttons",
         ),
         Setting(
             "button2_url",
@@ -70,6 +82,7 @@ MODULE = Module(
             "Where the second button goes. Leave empty for no button.",
             "url",
             placeholder="https://",
+            group="Link buttons",
         ),
     ),
 )

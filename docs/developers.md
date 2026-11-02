@@ -168,6 +168,7 @@ These are the fields a setting can have.
 | `placeholder` | Example text shown in empty boxes. |
 | `permission` | A Discord permission needed on top of Manage Server, like `"manage_roles"`. |
 | `channel_type` | For channel settings, which channels are offered. `"text"` by default, or `"any"` for text and announcement channels. |
+| `group` | The titled card it sits on, on the dashboard. Settings next to each other with the same group share a card. `"Settings"` by default. |
 
 Each kind of setting gets its own controls on both sides, and is stored as text.
 
