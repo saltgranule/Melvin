@@ -65,6 +65,11 @@ def _argument(value: object) -> str:
     return text[: MAX_ARG_LENGTH - 3] + "..." if len(text) > MAX_ARG_LENGTH else text
 
 
+def _guild_label(guild: discord.Guild) -> str:
+    name = discord.utils.escape_markdown(guild.name) or "an unknown server"
+    return f"{name} ({guild.id})"
+
+
 def _location(interaction: discord.Interaction) -> str:
     if interaction.guild:
         return f"in {interaction.guild.name}"
@@ -112,7 +117,7 @@ class PrivateCog(
             channel,
             discord.ui.Container(
                 discord.ui.TextDisplay(
-                    f"**Melvin was just removed from {guild.name}.**\n"
+                    f"**Melvin was just removed from {_guild_label(guild)}.**\n"
                     f"Now in **{len(self.bot.guilds)}** guild(s).",
                 ),
                 GalleryWithItem(MELVIN_BANNER),
