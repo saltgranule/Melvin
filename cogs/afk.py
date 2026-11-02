@@ -29,7 +29,7 @@ NO_PINGS = discord.AllowedMentions.none()
 
 
 @dataclass(frozen=True)
-class AfkStatus:
+class AFKStatus:
     reason: str
     since: int
 
@@ -38,7 +38,7 @@ def _clean_reason(reason: str | None) -> str:
     return " ".join((reason or "").split())
 
 
-def _describe(status: AfkStatus) -> str:
+def _describe(status: AFKStatus) -> str:
     went = f"Went AFK <t:{status.since}:R>"
     if not status.reason:
         return went
@@ -47,7 +47,7 @@ def _describe(status: AfkStatus) -> str:
 
 @app_commands.allowed_installs(guilds=True, users=False)
 @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
-class AfkCog(
+class AFKCog(
     commands.GroupCog,
     name=KEY,
     description="Leave an away message for this server.",
@@ -57,7 +57,7 @@ class AfkCog(
         self.bot = bot
         self.db_path = DATA_DIR / "afk.db"
         # on_message reads this for every message, so it stays out of the database
-        self._statuses: dict[int, dict[int, AfkStatus]] = {}
+        self._statuses: dict[int, dict[int, AFKStatus]] = {}
         self._last_notice: dict[tuple[int, int], float] = {}
 
     async def cog_load(self) -> None:
@@ -78,7 +78,7 @@ class AfkCog(
                 "SELECT guild_id, user_id, reason, since FROM afk_statuses",
             ) as cursor:
                 async for guild_id, user_id, reason, since in cursor:
-                    self._statuses.setdefault(guild_id, {})[user_id] = AfkStatus(
+                    self._statuses.setdefault(guild_id, {})[user_id] = AFKStatus(
                         reason,
                         since,
                     )
@@ -87,7 +87,7 @@ class AfkCog(
         self,
         guild_id: int,
         user_id: int,
-        status: AfkStatus,
+        status: AFKStatus,
     ) -> None:
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
@@ -103,7 +103,7 @@ class AfkCog(
             await db.commit()
         self._statuses.setdefault(guild_id, {})[user_id] = status
 
-    async def _clear_status(self, guild_id: int, user_id: int) -> AfkStatus | None:
+    async def _clear_status(self, guild_id: int, user_id: int) -> AFKStatus | None:
         guild_statuses = self._statuses.get(guild_id, {})
         if user_id not in guild_statuses:
             return None
@@ -141,9 +141,9 @@ class AfkCog(
         interaction: discord.Interaction,
         reason: app_commands.Range[str, 1, REASON_LENGTH] | None = None,
     ) -> None:
-        status = AfkStatus(_clean_reason(reason), int(time.time()))
+        status = AFKStatus(_clean_reason(reason), int(time.time()))
         await self._set_status(interaction.guild_id, interaction.user.id, status)
-        content = f"{interaction.user.mention} is now AFK"
+        content = f"{interaction.user.mention} is now AFK."
         if status.reason:
             content += f"\n-# **{discord.utils.escape_markdown(status.reason)}**"
         await interaction.response.send_message(content, allowed_mentions=NO_PINGS)
@@ -165,7 +165,7 @@ class AfkCog(
             return
 
         await interaction.response.send_message(
-            f"{user.mention} is no longer AFK",
+            f"{user.mention} is no longer AFK.",
             allowed_mentions=NO_PINGS,
         )
 
@@ -201,7 +201,7 @@ class AfkCog(
         try:
             if status is not None:
                 await message.reply(
-                    f"{message.author.mention} is no longer AFK",
+                    f"{message.author.mention} is no longer AFK.",
                     allowed_mentions=NO_PINGS,
                 )
             if lines:
@@ -239,4 +239,4 @@ class AfkCog(
 
 
 async def setup(bot: commands.Bot) -> None:
-    await bot.add_cog(AfkCog(bot))
+    await bot.add_cog(AFKCog(bot))
