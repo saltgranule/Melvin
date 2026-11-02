@@ -70,7 +70,7 @@ Roles being created or deleted are logged, along with name, color, and permissio
 Server updates are logged when the server's name or icon changes, or when ownership is transferred.
 
 ## Webhooks
-Each of the five categories has its own webhook, named Message Logs, Member Logs, Moderation Logs, Server Logs, or Voice Logs. Melvin creates it the first time an event is logged, in that category's channel. If the category's channel is changed, the old webhook is deleted and a new one is created in the new channel on the next event. If someone deletes a webhook manually, Melvin creates a new one the next time it's needed.
+Each of the five categories has its own webhook, named after its category and channel, like Message Logs #mod-logs, with Melvin's profile picture. Names are cut to 80 characters, and the channel is left out if its name contains "discord" or "clyde", since Discord doesn't allow those in webhook names. Melvin creates it the first time an event is logged, in that category's channel. If the category's channel is changed, the old webhook is deleted and a new one is created in the new channel on the next event. If someone deletes a webhook manually, Melvin creates a new one the next time it's needed.
 
 Melvin needs the Manage Webhooks permission in each log channel. Melvin also needs View Audit Log. It's used to tell kicks apart from leaves, to show moderators and reasons for kicks, bans, and timeouts, and to avoid logging `/mod` actions twice. Without it, kicks show up as leaves, reasons and moderators are left out, and `/mod` actions may be logged twice. It doesn't need to be able to send messages there. If it can't create a webhook, the event is skipped and a warning is written to the bot's logs.
 

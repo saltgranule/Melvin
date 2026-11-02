@@ -75,6 +75,9 @@ LOG_CHANNEL_SETTINGS = {
 
 log = logging.getLogger(__name__)
 
+WEBHOOK_NAME_LENGTH = 80
+WEBHOOK_NAME_BANNED = ("discord", "clyde")
+
 WEBHOOK_TABLE = """
     CREATE TABLE IF NOT EXISTS audit_webhooks (
         guild_id INTEGER NOT NULL,
@@ -141,6 +144,14 @@ def _attachments(attachments: list[discord.Attachment]) -> str:
 
 def _changes(changes: list[str]) -> list[list[str]]:
     return [["### Changes\n" + "\n".join(changes)]]
+
+
+def _webhook_name(channel: discord.TextChannel, category: str) -> str:
+    base = f"{category.title()} Logs"
+    # discord rejects these names outright, which would lose the log
+    if any(word in channel.name.lower() for word in WEBHOOK_NAME_BANNED):
+        return base
+    return f"{base} #{channel.name}"[:WEBHOOK_NAME_LENGTH]
 
 
 def _channel_display(
@@ -286,6 +297,15 @@ class AuditCog(
             )
             await db.commit()
 
+    async def _read_avatar(self) -> bytes | None:
+        if self.bot.user is None:
+            return None
+        try:
+            return await self.bot.user.display_avatar.read()
+        except discord.HTTPException:
+            log.warning("Couldn't read bots avatar for an audit webhook")
+            return None
+
     def _partial_webhook(self, webhook_id: int, token: str) -> discord.Webhook:
         if self.session is None:
             msg = "AuditCog session used before cog_load."
@@ -313,7 +333,8 @@ class AuditCog(
 
         try:
             webhook = await channel.create_webhook(
-                name=f"{category.title()} Logs",
+                name=_webhook_name(channel, category),
+                avatar=await self._read_avatar(),
                 reason="Audit log destination changed or first use.",
             )
         except discord.Forbidden, discord.HTTPException:
@@ -365,6 +386,10 @@ class AuditCog(
             try:
                 await webhook.send(
                     view=view,
+                    username=_webhook_name(channel, category),
+                    avatar_url=self.bot.user.display_avatar.url
+                    if self.bot.user
+                    else None,
                     allowed_mentions=discord.AllowedMentions.none(),
                 )
                 return
