@@ -266,6 +266,15 @@ def _delete_file(path: str | None) -> None:
         file.unlink()
 
 
+def check_image(filename: str, size: int) -> str:
+    extension = Path(filename).suffix.lower()
+    if extension not in IMAGE_TYPES:
+        _fail("Images must be PNG, JPG, GIF, or WebP.")
+    if size > MAX_IMAGE_BYTES:
+        _fail("Images must be 8 MB or smaller.")
+    return extension
+
+
 async def replace_image(
     guild_id: int,
     module: str,
@@ -273,12 +282,7 @@ async def replace_image(
     filename: str,
     data: bytes,
 ) -> str:
-    extension = Path(filename).suffix.lower()
-    if extension not in IMAGE_TYPES:
-        _fail("Images must be PNG, JPG, GIF, or WebP.")
-    if len(data) > MAX_IMAGE_BYTES:
-        _fail("Images must be 8 MB or smaller.")
-
+    extension = check_image(filename, len(data))
     old_path = await get(guild_id, module, key)
     path = IMAGE_DIR / f"{guild_id}-{module}-{key}-{secrets.token_hex(4)}{extension}"
     await asyncio.to_thread(IMAGE_DIR.mkdir, parents=True, exist_ok=True)

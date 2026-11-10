@@ -911,25 +911,28 @@ async def module_config_page(
             except module_config.ConfigError as e:
                 errors[key] = str(e)
 
+        # images are checked here and only written once every field is valid, so a
+        # failed save doesn't leave half of the form applied
+        pending_images: dict[str, tuple[str, bytes] | None] = {}
         for key, upload in images.items():
             setting = module_config.get_setting(module, key)
             try:
                 _check_value(setting, None, match, context)
                 if upload is None:
-                    await module_config.remove_image(guild_id, module, key)
+                    pending_images[key] = None
                 else:
                     data = upload.read(module_config.MAX_IMAGE_BYTES + 1)
-                    await module_config.replace_image(
-                        guild_id,
-                        module,
-                        key,
-                        upload.filename,
-                        data,
-                    )
+                    module_config.check_image(upload.filename, len(data))
+                    pending_images[key] = (upload.filename, data)
             except module_config.ConfigError as e:
                 errors[key] = str(e)
 
         if not errors:
+            for key, image in pending_images.items():
+                if image is None:
+                    await module_config.remove_image(guild_id, module, key)
+                else:
+                    await module_config.replace_image(guild_id, module, key, *image)
             if updates:
                 await module_config.set_values(guild_id, module, updates)
             return redirect(
