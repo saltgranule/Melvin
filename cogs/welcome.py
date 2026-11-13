@@ -26,7 +26,7 @@ MODULE = Module(
         Setting(
             "message",
             "Message",
-            "Use {member} to mention the new member and {member_count} for the member count. "
+            "Use {member} to mention the new member, {member_name} for member's display name and {member_count} for the member count. "
             "Separate several messages with $ and one is picked at random for each join.",
             "text",
             default="Welcome, {member}!",
@@ -129,6 +129,7 @@ def _build_welcome_ui(
 ) -> tuple[ResponseUI, discord.File | None]:
     message = random.choice(split_messages(values["message"] or ""))
     text = message.replace("{member}", target_member.mention)
+    text = text.replace("{member_name}", target_member.display_name)
     guild = getattr(target_member, "guild", None)
     if guild is not None:
         text = text.replace("{member_count}", str(guild.member_count))
