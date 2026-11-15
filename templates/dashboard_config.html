@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% from "_icons.html" import icon %}
 {% from "_banner.html" import banner %}
 {% from "_dropdown.html" import dropdown %}
 {% block content %}
@@ -7,10 +6,7 @@
     {% include "_dashboard_sidebar.html" %}
 
     <main class="dashboard-main">
-        <a href="{{ url_for('dashboard.modules', guild_id=guild.id) }}" class="dashboard-back">
-            {{ icon("arrow-circle-left", 14) }}
-            Modules
-        </a>
+        <a href="{{ url_for('dashboard.modules', guild_id=guild.id) }}" class="dashboard-back">Modules</a>
         <h1 class="status-heading">{{ module.label}} settings</h1>
         <p class="dashboard-notice">{{ module.description }} You can also change these with /{{ module.key }} config in Discord.</p>
 

@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% from "_icons.html" import icon %}
 {% from "_banner.html" import banner %}
 {% block meta_tags %}
     <meta property="og:title" content="Status">
@@ -61,7 +60,7 @@
             {"label": "User Count", "value": metrics.member_count},
             {"label": "Commands Ran", "value": metrics.command_count},
         ] %}
-        <div class="status-card is-plain">
+        <div class="status-card">
             <div class="status-card-header">
                 <div class="status-card-row">
                     <span class="status-shard-label">{{ card.label }}</span>
@@ -86,31 +85,19 @@
         </p>
         <div class="hero-cta">
             <a href="{{ links.invite }}" class="btn btn-dark">Support Server</a>
-            <a href="/docs" class="docs-search">
-                {{ icon("magnifying-glass", 14, "docs-search-icon") }}
-                <span class="docs-search-input docs-search-fake-input">Search docs...</span>
-                <kbd class="docs-search-kbd">/</kbd>
-            </a>
         </div>
     </div>
 
     <div class="hero-logo-wrap">
-        <img src="{{ url_for('static', filename='media/MelvinLogo.png') }}" alt="" class="hero-logo">
+        <picture>
+            <source srcset="{{ url_for('static', filename='media/melvin-logo-512.png') }}" media="(prefers-reduced-motion: reduce)">
+            <img src="{{ url_for('static', filename='media/melvin-logo-wobble-440.webp') }}" alt="" class="hero-logo" width="440" height="440" loading="lazy">
+        </picture>
     </div>
 </section>
 
 <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
 <script>
-    document.addEventListener("keydown", function (event) {
-        var isTypingElsewhere = ["INPUT", "TEXTAREA"].indexOf(document.activeElement.tagName) !== -1;
-        var isCmdK = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
-        var isSlash = event.key === "/" && !isTypingElsewhere;
-        if (isCmdK || isSlash) {
-            event.preventDefault();
-            window.location.href = "/docs";
-        }
-    });
-
     (function () {
         // swap in fresh numbers every minute, but never while someone is reading a tooltip
         setInterval(function () {

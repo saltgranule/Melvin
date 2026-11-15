@@ -223,6 +223,7 @@ def _fetch_guilds(access_token: str, user_id: str, sid_hash: str) -> list[dict]:
             "id": guild["id"],
             "name": guild["name"],
             "icon": guild.get("icon"),
+            "banner": guild.get("banner"),
             "owner": bool(guild.get("owner")),
             "permissions": int(guild.get("permissions", 0)),
         }
@@ -448,6 +449,7 @@ def _with_bot_guilds(guilds: list[dict]) -> list[dict]:
                     "id": guild["id"],
                     "name": guild["name"],
                     "icon": guild.get("icon"),
+                    "banner": guild.get("banner"),
                     "owner": False,
                     "permissions": 0,
                 },
@@ -471,6 +473,12 @@ def guild_icon_url(guild: dict) -> str | None:
     return f"{DISCORD_CDN}/icons/{guild['id']}/{guild['icon']}.png?size=96"
 
 
+def guild_banner_url(guild: dict) -> str | None:
+    if not guild.get("banner"):
+        return None
+    return f"{DISCORD_CDN}/banners/{guild['id']}/{guild['banner']}.png?size=480"
+
+
 def user_avatar_url(user: dict) -> str:
     if user.get("avatar"):
         return f"{DISCORD_CDN}/avatars/{user['id']}/{user['avatar']}.png?size=64"
@@ -487,6 +495,7 @@ def _guild_header(guild: dict) -> dict:
         "id": guild["id"],
         "name": guild["name"],
         "icon_url": guild_icon_url(guild),
+        "banner_url": guild_banner_url(guild),
         "initials": initials(guild["name"]),
     }
 
@@ -495,13 +504,13 @@ def _guild_header(guild: dict) -> dict:
 @bp.route("/")
 def index() -> str:
     if current_session() is None:
-        return render_template("dashboard_login.html", active="dashboard", error=None)
+        return render_template("login.html", active="dashboard", error=None)
 
     try:
         guilds = manageable_guilds()
     except DiscordError:
         return render_template(
-            "dashboard_login.html",
+            "login.html",
             active="dashboard",
             error="Couldn't reach Discord to load your servers, please try again.",
         )
@@ -531,7 +540,7 @@ def login() -> str | Response:
             "Dashboard login needs DISCORD_CLIENT_SECRET and DASHBOARD_REDIRECT_URI",
         )
         return render_template(
-            "dashboard_login.html",
+            "login.html",
             active="dashboard",
             error="The dashboard isn't set up yet.",
         )
@@ -558,7 +567,7 @@ def callback() -> str | Response:
     state = request.args.get("state", "")
     if not expected_state or not secrets.compare_digest(state, expected_state):
         return render_template(
-            "dashboard_login.html",
+            "login.html",
             active="dashboard",
             error="That login link expired, please try again.",
         )
@@ -567,7 +576,7 @@ def callback() -> str | Response:
     if not code:
         # discord sends an error instead of a code when the user cancels
         return render_template(
-            "dashboard_login.html",
+            "login.html",
             active="dashboard",
             error="Login was cancelled.",
         )
@@ -588,7 +597,7 @@ def callback() -> str | Response:
     except DiscordError, KeyError:
         log.exception("Dashboard login failed")
         return render_template(
-            "dashboard_login.html",
+            "login.html",
             active="dashboard",
             error="Couldn't log you in with Discord, please try again.",
         )

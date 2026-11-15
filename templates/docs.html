@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% from "_icons.html" import icon %}
 {% block meta_tags %}
     <meta property="og:title" content="Documentation">
     <meta property="og:description" content="A page dedicated to documentation for melvin.">
@@ -15,7 +14,6 @@
 <div class="docs-layout">
     <aside class="docs-sidebar">
         <div class="docs-search">
-            {{ icon("magnifying-glass", 14, "docs-search-icon") }}
             <input type="text" id="docs-search-input" class="docs-search-input" placeholder="Search docs..." autocomplete="off"
                    role="combobox" aria-label="Search docs" aria-autocomplete="list" aria-controls="docs-list" aria-expanded="false">
             <kbd class="docs-search-kbd">/</kbd>
@@ -39,10 +37,7 @@
 
         <div class="docs-notice">
             <p>You can contribute to the documentation in our repo, which you can find below.</p>
-            <a href="{{ links.github }}" class="btn btn-dark">
-            {{ icon("github-logo") }}
-            GitHub
-            </a>
+            <a href="{{ links.github }}" class="btn btn-dark">GitHub</a>
         </div>
     </aside>
 
