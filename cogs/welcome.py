@@ -27,7 +27,7 @@ MODULE = Module(
         Setting(
             "message",
             "Message",
-            "Use {member} to mention the new member, {member_name} for member's display name and {member_count} for the member count. "
+            "Use {member} to mention the new member, {member_name} for the display name, {member_count} for the member count, {member_no_ping} for a non‑pinging mention, {member_created} for the account creation date, {member_username} for the username, and {server_name} for the server name. "
             "Separate several messages with $ and one is picked at random for each join.",
             "text",
             default="Welcome, {member}!",
