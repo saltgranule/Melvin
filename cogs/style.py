@@ -10,7 +10,7 @@ import module_config
 import module_settings
 from globals import (
     LOG_CHANNEL,
-    MELVIN_BANNER,
+    MELVIN_JOINED_BANNER,
     DisplayNameEffect,
     DisplayNameFont,
 )
@@ -172,7 +172,7 @@ class StyleCog(
                     f"**Melvin was just added to {guild.name}.**\n"
                     f"Now in **{len(self.bot.guilds)}** guild(s).",
                 ),
-                GalleryWithItem(MELVIN_BANNER),
+                GalleryWithItem(MELVIN_JOINED_BANNER),
             ),
         )
         try:

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_component_embed.html" import component_embed with context %}
 {% block meta_tags %}
     <meta property="og:title" content="Documentation">
     <meta property="og:description" content="A page dedicated to documentation for melvin.">
@@ -9,6 +10,7 @@
     <meta name="twitter:title" content="Documentation">
     <meta name="twitter:description" content="A page dedicated to documentation for melvin.">
     <meta name="twitter:image" content="{{ url_for('static', filename='media/DOG.jpg', _external=True) }}">
+    {{ component_embed("Documentation", "documentation for every melvin module and command.", url_for('static', filename='media/DOG.jpg', _external=True)) }}
 {% endblock %}
 {% block content %}
 <div class="docs-layout">

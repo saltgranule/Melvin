@@ -1,4 +1,5 @@
 {% from "_banner.html" import banner -%}
+{% from "_component_embed.html" import component_embed with context -%}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -48,6 +49,7 @@
     <meta name="twitter:title" content="Melvin">
     <meta name="twitter:description" content="a demonstration of community driven consistency towards the discord bot space. Open to contributions.">
     <meta name="twitter:image" content="{{ url_for('static', filename='media/OG.jpg', _external=True) }}">
+    {{ component_embed("Melvin", "an open source, community managed discord bot, stable and paywall free.", url_for('static', filename='media/OG.jpg', _external=True)) }}
     {% endblock %}
     {% block head %}{% endblock %}
 </head>

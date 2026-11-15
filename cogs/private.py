@@ -8,7 +8,7 @@ from discord.ext import commands
 
 import server_stats
 import site_banner
-from globals import LOG_CHANNEL, MELVIN_BANNER, MELVIN_MISC_EMOJI, QUATERNARY
+from globals import LOG_CHANNEL, MELVIN_LEFT_BANNER, MELVIN_MISC_EMOJI, QUATERNARY
 from ui import ErrorUI, GalleryWithItem, GatedUI, PositiveUI, SmallSeparator
 
 if TYPE_CHECKING:
@@ -199,7 +199,7 @@ class PrivateCog(
                     f"**Melvin was just removed from {_guild_label(guild)}.**\n"
                     f"Now in **{len(self.bot.guilds)}** guild(s).",
                 ),
-                GalleryWithItem(MELVIN_BANNER),
+                GalleryWithItem(MELVIN_LEFT_BANNER),
             ),
         )
 

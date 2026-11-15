@@ -43,7 +43,8 @@ INVITE_URL = "https://discord.gg/PfyKM7dyx4"
 ADD_BOT_URL = "https://discord.com/oauth2/authorize?client_id=1468362201197973756"
 MELVIN_GITHUB_URL = "https://github.com/saltgranule/Melvin"
 WEBSITE_URL = "https://justmelvin.site"
-MELVIN_BANNER = "https://cdn.discordapp.com/attachments/1537874702146469988/1541048056751849512/image.png?ex=6a8c2c58&is=6a8adad8&hm=a13f54c4349d9a4d2672fd6b90b544ca5b00d27964c28891d56a0e49e00cead1&"
+MELVIN_JOINED_BANNER = f"{WEBSITE_URL}/static/media/bot/joined.png"
+MELVIN_LEFT_BANNER = f"{WEBSITE_URL}/static/media/bot/left.png"
 
 # messages
 ERROR_MESSAGE = f"**Something went wrong with that. Please [join the support server]({INVITE_URL}) to report this issue.**"

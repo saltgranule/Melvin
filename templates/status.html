@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_component_embed.html" import component_embed with context %}
 {% from "_banner.html" import banner %}
 {% block meta_tags %}
     <meta property="og:title" content="Status">
@@ -10,6 +11,7 @@
     <meta name="twitter:title" content="Status">
     <meta name="twitter:description" content="A page dedicated to latency information regarding melvin.">
     <meta name="twitter:image" content="{{ url_for('static', filename='media/SOG.jpg', _external=True) }}">
+    {{ component_embed("Status", "view melvin's current status, and stuff.", url_for('static', filename='media/SOG.jpg', _external=True)) }}
 {% endblock %}
 {% block content %}
 <section class="section-container status-section" id="status-section">

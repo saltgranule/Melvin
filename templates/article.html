@@ -1,13 +1,19 @@
 {% extends "base.html" %}
+{% from "_component_embed.html" import component_embed with context %}
 {% from "_articles.html" import thumb, meta %}
 {% block meta_tags %}
+    {% set share_image = article.thumbnail if article.thumbnail.startswith('http') else url_for('static', filename=article.thumbnail or 'media/OG.jpg', _external=True) %}
     <meta property="og:type" content="article">
+    <meta property="og:image" content="{{ share_image }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="{{ share_image }}">
     <meta property="og:title" content="{{ article.title }}">
     <meta property="og:description" content="{{ article.summary }}">
     <meta property="og:url" content="{{ request.url }}">
     <meta name="theme-color" content="{{ theme.primary }}">
     <meta name="twitter:title" content="{{ article.title }}">
     <meta name="twitter:description" content="{{ article.summary }}">
+    {{ component_embed(article.title, article.summary, share_image) }}
 {% endblock %}
 {% block content %}
 <div class="docs-layout legal-layout">
