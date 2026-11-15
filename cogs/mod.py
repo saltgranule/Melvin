@@ -26,6 +26,33 @@ MODULE = Module(
             permission="manage_roles",
             group="Roles",
         ),
+        Setting(
+            "age_gate",
+            "Account age gate",
+            "Kick members whose Discord account is younger than the minimum age. Needs Kick Members.",
+            "choice",
+            default="off",
+            choices=(("off", "Off"), ("on", "On")),
+            group="Account age",
+        ),
+        Setting(
+            "min_account_age",
+            "Minimum account age",
+            "How old an account has to be to join.",
+            "choice",
+            default="7d",
+            # i wasn't sure what to do here, so here's a nice list of choices, that i think make sense for age gating.
+            choices=(
+                ("1h", "1 hour"),
+                ("12h", "12 hours"),
+                ("1d", "1 day"),
+                ("3d", "3 days"),
+                ("7d", "7 days"),
+                ("14d", "14 days"),
+                ("30d", "30 days"),
+            ),
+            group="Account age",
+        ),
     ),
 )
 
@@ -148,13 +175,29 @@ class ModCog(
         action: str,
         reason: str,
     ) -> int:
+        return await self._insert_case(
+            interaction.guild_id,
+            user_id,
+            interaction.user.id,
+            action,
+            reason,
+        )
+
+    async def _insert_case(
+        self,
+        guild_id: int,
+        user_id: int,
+        mod_id: int,
+        action: str,
+        reason: str,
+    ) -> int:
         async with aiosqlite.connect(self.db_path) as conn:
             cursor = await conn.execute(
                 """
                 INSERT INTO mod_cases (guild_id, user_id, mod_id, action_type, reason)
                 VALUES (?, ?, ?, ?, ?)
                 """,
-                (interaction.guild_id, user_id, interaction.user.id, action, reason),
+                (guild_id, user_id, mod_id, action, reason),
             )
             await conn.commit()
             return cursor.lastrowid
@@ -170,18 +213,27 @@ class ModCog(
         action: str,
         **details: object,
     ) -> None:
+        if interaction.guild is None:
+            return
+        await self._log_moderation(
+            interaction.guild,
+            interaction.user,
+            action,
+            **details,
+        )
+
+    async def _log_moderation(
+        self,
+        guild: discord.Guild,
+        moderator: discord.abc.User,
+        action: str,
+        **details: object,
+    ) -> None:
         audit = self.bot.get_cog("audit")
         if audit is None:
             log.warning("Audit cog is not loaded; %s was not logged.", action)
             return
-        if interaction.guild is None:
-            return
-        await audit.log_moderation(
-            interaction.guild,
-            action,
-            moderator=interaction.user,
-            **details,
-        )
+        await audit.log_moderation(guild, action, moderator=moderator, **details)
 
     async def handle_dm(
         self,
@@ -207,7 +259,11 @@ class ModCog(
         if not await module_settings.is_enabled(member.guild.id, "mod"):
             return
 
-        role_id = await module_config.get(member.guild.id, "mod", "auto_role")
+        config = await module_config.get_all(member.guild.id, "mod")
+        if await self._gate_account_age(member, config):
+            return
+
+        role_id = config["auto_role"]
         role = member.guild.get_role(int(role_id)) if role_id else None
         if role is None:
             return
@@ -216,6 +272,67 @@ class ModCog(
             await member.add_roles(role, reason="/mod config auto-role")
         except discord.HTTPException:
             pass
+
+    async def _gate_account_age(
+        self,
+        member: discord.Member,
+        config: dict[str, str | None],
+    ) -> bool:
+        if member.bot or config["age_gate"] != "on":
+            return False
+
+        min_age = config["min_account_age"]
+        seconds = durations.parse_duration(min_age or "")
+        if not seconds:
+            return False
+        rejoin_at = member.created_at + datetime.timedelta(seconds=seconds)
+        if rejoin_at <= discord.utils.utcnow():
+            return False
+
+        guild = member.guild
+        perms = guild.me.guild_permissions
+        if not (perms.administrator or perms.kick_members):
+            log.warning(
+                "Account age gate in guild %s skipped %s: missing Kick Members.",
+                guild.id,
+                member.id,
+            )
+            return False
+
+        label = module_config.choice_label(
+            module_config.get_setting("mod", "min_account_age"),
+            min_age,
+        )
+        reason = (
+            f"Account younger than {label}, "
+            f"can rejoin {discord.utils.format_dt(rejoin_at, style='R')}"
+        )
+        case_id = await self._insert_case(
+            guild.id,
+            member.id,
+            guild.me.id,
+            "kick",
+            reason,
+        )
+        await self.handle_dm(member, "kick", case_id, guild.name, reason)
+        try:
+            await member.kick(
+                reason=f"Account age gate, account younger than {label}",
+            )
+        except discord.HTTPException:
+            log.exception("Account age gate kick failed")
+            await self._delete_case(case_id)
+            return False
+
+        await self._log_moderation(
+            guild,
+            guild.me,
+            "kick",
+            target=member,
+            reason=reason,
+            case_id=case_id,
+        )
+        return True
 
     @cases.command(
         name="view",
