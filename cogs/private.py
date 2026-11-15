@@ -193,7 +193,13 @@ class PrivateCog(
         if channel is None:
             return
         if guild.unavailable:
-            await self._log(channel,discord.ui.Container(discord.ui.TextDisplay(f"if this fires then this would be the issue {guild.id}")))
+            await self._log(
+                test_channel,
+                discord.ui.Container(
+                    discord.ui.TextDisplay(
+                        f"if this fires then this would be the issue {guild.id}",
+                    ),
+                )
             return
         await self._log(
             channel,
