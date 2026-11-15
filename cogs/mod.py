@@ -113,12 +113,7 @@ def _action_error(
     if not (perms.administrator or getattr(perms, permission)):
         label = BOT_PERMISSION_LABELS[permission]
         return f"I lack the {label} permission required to {verb} members."
-    if error := _target_error(interaction, member, verb):
-        return error
-    can_act = member.kickable if verb == "kick" else member.bannable
-    if not can_act:
-        return f"I tried to {verb} someone I don't have permission to act on."
-    return None
+    return _target_error(interaction, member, verb)
 
 
 def _role_error(interaction: discord.Interaction, role: discord.Role) -> str | None:
