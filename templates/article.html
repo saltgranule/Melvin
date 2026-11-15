@@ -22,6 +22,18 @@
         <h1 class="article-title">{{ article.title }}</h1>
         {{ meta(article) }}
         {{ thumb(article, "article-hero") }}
+        {% if article.contributors %}
+        <div class="repo-meta article-contributors">
+            <div class="repo-contributors" role="group" aria-label="Contributors">
+                {% for login in article.contributors %}
+                <a href="https://github.com/{{ login }}" class="repo-avatar" title="{{ login }}">
+                    <img src="https://github.com/{{ login }}.png?size=64" alt="{{ login }}" loading="lazy">
+                </a>
+                {% endfor %}
+            </div>
+            <span class="bot-stats">Thanks to {{ article.contributors | join(", ") }}</span>
+        </div>
+        {% endif %}
         {{ article.content | safe }}
     </main>
 

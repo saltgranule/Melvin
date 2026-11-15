@@ -57,6 +57,8 @@ def _parse(path: Path, _mtime: float) -> dict:
         "date_label": f"{date.day} {date:%B %Y}" if date else "",
         "summary": meta.get("summary", ""),
         "thumbnail": meta.get("thumbnail", ""),
+        # special contrib list for changelog articles
+        "contributors": [c.strip() for c in meta.get("contributors", "").split(",") if c.strip()],
         "minutes": max(1, math.ceil(len(body.split()) / WORDS_PER_MINUTE)),
         "content": content,
         "headings": headings,

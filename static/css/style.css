@@ -2233,6 +2233,11 @@ textarea.dashboard-input {
     border-radius: 16px;
 }
 
+.article-contributors {
+    gap: 14px;
+    margin: -12px 0 28px;
+}
+
 html body :is(h1, h2, h3, h4, h5, h6, .docs-toc-title) {
     font-family: "Geist Serif", Georgia, serif;
     font-weight: 400;
