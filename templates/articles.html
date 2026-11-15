@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_articles.html" import thumb, meta %}
+{% block content %}
+<section class="section-container articles-page">
+    <h1 class="status-heading">Articles</h1>
+    <p class="articles-intro">Things about Melvin worth talking about, from how it's built to where it's going.</p>
+
+    {% if articles %}
+    <ul class="articles-grid">
+        {% for article in articles %}
+        <li>
+            <a href="{{ url_for('article_page', slug=article.slug) }}" class="article-card">
+                {{ thumb(article) }}
+                <span class="article-card-body">
+                    <span class="article-card-title">{{ article.title }}</span>
+                    {% if article.summary %}<span class="article-card-summary">{{ article.summary }}</span>{% endif %}
+                    {{ meta(article) }}
+                </span>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="status-card-empty">No articles yet, check back soon.</div>
+    {% endif %}
+</section>
+{% endblock %}

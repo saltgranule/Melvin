@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "_articles.html" import thumb, meta %}
+{% block meta_tags %}
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="{{ article.title }}">
+    <meta property="og:description" content="{{ article.summary }}">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta name="theme-color" content="{{ theme.primary }}">
+    <meta name="twitter:title" content="{{ article.title }}">
+    <meta name="twitter:description" content="{{ article.summary }}">
+{% endblock %}
+{% block content %}
+<div class="docs-layout legal-layout">
+    <main class="docs-content article-content">
+        <a href="{{ url_for('articles_index') }}" class="dashboard-back">All articles</a>
+        <h1 class="article-title">{{ article.title }}</h1>
+        {{ meta(article) }}
+        {{ thumb(article, "article-hero") }}
+        {{ article.content | safe }}
+    </main>
+
+    {% if article.headings %}
+    <aside class="docs-toc" aria-label="On this page">
+        <p class="docs-toc-title">On this page</p>
+        <ul class="docs-toc-list">
+            {% for heading in article.headings %}
+            <li>
+                <a href="#{{ heading.id }}" class="docs-toc-link {{ 'is-sub' if heading.level == 3 else '' }}">{{ heading.name }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </aside>
+    {% endif %}
+</div>
+<script src="{{ url_for('static', filename='js/toc.js') }}"></script>
+{% endblock %}

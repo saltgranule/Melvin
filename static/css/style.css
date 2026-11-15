@@ -979,6 +979,16 @@ a {
     transform: rotate(-90deg);
 }
 
+.nav-menu-panel.nav-menu-articles {
+    width: 240px;
+}
+
+.nav-menu-article {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .nav-menu-panel {
     right: auto;
     left: 50%;
@@ -1849,6 +1859,8 @@ textarea.dashboard-input {
 @supports (clip-path: shape(from 0 0, line to 1px 1px)) {
     .btn,
     .login-art-image,
+    .article-hero,
+    .login-article-thumb,
     .dashboard-switch,
     .dashboard-range {
         --squircle: 14px;
@@ -1884,8 +1896,13 @@ textarea.dashboard-input {
         --squircle: 20px;
     }
 
-    .login-art-image {
+    .login-art-image,
+    .article-hero {
         --squircle: 44px;
+    }
+
+    .login-article-thumb {
+        --squircle: 18px;
     }
 
     .btn-small {
@@ -2027,6 +2044,193 @@ textarea.dashboard-input {
         padding: 20px 16px;
     }
 
+}
+
+.login-body.has-articles {
+    --card-gap: 40px;
+    --card-w: clamp(340px, min((100vh - 236px) * 0.8, (100vw - 176px) / 3), 420px);
+    --content-w: calc(3 * var(--card-w) + 2 * var(--card-gap));
+}
+
+.login-articles {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+}
+
+.login-articles-title {
+    font-size: 28px;
+}
+
+.login-articles-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.login-article {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 8px;
+    margin: 0 -8px;
+    border-radius: 12px;
+    color: var(--text);
+    text-decoration: none;
+    transition: background-color 120ms ease, border-radius 220ms ease;
+}
+
+.login-article:hover {
+    background: color-mix(in srgb, var(--surface) 50%, var(--bg));
+    border-radius: 0;
+}
+
+.login-article-thumb {
+    flex: 0 0 auto;
+    width: 76px;
+    height: 56px;
+    border-radius: 10px;
+}
+
+.login-article-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.login-article-name {
+    font-family: "Geist Serif", Georgia, serif;
+    font-size: 16px;
+    line-height: 1.3;
+}
+
+.login-article-date,
+.login-articles-empty {
+    color: var(--text-subtle);
+    font-size: 13px;
+}
+
+.login-articles-all {
+    align-self: flex-start;
+}
+
+@media (max-width: 1259px) {
+    .login-articles {
+        display: none;
+    }
+
+    .login-body.has-articles {
+        --card-gap: 56px;
+        --card-w: clamp(360px, (100vh - 236px) * 0.8, 420px);
+        --content-w: calc(2 * var(--card-w) + var(--card-gap));
+    }
+}
+
+.article-thumb {
+    display: block;
+    object-fit: cover;
+    background-color: var(--surface);
+}
+
+.article-thumb.is-paper {
+    background-color: var(--primary);
+    background-image: url("../media/paper-grain.png");
+    background-size: 128px;
+    background-blend-mode: soft-light;
+}
+
+.article-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    color: var(--text-subtle);
+    font-size: 13px;
+}
+
+.articles-page {
+    padding-top: 40px;
+    padding-bottom: 64px;
+}
+
+.articles-intro {
+    color: var(--text-muted);
+    font-size: 15px;
+    margin: -8px 0 28px;
+}
+
+.articles-grid {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+.article-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: color-mix(in srgb, var(--surface) 50%, var(--bg));
+    color: var(--text);
+    text-decoration: none;
+    transition: background-color 120ms ease;
+}
+
+.article-card:hover {
+    background: var(--surface);
+}
+
+.article-card .article-thumb {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+}
+
+.article-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px 18px 18px;
+}
+
+.article-card-title {
+    font-family: "Geist Serif", Georgia, serif;
+    font-size: 22px;
+    line-height: 1.25;
+}
+
+.article-card-summary {
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.article-content .dashboard-back {
+    margin-bottom: 18px;
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+.article-content .dashboard-back:hover {
+    color: var(--text);
+}
+
+.article-title {
+    font-size: 38px;
+    line-height: 1.15;
+    margin-bottom: 10px;
+}
+
+.article-content .article-meta {
+    margin-bottom: 24px;
+}
+
+.article-hero {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    margin-bottom: 28px;
+    border-radius: 16px;
 }
 
 html body :is(h1, h2, h3, h4, h5, h6, .docs-toc-title) {

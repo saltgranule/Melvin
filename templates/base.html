@@ -64,6 +64,19 @@
         <div class="navbar-links">
             <a href="/" class="navbar-link {{ 'is-active' if active == 'home' else '' }}">Home</a>
             <details class="nav-menu">
+                <summary class="navbar-link nav-menu-toggle {{ 'is-active' if active == 'articles' else '' }}">
+                    Articles<span class="nav-menu-chevron" aria-hidden="true">&gt;</span>
+                </summary>
+                <div class="user-menu-panel nav-menu-panel nav-menu-articles">
+                    <div class="user-menu-actions">
+                        {% for article in recent_articles() %}
+                        <a href="{{ url_for('article_page', slug=article.slug) }}" class="user-menu-item nav-menu-article">{{ article.title }}</a>
+                        {% endfor %}
+                        <a href="{{ url_for('articles_index') }}" class="user-menu-item">All articles</a>
+                    </div>
+                </div>
+            </details>
+            <details class="nav-menu">
                 <summary class="navbar-link nav-menu-toggle {{ 'is-active' if active in ('docs', 'status', 'donations') else '' }}">
                     Resources<span class="nav-menu-chevron" aria-hidden="true">&gt;</span>
                 </summary>

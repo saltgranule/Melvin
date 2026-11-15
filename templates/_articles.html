@@ -1,0 +1,16 @@
+{% macro thumb(article, class="") -%}
+{% if article.thumbnail %}
+<img src="{{ article.thumbnail if article.thumbnail.startswith('http') else url_for('static', filename=article.thumbnail) }}"
+     alt="" class="article-thumb {{ class }}" loading="lazy">
+{% else %}
+<span class="article-thumb is-paper {{ class }}" aria-hidden="true"></span>
+{% endif %}
+{%- endmacro %}
+
+{% macro meta(article) -%}
+<p class="article-meta">
+    {% if article.author %}<span>{{ article.author }}</span>{% endif %}
+    {% if article.date_label %}<time datetime="{{ article.date.isoformat() }}">{{ article.date_label }}</time>{% endif %}
+    <span>{{ article.minutes }} min read</span>
+</p>
+{%- endmacro %}

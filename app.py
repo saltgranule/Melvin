@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from flask import Flask, Response, abort, redirect, render_template, url_for
 from werkzeug.exceptions import HTTPException
 
+import articles
 import dashboard
 import site_banner
 import http_client
@@ -154,6 +155,7 @@ def inject_globals() -> dict:
         # called by the login page, which several routes render
         "bot_stats": get_bot_stats,
         "repo_meta": get_repo_meta,
+        "recent_articles": lambda: articles.all_articles()[:3],
         "site_banner": site_banner.load(),
     }
 
@@ -275,6 +277,19 @@ def home() -> str | Response:
 @app.route("/donations")
 def donations() -> str:
     return render_template("donations.html", active="donations")
+
+
+@app.route("/articles")
+def articles_index() -> str:
+    return render_template("articles.html", active="articles", articles=articles.all_articles())
+
+
+@app.route("/articles/<slug>")
+def article_page(slug: str) -> str:
+    article = articles.get(slug)
+    if article is None:
+        abort(404)
+    return render_template("article.html", active="articles", article=article)
 
 
 @app.route("/docs")
