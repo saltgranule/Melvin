@@ -755,12 +755,14 @@ class ToolCog(
 
     @app_commands.command(name="reminders", description="List your reminders.")
     async def reminders(self, interaction: discord.Interaction) -> None:
-        async with aiosqlite.connect(self.db_path) as conn:
-            async with conn.execute(
+        async with (
+            aiosqlite.connect(self.db_path) as conn,
+            conn.execute(
                 "SELECT id, due_at, message FROM reminders WHERE user_id = ? ORDER BY due_at",
                 (interaction.user.id,),
-            ) as cursor:
-                rows = await cursor.fetchall()
+            ) as cursor,
+        ):
+            rows = await cursor.fetchall()
 
         if not rows:
             await interaction.response.send_message(

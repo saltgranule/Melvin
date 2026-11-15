@@ -401,12 +401,13 @@ class AuditCog(
                     else None,
                     allowed_mentions=discord.AllowedMentions.none(),
                 )
-                return
             except discord.NotFound:
                 async with self._webhook_lock(channel.guild.id, category):
                     await self._clear_webhook_row(channel.guild.id, category)
             except discord.HTTPException:
                 log.warning("Couldn't send audit log to channel %s", channel.id)
+                return
+            else:
                 return
 
     async def _log(

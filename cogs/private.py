@@ -104,7 +104,10 @@ class PrivateCog(
         await interaction.response.send_message(view=GatedUI(), ephemeral=True)
         return False
 
-    @banner.command(name="set", description="Show a message above the website's navbar.")
+    @banner.command(
+        name="set",
+        description="Show a message above the website's navbar.",
+    )
     @app_commands.describe(
         text="What the banner says.",
         type="Primary is orange, positive is green, negative is red. Keeps the current type if left out.",
@@ -114,7 +117,7 @@ class PrivateCog(
         self,
         interaction: discord.Interaction,
         text: app_commands.Range[str, 1, site_banner.MAX_LENGTH],
-        type: app_commands.Choice[str] | None = None,  # noqa: A002
+        type: app_commands.Choice[str] | None = None,  # ruff: ignore[builtin-argument-shadowing]
     ) -> None:
         if not await self._owner_only(interaction):
             return
@@ -129,20 +132,27 @@ class PrivateCog(
             ephemeral=True,
         )
 
-    @banner.command(name="type", description="Change the colour of the website's banner.")
-    @app_commands.describe(type="Primary is orange, positive is green, negative is red.")
+    @banner.command(
+        name="type",
+        description="Change the colour of the website's banner.",
+    )
+    @app_commands.describe(
+        type="Primary is orange, positive is green, negative is red.",
+    )
     @app_commands.choices(type=BANNER_TYPE_CHOICES)
     async def banner_type(
         self,
         interaction: discord.Interaction,
-        type: app_commands.Choice[str],  # noqa: A002
+        type: app_commands.Choice[str],  # ruff: ignore[builtin-argument-shadowing]
     ) -> None:
         if not await self._owner_only(interaction):
             return
         current = site_banner.load()
         if current is None:
             await interaction.response.send_message(
-                view=ErrorUI("**There's no banner yet. Set one with /private banner set first.**"),
+                view=ErrorUI(
+                    "**There's no banner yet. Set one with /private banner set first.**",
+                ),
                 ephemeral=True,
             )
             return

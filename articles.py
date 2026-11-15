@@ -42,7 +42,9 @@ def _parse(path: Path, _mtime: float) -> dict:
 
     headings = []
     for token in md.toc_tokens:
-        headings.append({"id": token["id"], "name": html.unescape(token["name"]), "level": 2})
+        headings.append(
+            {"id": token["id"], "name": html.unescape(token["name"]), "level": 2},
+        )
         headings.extend(
             {"id": child["id"], "name": html.unescape(child["name"]), "level": 3}
             for child in token["children"]
@@ -51,14 +53,17 @@ def _parse(path: Path, _mtime: float) -> dict:
     date = _date(meta.get("date", ""))
     return {
         "slug": path.stem,
-        "title": meta.get("title") or path.stem.replace("-", " ").replace("_", " ").title(),
+        "title": meta.get("title")
+        or path.stem.replace("-", " ").replace("_", " ").title(),
         "author": meta.get("author", ""),
         "date": date,
         "date_label": f"{date.day} {date:%B %Y}" if date else "",
         "summary": meta.get("summary", ""),
         "thumbnail": meta.get("thumbnail", ""),
         # special contrib list for changelog articles
-        "contributors": [c.strip() for c in meta.get("contributors", "").split(",") if c.strip()],
+        "contributors": [
+            c.strip() for c in meta.get("contributors", "").split(",") if c.strip()
+        ],
         "minutes": max(1, math.ceil(len(body.split()) / WORDS_PER_MINUTE)),
         "content": content,
         "headings": headings,
@@ -73,7 +78,11 @@ def _paths() -> list[Path]:
 
 def all_articles() -> list[dict]:
     articles = [_parse(p, p.stat().st_mtime) for p in _paths()]
-    return sorted(articles, key=lambda a: (a["date"] or datetime.date.min, a["title"]), reverse=True)
+    return sorted(
+        articles,
+        key=lambda a: (a["date"] or datetime.date.min, a["title"]),
+        reverse=True,
+    )
 
 
 def get(slug: str) -> dict | None:
