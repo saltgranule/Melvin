@@ -15,8 +15,7 @@ Welcome messages have a lot more to work with now.
 - {member_name}, {member_username}, {member_no_ping}, {member_created} and {server_name} placeholders, thanks to Fantastic Fanta
 - join messages only ping the member if the message actually uses {member}
 - placeholders are filled in a single pass, so a display name containing a placeholder no longer gets expanded twice, also Fanta
-- {date_long}, {date_short} and {date_relative} placeholders, plus every [discord timestamp style](https://discord.com/developers/docs/reference#message-formatting-timestamp-styles) (f, F, d, D, t, T, s, S, R), thanks to Kajii, with the timestamp idea suggested by FinestPerfectionism
-- dates are now taken from when the member joined, rather than when melvin started, also Kajii
+- {date_t} through {date_R} placeholders, one for every [discord timestamp style](https://discord.com/developers/docs/reference#message-formatting-timestamp-styles) (f, F, d, D, t, T, s, S, R), thanks to Kajii, with the timestamp idea suggested by FinestPerfectionism
 
 ### branding
 

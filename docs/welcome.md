@@ -38,8 +38,24 @@ These are replaced in the message text when it is sent.
 
 | Placeholder | Replaced with |
 |------|------|
-| `{member}` | A mention of the new member. |
+| `{member}` | A mention of the new member. Only this placeholder pings them. |
+| `{member_no_ping}` | A mention of the new member that doesn't ping them. |
+| `{member_name}` | The member's display name. |
+| `{member_username}` | The member's username. |
+| `{member_created}` | When the member's account was created, as relative time, eg. 3 years ago. |
 | `{member_count}` | The guild's member count. |
+| `{server_name}` | The guild's name. |
+| `{date_t}` | Short time, eg. 11:20. |
+| `{date_T}` | Time with seconds, eg. 11:20:30. |
+| `{date_d}` | Short date, eg. 01/01/2020. |
+| `{date_D}` | Long date, eg. January 1, 2020. |
+| `{date_f}` | Date and time, eg. January 1, 2020 at 11:30. |
+| `{date_F}` | Full date and time, eg. Wednesday, January 1, 2020 at 11:30. |
+| `{date_s}` | Short date and time, eg. 01/01/2020, 11:30. |
+| `{date_S}` | Short date and time with seconds, eg. 01/01/2020, 11:30:30. |
+| `{date_R}` | Relative time, eg. 5 minutes ago. |
+
+The `{date_...}` placeholders use the time the member joined, and are shown in each reader's own timezone. They use [Discord's timestamp styles](https://discord.com/developers/docs/reference#message-formatting-timestamp-styles). Unknown placeholders are left as they are.
 
 ## /welcome preview
 Preview what the configured welcome notification looks like.
@@ -53,4 +69,4 @@ If no welcome channel is set, the command replies with an error message asking y
 Otherwise, the command replies with the welcome message exactly as a new member would see it, using the command user as the example member, without the select menu.
 
 ## Member joins
-When a member joins a guild with a welcome channel set, the bot sends the welcome message to that channel. Bots are skipped unless Bot welcomes is on. If the message contains several parts separated by `$`, one part is picked at random. If the bot can't post in the channel, the message is skipped silently.
+When a member joins a guild with a welcome channel set, the bot sends the welcome message to that channel. Bots are skipped unless Bot welcomes is on. If the message contains several parts separated by `$`, one part is picked at random. The member is only pinged if the message uses `{member}`. If the bot can't post in the channel, the message is skipped silently.
