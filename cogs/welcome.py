@@ -237,7 +237,7 @@ class WelcomeCog(
         await safe_finish(interaction, view, file=file)
 
     @commands.Cog.listener()
-    async def on_member_join(self, member: discord.Member) -> None:
+    async def on_member_admit(self, member: discord.Member) -> None:
         if not await module_settings.is_enabled(member.guild.id, "welcome"):
             return
 

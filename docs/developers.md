@@ -75,6 +75,8 @@ async def on_message(self, message: discord.Message) -> None:
 
 If every listener goes through the same lookup, put the check there once instead. The audit cog checks inside `get_log_channel`, since all 15 of its listeners call it.
 
+To act on new members, listen for `on_member_admit` instead of `on_member_join`. The mod cog sends it once a member has passed the account age gate, so members it kicks are skipped. Keep `on_member_join` for things that should see every join, like the audit log.
+
 Listeners that clean up after the bot leaves a guild, like `on_guild_remove`, should run whether the module is on or not.
 
 A module with no commands, like Server Stats, uses a plain `commands.Cog` instead, named after its module key. A GroupCog with no commands would show up in Discord as a command that does nothing. Its listeners still check `is_enabled` like any other module.

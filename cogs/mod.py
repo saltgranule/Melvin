@@ -256,14 +256,22 @@ class ModCog(
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
+        config = (
+            await module_config.get_all(member.guild.id, "mod")
+            if await module_settings.is_enabled(member.guild.id, "mod")
+            else None
+        )
+        if config is not None and await self._gate_account_age(member, config):
+            return
+
+        self.bot.dispatch("member_admit", member)
+
+    @commands.Cog.listener()
+    async def on_member_admit(self, member: discord.Member) -> None:
         if not await module_settings.is_enabled(member.guild.id, "mod"):
             return
 
-        config = await module_config.get_all(member.guild.id, "mod")
-        if await self._gate_account_age(member, config):
-            return
-
-        role_id = config["auto_role"]
+        role_id = await module_config.get(member.guild.id, "mod", "auto_role")
         role = member.guild.get_role(int(role_id)) if role_id else None
         if role is None:
             return
