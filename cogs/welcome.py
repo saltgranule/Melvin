@@ -12,8 +12,6 @@ from globals import DATA_DIR
 from module_registry import Module, Setting
 from ui import ErrorUI, GalleryWithItem, ResponseUI, open_config
 
-dt = discord.utils.utcnow();
-
 MODULE = Module(
     "welcome",
     "Welcome",
@@ -131,6 +129,8 @@ def _build_welcome_ui(
     values: dict[str, str | None],
     member: discord.Member,
 ) -> tuple[ResponseUI, discord.File | None]:
+    dt = member.joined_at or discord.utils.utcnow() # fallback
+    
     placeholders = {
         "member": member.mention,
         "member_no_ping": member.mention,
