@@ -48,12 +48,6 @@ LINK_BUTTONS = (
         "<:questionduotone:1548410071195844668>",
     ),
     ("Website", WEBSITE_URL, "<:browsersduotone:1548410087037477066>"),
-    ("Status", f"{WEBSITE_URL}/status", "<:browsersduotone:1548410087037477066>"),
-    (
-        "Github",
-        "https://github.com/saltgranule/melvin",
-        "<:githublogoduotone:1548410053382643723>",
-    ),
 )
 
 

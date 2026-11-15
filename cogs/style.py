@@ -51,7 +51,7 @@ MODULE = Module(
             "Font",
             "The font of Melvin's name in this server.",
             "choice",
-            default="cherry_bomb",
+            default="zilla_slab",
             choices=FONTS,
             group="Appearance",
         ),
@@ -60,7 +60,7 @@ MODULE = Module(
             "Effect",
             "The effect on Melvin's name in this server.",
             "choice",
-            default="gradient",
+            default="solid",
             choices=EFFECTS,
             group="Appearance",
         ),
@@ -69,7 +69,7 @@ MODULE = Module(
             "Colors",
             "One hex color, or up to five joined by dashes for Prism, Gradient, and Gummy, eg. F4A261-FFFFFF.",
             "color",
-            default="FFFFFF",
+            default="F4A261",
             placeholder="F4A261-FFFFFF",
             group="Appearance",
         ),
@@ -109,7 +109,7 @@ class StyleCog(
         if self._applied.get(guild.id) == key:
             return
 
-        colors = (values["colors"] or "FFFFFF").split("-")
+        colors = (values["colors"] or "F4A261").split("-")
         effect = DisplayNameEffect[values["effect"]]
 
         # Prism, Gradient, and Gummy accept up to 5 colors; everything else uses 1

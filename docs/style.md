@@ -20,9 +20,9 @@ The same settings can be changed from the dashboard on the website, under Config
 
 | Setting | Description |
 |------|--------------|
-| Font | Sakura, Jellybean, Modern, Medieval, 8Bit, Vampyre, GG Sans, Tempo, Monkey Bars, Mainframe, Headbang, or Journal. Defaults to Sakura. |
-| Effect | Solid, Gradient, Neon, Toon, Pop, Prism, or Gummy. Defaults to Gradient. |
-| Colors | One hex color like `F4A261`, or up to five joined by dashes like `F4A261-FFFFFF`. Defaults to white. With Prism, Gradient, and Gummy, up to five colors can be used. With any other effect, only the first color is used. |
+| Font | Sakura, Jellybean, Modern, Medieval, 8Bit, Vampyre, GG Sans, Tempo, Monkey Bars, Mainframe, Headbang, or Journal. Defaults to Tempo. |
+| Effect | Solid, Gradient, Neon, Toon, Pop, Prism, or Gummy. Defaults to Solid. |
+| Colors | One hex color like `F4A261`, or up to five joined by dashes like `F4A261-FFFFFF`. Defaults to `F4A261`, Melvin's orange. With Prism, Gradient, and Gummy, up to five colors can be used. With any other effect, only the first color is used. |
 
 Changes made in Discord apply straight away. Changes made on the dashboard apply within about 15 seconds. If Discord doesn't accept a change, it's retried automatically.
 
