@@ -18,8 +18,8 @@ from werkzeug.exceptions import HTTPException
 
 import articles
 import dashboard
-import site_banner
 import http_client
+import site_banner
 from globals import (
     ADD_BOT_URL,
     DATA_DIR,
@@ -273,6 +273,7 @@ def home() -> str | Response:
         return redirect(url_for("dashboard.index"))
     return render_template("login.html", active="home", error=None)
 
+
 # routes (probably shouldve labelled this sooner)
 @app.route("/donations")
 def donations() -> str:
@@ -281,7 +282,11 @@ def donations() -> str:
 
 @app.route("/articles")
 def articles_index() -> str:
-    return render_template("articles.html", active="articles", articles=articles.all_articles())
+    return render_template(
+        "articles.html",
+        active="articles",
+        articles=articles.all_articles(),
+    )
 
 
 @app.route("/articles/<slug>")

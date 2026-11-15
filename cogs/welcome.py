@@ -27,7 +27,7 @@ MODULE = Module(
         Setting(
             "message",
             "Message",
-            "Use {member} to mention the new member, {member_name} for the display name, {member_count} for the member count, {member_no_ping} for a non‑pinging mention, {member_created} for the account creation date, {member_username} for the username, {server_name} for the server name, {date_t} for short time (11:20), {date_T} for time with seconds (11:20:30), {date_d} for short date (01/01/2020), {date_D} for long date (January 1, 2020), {date_f} for date and time (January 1, 2020 at 11:30), {date_F} for full date and time (Wednesday, January 1, 2020 at 11:30), {date_s} for short date and time (01/01/2020, 11:30), {date_S} for short date and time with seconds (01/01/2020, 11:30:30) and {date_R} for the relative time (5 minutes ago). "
+            "Use {member} to mention the new member, {member_name} for the display name, {member_count} for the member count, {member_no_ping} for a non-pinging mention, {member_created} for the account creation date, {member_username} for the username, {server_name} for the server name, {date_t} for short time (11:20), {date_T} for time with seconds (11:20:30), {date_d} for short date (01/01/2020), {date_D} for long date (January 1, 2020), {date_f} for date and time (January 1, 2020 at 11:30), {date_F} for full date and time (Wednesday, January 1, 2020 at 11:30), {date_s} for short date and time (01/01/2020, 11:30), {date_S} for short date and time with seconds (01/01/2020, 11:30:30) and {date_R} for the relative time (5 minutes ago). "
             "Separate several messages with $ and one is picked at random for each join.",
             "text",
             default="Welcome, {member}!",
@@ -129,8 +129,8 @@ def _build_welcome_ui(
     values: dict[str, str | None],
     member: discord.Member,
 ) -> tuple[ResponseUI, discord.File | None]:
-    dt = member.joined_at or discord.utils.utcnow() # fallback
-    
+    dt = member.joined_at or discord.utils.utcnow()  # fallback
+
     placeholders = {
         "member": member.mention,
         "member_no_ping": member.mention,
