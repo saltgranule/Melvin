@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block body_class %} class="login-body"{% endblock %}
+{% block content %}
+<div class="login-page">
+    <div class="login-cards">
+        <section class="login-card login-panel">
+            <h1 class="login-title">Support Melvin</h1>
+            <p class="login-subtitle">
+                Hey, this is a temporary donation page setup to fund the ongoing electricity costs, and the copious
+                amounts of debt I'm in at university. This is a temporary donation page for now, to hopefully aid with
+                my struggle, I'll set something proper up when we grow a little more.
+            </p>
+            <p class="donations-signature">saltgranule</p>
+
+            <div class="login-actions">
+                <a href="https://buymeacoffee.com/justmelvin" class="btn btn-primary">Buy me a coffee</a>
+            </div>
+        </section>
+
+        <div class="login-card login-art">
+            <img src="{{ url_for('static', filename='media/donations-fox.jpg') }}" width="840" height="1493" alt="A fox plush sitting on a desk."
+                 class="login-art-image donations-image">
+        </div>
+    </div>
+</div>
+{% endblock %}

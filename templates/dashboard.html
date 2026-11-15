@@ -1,11 +1,9 @@
 {% extends "base.html" %}
-{% from "_icons.html" import icon %}
 {% block content %}
 <div class="docs-layout dashboard-layout">
     <aside class="docs-sidebar dashboard-sidebar">
         {% if guilds %}
         <div class="docs-search">
-            {{ icon("magnifying-glass", 14, "docs-search-icon") }}
             <input type="text" id="server-search-input" class="docs-search-input" placeholder="Search servers..."
                    autocomplete="off" aria-label="Search servers" aria-controls="server-list">
             <kbd class="docs-search-kbd">/</kbd>
@@ -30,14 +28,18 @@
     <main class="dashboard-main">
     <div class="dashboard-header">
         <h1 class="status-heading">Your servers</h1>
-        {% include "_dashboard_user.html" %}
     </div>
 
     {% if guilds %}
     <ul class="dashboard-grid" id="server-list">
         {% for guild in guilds %}
         <li data-search="{{ guild.name | lower }}">
-            <div class="dashboard-card dashboard-server">
+            <div class="dashboard-card dashboard-server has-banner">
+                {% if guild.banner_url %}
+                <img src="{{ guild.banner_url }}" alt="" class="dashboard-server-banner" loading="lazy">
+                {% else %}
+                <div class="dashboard-server-banner is-paper" aria-hidden="true"></div>
+                {% endif %}
                 {% if guild.icon_url %}
                 <img src="{{ guild.icon_url }}" alt="" class="dashboard-card-icon" loading="lazy">
                 {% else %}
@@ -46,7 +48,7 @@
                 <span class="status-card-row">
                     <span class="dashboard-card-name" title="{{ guild.name }}">{{ guild.name }}</span>
                     {% if guild.has_bot %}
-                    <a href="{{ url_for('dashboard.modules', guild_id=guild.id) }}" class="btn btn-dark btn-small">Edit Server{{ icon("arrow-circle-up-right", 14) }}</a>
+                    <a href="{{ url_for('dashboard.modules', guild_id=guild.id) }}" class="btn btn-tertiary btn-small">Edit Server</a>
                     {% else %}
                     <a href="{{ add_bot_url }}" class="btn btn-dark btn-small">Add Melvin</a>
                     {% endif %}
@@ -140,4 +142,23 @@
     {% endif %}
     </main>
 </div>
+
+<section class="hero section-container">
+    <div class="hero-text">
+        <h1 class="hero-title">Can't config a server?</h1>
+        <p class="hero-subtitle">
+            Make sure Melvin is in the server you intend to manage.
+        </p>
+        <div class="hero-cta">
+            <a href="{{ links.add }}" class="btn btn-primary">Add Melvin</a>
+        </div>
+    </div>
+
+    <div class="hero-logo-wrap">
+        <picture>
+            <source srcset="{{ url_for('static', filename='media/melvin-logo-512.png') }}" media="(prefers-reduced-motion: reduce)">
+            <img src="{{ url_for('static', filename='media/melvin-logo-wobble-440.webp') }}" alt="" class="hero-logo" width="440" height="440" loading="lazy">
+        </picture>
+    </div>
+</section>
 {% endblock %}

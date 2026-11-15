@@ -13,10 +13,11 @@ from pathlib import Path
 
 import markdown
 from dotenv import load_dotenv
-from flask import Flask, Response, abort, render_template
+from flask import Flask, Response, abort, redirect, render_template, url_for
 from werkzeug.exceptions import HTTPException
 
 import dashboard
+import site_banner
 import http_client
 from globals import (
     ADD_BOT_URL,
@@ -52,7 +53,6 @@ ROOT = Path(app.root_path)
 DOCS_DIR = ROOT / "docs"
 LEGAL_DIR = ROOT / "legal"
 BOT_STATS_FILE = DATA_DIR / "bot_stats.json"
-MIN_GUILDS_FOR_STATS = 70
 
 GITHUB_API = "https://api.github.com/repos/saltgranule/Melvin"
 HIDDEN_CONTRIBUTORS = {"replit-agent"}
@@ -111,8 +111,6 @@ THEME_SHADES = {
         "chart-key-1": mix(PRIMARY, "#ffffff", 0.55),
         "chart-key-2": mix(PRIMARY, "#ffffff", 0.32),
         "mark-bg": alpha(PRIMARY, 0.35),
-        "secondary-edge": mix(SECONDARY, "#000000", 0.75),
-        "tertiary-edge": mix(TERTIARY, "#000000", 0.75),
     },
     "dark": {
         "chart-2-fill": _dark_chart_2_fill,
@@ -153,6 +151,10 @@ def inject_globals() -> dict:
         "dashboard_user": user,
         "dashboard_avatar": dashboard.user_avatar_url(user) if user else None,
         "csrf_token": dashboard.csrf_token,
+        # called by the login page, which several routes render
+        "bot_stats": get_bot_stats,
+        "repo_meta": get_repo_meta,
+        "site_banner": site_banner.load(),
     }
 
 
@@ -264,14 +266,15 @@ def render_doc(slug: str) -> dict | None:
 
 
 @app.route("/")
-def home() -> str:
-    stats = get_bot_stats()
-    return render_template(
-        "index.html",
-        active="home",
-        repo=get_repo_meta(),
-        stats=stats if stats["guild_count"] >= MIN_GUILDS_FOR_STATS else None,
-    )
+def home() -> str | Response:
+    if dashboard.current_session() is not None:
+        return redirect(url_for("dashboard.index"))
+    return render_template("login.html", active="home", error=None)
+
+# routes (probably shouldve labelled this sooner)
+@app.route("/donations")
+def donations() -> str:
+    return render_template("donations.html", active="donations")
 
 
 @app.route("/docs")

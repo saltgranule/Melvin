@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "_banner.html" import banner %}
+{% block body_class %} class="login-body"{% endblock %}
+{% block content %}
+{% set stats = bot_stats() %}
+{% set repo = repo_meta() %}
+{% set legal = {"visible": false} %}
+<div class="login-page">
+    <div class="login-cards">
+        <section class="login-card login-panel">
+            <h1 class="login-title">
+                {# the logo, always going liquidy kinda here. reduced motion gets the still #}
+                <picture>
+                    <source srcset="{{ url_for('static', filename='media/melvin-logo-128.png') }}" media="(prefers-reduced-motion: reduce)">
+                    <img src="{{ url_for('static', filename='media/melvin-logo-wobble-128.webp') }}" alt="" class="login-title-logo" width="128" height="128">
+                </picture>Moderation, server statistics, utilities, and more
+            </h1>
+            <p class="login-subtitle">A community driven Discord bot. Log in to manage it in your servers.</p>
+
+            {% if error %}
+            {{ banner("error", error) }}
+            {% endif %}
+
+            <div class="login-actions">
+                <a href="{{ url_for('dashboard.login') }}" class="btn btn-primary">Continue with Discord</a>
+                <a href="{{ links.add }}" class="btn btn-light">Add to server</a>
+            </div>
+
+            <div class="repo-meta login-meta">
+                {% if repo.contributors %}
+                <div class="repo-contributors" role="group" aria-label="Contributors">
+                    {% for c in repo.contributors %}
+                    <a href="{{ c.html_url }}" class="repo-avatar" title="{{ c.login }}">
+                        <img src="{{ c.avatar_url }}" alt="{{ c.login }}" loading="lazy">
+                    </a>
+                    {% endfor %}
+                    {% if repo.extra_contributors > 0 %}
+                    <a href="{{ links.github }}/graphs/contributors" class="repo-avatar repo-avatar-more" aria-label="{{ repo.extra_contributors }} more contributors">
+                        +{{ repo.extra_contributors }}
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <div class="bot-stats">
+                    <span>{{ stats.guild_count }} guilds</span>
+                    <span>{{ stats.member_count }} members</span>
+                </div>
+            </div>
+
+            {% if legal.visible %}
+            <p class="login-legal">
+                Melvin only asks to see your name, avatar, and server list. By continuing, you agree to our
+                <a href="{{ url_for('terms') }}">Terms of Service</a> and <a href="{{ url_for('privacy') }}">Privacy Policy</a>.
+            </p>
+            {% endif %}
+        </section>
+
+        <div class="login-card login-art">
+            <img src="{{ url_for('static', filename='media/melvin-panel.gif') }}" width="540" height="675"
+                 alt="Open sourced, community managed, Melvin." class="login-art-image">
+        </div>
+    </div>
+</div>
+{% endblock %}

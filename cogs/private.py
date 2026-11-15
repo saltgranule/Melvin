@@ -7,6 +7,7 @@ from discord import app_commands
 from discord.ext import commands
 
 import server_stats
+import site_banner
 from globals import LOG_CHANNEL, MELVIN_BANNER, MELVIN_MISC_EMOJI, QUATERNARY
 from ui import ErrorUI, GalleryWithItem, GatedUI, PositiveUI, SmallSeparator
 
@@ -21,6 +22,9 @@ DENSITIES = {
 }
 DENSITY_CHOICES = [
     app_commands.Choice(name=key.title(), value=key) for key in DENSITIES
+]
+BANNER_TYPE_CHOICES = [
+    app_commands.Choice(name=key.title(), value=key) for key in site_banner.KINDS
 ]
 POPULATE_HOURS = 30 * 24
 LOG_COLOR = discord.Color.from_str(QUATERNARY)
@@ -85,9 +89,84 @@ class PrivateCog(
     name="private",
     description="Private administrative and developer utilities.",
 ):
+    banner = app_commands.Group(
+        name="banner",
+        description="The banner shown above the website's navbar.",
+    )
+
     def __init__(self, bot: Melvin) -> None:
         super().__init__()
         self.bot = bot
+
+    async def _owner_only(self, interaction: discord.Interaction) -> bool:
+        if await self.bot.is_owner(interaction.user):
+            return True
+        await interaction.response.send_message(view=GatedUI(), ephemeral=True)
+        return False
+
+    @banner.command(name="set", description="Show a message above the website's navbar.")
+    @app_commands.describe(
+        text="What the banner says.",
+        type="Primary is orange, positive is green, negative is red. Keeps the current type if left out.",
+    )
+    @app_commands.choices(type=BANNER_TYPE_CHOICES)
+    async def banner_set(
+        self,
+        interaction: discord.Interaction,
+        text: app_commands.Range[str, 1, site_banner.MAX_LENGTH],
+        type: app_commands.Choice[str] | None = None,  # noqa: A002
+    ) -> None:
+        if not await self._owner_only(interaction):
+            return
+        current = site_banner.load()
+        kind = type.value if type else (current["kind"] if current else "primary")
+        site_banner.save(text, kind)
+        await interaction.response.send_message(
+            view=PositiveUI(
+                title="Banner Set",
+                subtitle=f"**The website now shows a {kind} banner above the navbar.**",
+            ),
+            ephemeral=True,
+        )
+
+    @banner.command(name="type", description="Change the colour of the website's banner.")
+    @app_commands.describe(type="Primary is orange, positive is green, negative is red.")
+    @app_commands.choices(type=BANNER_TYPE_CHOICES)
+    async def banner_type(
+        self,
+        interaction: discord.Interaction,
+        type: app_commands.Choice[str],  # noqa: A002
+    ) -> None:
+        if not await self._owner_only(interaction):
+            return
+        current = site_banner.load()
+        if current is None:
+            await interaction.response.send_message(
+                view=ErrorUI("**There's no banner yet. Set one with /private banner set first.**"),
+                ephemeral=True,
+            )
+            return
+        site_banner.save(current["text"], type.value)
+        await interaction.response.send_message(
+            view=PositiveUI(
+                title="Banner Type Changed",
+                subtitle=f"**The website's banner is now {type.value}.**",
+            ),
+            ephemeral=True,
+        )
+
+    @banner.command(name="clear", description="Remove the banner from the website.")
+    async def banner_clear(self, interaction: discord.Interaction) -> None:
+        if not await self._owner_only(interaction):
+            return
+        site_banner.clear()
+        await interaction.response.send_message(
+            view=PositiveUI(
+                title="Banner Cleared",
+                subtitle="**The website no longer shows a banner.**",
+            ),
+            ephemeral=True,
+        )
 
     def _log_channel(self) -> discord.TextChannel | None:
         channel = self.bot.get_channel(LOG_CHANNEL)

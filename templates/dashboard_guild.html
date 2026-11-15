@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% from "_icons.html" import icon %}
 {% from "_banner.html" import banner %}
 {% block content %}
 <div class="docs-layout dashboard-layout">
@@ -8,11 +7,9 @@
     <main class="dashboard-main">
         <div class="dashboard-header">
             <h1 class="status-heading">Modules</h1>
-            {% include "_dashboard_user.html" %}
         </div>
 
         <div class="docs-search dashboard-search">
-            {{ icon("magnifying-glass", 14, "docs-search-icon") }}
             <input type="text" id="module-search-input" class="docs-search-input" placeholder="Search modules..."
                    autocomplete="off" aria-label="Search modules" aria-controls="module-list">
             <kbd class="docs-search-kbd">/</kbd>
@@ -38,7 +35,7 @@
                         </button>
                     </form>
                     {% if module.configurable %}
-                    <a href="{{ url_for('dashboard.module_config_page', guild_id=guild.id, module=module.key) }}" class="btn btn-dark btn-small">Config{{ icon("arrow-circle-up-right", 14) }}</a>
+                    <a href="{{ url_for('dashboard.module_config_page', guild_id=guild.id, module=module.key) }}" class="btn btn-dark btn-small">Config</a>
                     {% endif %}
                 </div>
             </li>
@@ -59,7 +56,10 @@
     </div>
 
     <div class="hero-logo-wrap">
-        <img src="{{ url_for('static', filename='media/MelvinLogo.png') }}" alt="" class="hero-logo">
+        <picture>
+            <source srcset="{{ url_for('static', filename='media/melvin-logo-512.png') }}" media="(prefers-reduced-motion: reduce)">
+            <img src="{{ url_for('static', filename='media/melvin-logo-wobble-440.webp') }}" alt="" class="hero-logo" width="440" height="440" loading="lazy">
+        </picture>
     </div>
 </section>
 
