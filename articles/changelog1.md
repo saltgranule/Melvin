@@ -20,7 +20,7 @@ Welcome messages have a lot more to work with now.
 ### branding
 
 - new link previews for the home page, docs and status, each a riso print of a different fox
-- link previews now use discords component embeds, so shared links look like the rest of melvin
+  - link previews now use discords component embeds, so shared links look like the rest of melvin
 - melvins emoji is now the wobbling fox
 - style now defaults to Tempo, Solid, in melvins orange (F4A261)
 - /melvin has been trimmed down to Add Me, Support and Website becuase and i quote 'this is pmoism' - Fanta

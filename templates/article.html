@@ -13,7 +13,7 @@
     <meta name="theme-color" content="{{ theme.primary }}">
     <meta name="twitter:title" content="{{ article.title }}">
     <meta name="twitter:description" content="{{ article.summary }}">
-    {{ component_embed(article.title, article.summary, share_image) }}
+    {{ component_embed(article.title, article.summary, share_image, read_url=request.url) }}
 {% endblock %}
 {% block content %}
 <div class="docs-layout legal-layout">
