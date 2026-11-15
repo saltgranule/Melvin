@@ -1,5 +1,6 @@
 import logging
 import random
+import re
 
 import discord
 from discord import app_commands
@@ -124,17 +125,26 @@ def _load_image_file(path: str | None) -> discord.File | None:
 
 
 def _build_welcome_ui(
+    message: str,
     values: dict[str, str | None],
-    target_member: discord.Member | discord.User,
+    member: discord.Member,
 ) -> tuple[ResponseUI, discord.File | None]:
-    message = random.choice(split_messages(values["message"] or ""))
-    text = message.replace("{member}", target_member.mention)
-    text = text.replace("{member_name}", target_member.display_name)
-    guild = getattr(target_member, "guild", None)
-    if guild is not None:
-        text = text.replace("{member_count}", str(guild.member_count))
-
-    view = ResponseUI(text)
+    placeholders = {
+        "member": member.mention,
+        "member_no_ping": member.mention,
+        "member_name": member.display_name,
+        "member_username": member.name,
+        "member_created": discord.utils.format_dt(member.created_at, "R"),
+        "member_count": str(member.guild.member_count or 0),
+        "server_name": member.guild.name,
+    }
+    view = ResponseUI(
+        re.sub(
+            r"\{(\w+)\}",
+            lambda match: placeholders.get(match.group(1), match.group(0)),
+            message,
+        ),
+    )
     file = _load_image_file(values["image"])
     if file is not None:
         view.container.add_item(GalleryWithItem(f"attachment://{file.filename}"))
@@ -211,7 +221,8 @@ class WelcomeCog(
             )
             return
 
-        view, file = _build_welcome_ui(values, interaction.user)
+        message = random.choice(split_messages(values["message"] or ""))
+        view, file = _build_welcome_ui(message, values, interaction.user)
         await safe_finish(interaction, view, file=file)
 
     @commands.Cog.listener()
@@ -227,10 +238,12 @@ class WelcomeCog(
         if not isinstance(channel, discord.TextChannel):
             return
 
-        view, file = _build_welcome_ui(values, member)
+        message = random.choice(split_messages(values["message"] or ""))
+        view, file = _build_welcome_ui(message, values, member)
         try:
             await channel.send(
                 view=view,
+                allowed_mentions=discord.AllowedMentions(users="{member}" in message),
                 **({"file": file} if file is not None else {}),
             )
         except discord.HTTPException:
