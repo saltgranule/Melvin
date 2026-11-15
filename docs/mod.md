@@ -352,6 +352,11 @@ The same settings can be changed from the dashboard on the website, under Config
 | Setting | Description |
 |------|--------------|
 | Auto-role | Given to members when they join. Leave empty for none. Changing it also requires Manage Roles. |
+| Account age gate | Kick members whose Discord account is younger than the minimum age. Off by default. Needs Melvin to have Kick Members. |
+| Minimum account age | How old an account has to be to join. One of 1 hour, 12 hours, 1 day, 3 days, 7 days, 14 days, or 30 days. Defaults to 7 days. |
 
 The auto-role can't be `@everyone`, a role managed by an app, a role equal to or above Melvin's top role, or a role equal to or above the command user's top role unless they are the guild owner. The dashboard only lists roles that pass these checks.
 When a member joins, the bot gives them the auto-role. If the role has since been deleted, or the bot can't assign it, the member is skipped silently. Auto-roles are not logged as cases.
+
+When the account age gate is on and a member joins with an account younger than the minimum age, the bot logs a case as `kick` with itself as the moderator, tries to DM the member the reason and when they can rejoin, then kicks them. The kick goes to the moderation log like any other case. The auto-role is not given to members who are kicked this way.
+Bots are never gated. If the bot doesn't have Kick Members, the member is let in and a warning is written to the bot's log. If the kick fails, the case is removed and the details are written to the bot's log.
