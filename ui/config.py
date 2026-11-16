@@ -298,6 +298,10 @@ class SettingModal(discord.ui.Modal):
             else setting.max_length,
             required=False,
         )
+
+        if setting.description:
+            self.add_item(discord.ui.TextDisplay(setting.description))
+
         self.add_item(
             discord.ui.Label(
                 text=setting.label[:45],
