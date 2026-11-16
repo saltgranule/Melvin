@@ -242,9 +242,9 @@ class ServerInfoView(discord.ui.LayoutView):
         details = "\n".join(
             (
                 f"**Owner:** {owner.mention} | {owner.id}",
+                f"**Server Description**: {guild.description or "None"}",
                 f"**Icon:** [Icon Link]({guild.icon.url})"
-                if guild.icon
-                else "**Icon:** None",
+                if guild.icon else "**Icon:** None",
                 f"**Verification:** {level} | {requirement}",
                 f"**2FA:** {'Enabled' if guild.mfa_level else 'Disabled'}",
                 f"**Roles:** {len(guild.roles)}",
@@ -259,7 +259,8 @@ class ServerInfoView(discord.ui.LayoutView):
                 ),
                 (
                     f"**Server Boosts:** Level {guild.premium_tier} | "
-                    f"{guild.premium_subscription_count} boosts total"
+                    f"{guild.premium_subscription_count or 0} boosts total | "
+                    f"{len(guild.premium_subscribers or [])} boosters"
                 ),
                 f"**Vanity Link:** {guild.vanity_url or 'None'}",
                 _created(guild.created_at),
