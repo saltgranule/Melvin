@@ -305,7 +305,7 @@ class SettingModal(discord.ui.Modal):
         self.add_item(
             discord.ui.Label(
                 text=setting.label[:45],
-                description=f"{setting.description} Leave empty to reset."[:100],
+                description=f"Leave empty to reset."[:100],
                 component=self.text,
             ),
         )
