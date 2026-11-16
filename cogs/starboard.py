@@ -33,6 +33,7 @@ MODULE = Module(
             "Where starred messages go.",
             "channel",
             group="Channels",
+            inline=True,
         ),
         Setting(
             "sources",
@@ -41,6 +42,7 @@ MODULE = Module(
             "channels",
             channel_type="any",
             group="Channels",
+            inline=True,
         ),
         Setting(
             "emojis",
@@ -59,6 +61,7 @@ MODULE = Module(
             default="off",
             choices=(("off", "Off"), ("on", "On")),
             group="Stars",
+            inline=True,
         ),
         Setting(
             "threshold",
@@ -69,6 +72,7 @@ MODULE = Module(
             minimum=1,
             maximum=100,
             group="Stars",
+            inline=True,
         ),
         Setting(
             "self_star",
@@ -78,6 +82,7 @@ MODULE = Module(
             default="off",
             choices=(("off", "Off"), ("on", "On")),
             group="Stars",
+            inline=True,
         ),
         Setting(
             "auto_react",
@@ -87,6 +92,7 @@ MODULE = Module(
             default="off",
             choices=(("off", "Off"), ("on", "On")),
             group="Stars",
+            inline=True,
         ),
     ),
 )

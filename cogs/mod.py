@@ -34,6 +34,7 @@ MODULE = Module(
             default="off",
             choices=(("off", "Off"), ("on", "On")),
             group="Account age",
+            inline=True,
         ),
         Setting(
             "min_account_age",
@@ -52,6 +53,7 @@ MODULE = Module(
                 ("30d", "30 days"),
             ),
             group="Account age",
+            inline=True,
         ),
     ),
 )

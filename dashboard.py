@@ -27,6 +27,7 @@ from werkzeug.wrappers import Response
 import charts
 import http_client
 import module_config
+import module_registry
 import module_settings
 import server_stats
 from globals import ADD_BOT_URL, CLIENT_ID, DATA_DIR
@@ -965,6 +966,7 @@ async def module_config_page(
             "label": label,
             "description": description,
             "enabled": module not in await module_settings.disabled_modules(guild_id),
+            "panel": module_registry.modules()[module].panel,
         },
         groups=_group_fields(_config_fields(module, values, errors, match, context))
         if context

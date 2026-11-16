@@ -7,6 +7,7 @@ Writing up all of the documentation for each module / cog is quite time consumin
 - `afk.md`
 - `ai.md`
 - `audit.md`
+- `boost.md`
 - `developers.md`
 - `info.md`
 - `melvin.md`

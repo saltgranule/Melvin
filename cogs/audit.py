@@ -30,6 +30,7 @@ MODULE = Module(
             "Used for any event without its own channel below. Nothing is logged until one is set.",
             "channel",
             group="Log channels",
+            inline=True,
         ),
         Setting(
             "message_channel",
@@ -37,6 +38,7 @@ MODULE = Module(
             "Message edits and deletes. Uses the audit channel if not set.",
             "channel",
             group="Log channels",
+            inline=True,
         ),
         Setting(
             "member_channel",
@@ -44,6 +46,7 @@ MODULE = Module(
             "Joins, leaves, and member or profile changes. Uses the audit channel if not set.",
             "channel",
             group="Log channels",
+            inline=True,
         ),
         Setting(
             "moderation_channel",
@@ -51,6 +54,7 @@ MODULE = Module(
             "Bans, kicks, unbans, and timeouts. Uses the audit channel if not set.",
             "channel",
             group="Log channels",
+            inline=True,
         ),
         Setting(
             "server_channel",
@@ -58,6 +62,7 @@ MODULE = Module(
             "Server, channel, and role changes. Uses the audit channel if not set.",
             "channel",
             group="Log channels",
+            inline=True,
         ),
         Setting(
             "voice_channel",
@@ -65,6 +70,7 @@ MODULE = Module(
             "Voice channel activity. Uses the audit channel if not set.",
             "channel",
             group="Log channels",
+            inline=True,
         ),
     ),
 )

@@ -171,6 +171,7 @@ These are the fields a setting can have.
 | `permission` | A Discord permission needed on top of Manage Server, like `"manage_roles"`. |
 | `channel_type` | For channel settings, which channels are offered. `"text"` by default, or `"any"` for text and announcement channels. |
 | `group` | The titled card it sits on, on the dashboard. Settings next to each other with the same group share a card. `"Settings"` by default. |
+| `inline` | On the dashboard, puts the setting in a half width column, so two inline settings in a row sit side by side. Use it for short, related pairs like two channels or two on and off choices, not for large text boxes. Off by default. |
 
 Each kind of setting gets its own controls on both sides, and is stored as text.
 
@@ -184,6 +185,24 @@ Each kind of setting gets its own controls on both sides, and is stored as text.
 | `url` | Edit button and form | Link box | The link, which must start with `http://` or `https://` |
 | `color` | Edit button and form | Text box with color swatches | Hex codes joined by a dash, like `F4A261-FFFFFF` |
 | `image` | Edit button and form with an upload and a remove checkbox | File upload with a preview | The file's path in `data/config_images` |
+
+A module can also have a `panel`, a box shown beside its settings on the dashboard for anything that needs more room than a description, like the placeholders a message can use. It takes a title, a sentence about it, and pairs of a term and what it means.
+
+```python
+from module_registry import Module, Panel
+
+MODULE = Module(
+    "welcome",
+    "Welcome",
+    "Welcome messages for new members.",
+    settings=(...),
+    panel=Panel(
+        "Placeholders",
+        "These are swapped into the message when it's sent.",
+        (("{member}", "A mention of the member."),),
+    ),
+)
+```
 
 Values are checked the same way on both sides by `clean_value`, so a value that's rejected in Discord is also rejected on the dashboard. If a setting needs a kind that isn't listed, add it to `clean_value`, `ui/config.py`, and the field markup in `templates/dashboard_config.html`.
 

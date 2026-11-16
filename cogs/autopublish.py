@@ -21,6 +21,7 @@ MODULE = Module(
             "channels",
             channel_type="any",
             group="Publishing",
+            inline=True,
         ),
         Setting(
             "bots",
@@ -30,6 +31,7 @@ MODULE = Module(
             default="off",
             choices=(("off", "Skip them"), ("on", "Publish them")),
             group="Publishing",
+            inline=True,
         ),
     ),
 )

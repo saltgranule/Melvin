@@ -54,6 +54,7 @@ MODULE = Module(
             default="zilla_slab",
             choices=FONTS,
             group="Appearance",
+            inline=True,
         ),
         Setting(
             "effect",
@@ -63,6 +64,7 @@ MODULE = Module(
             default="solid",
             choices=EFFECTS,
             group="Appearance",
+            inline=True,
         ),
         Setting(
             "colors",

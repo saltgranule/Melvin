@@ -26,6 +26,14 @@ class Setting:
     minimum: int = 0
     maximum: int = 0
     group: str = "Settings"
+    inline: bool = False
+
+
+@dataclass(frozen=True)
+class Panel:
+    title: str
+    description: str
+    entries: tuple[tuple[str, str], ...]
 
 
 @dataclass(frozen=True)
@@ -35,6 +43,7 @@ class Module:
     description: str
     settings: tuple[Setting, ...] = ()
     enabled_by_default: bool = True
+    panel: Panel | None = None
 
 
 def cog_names() -> list[str]:

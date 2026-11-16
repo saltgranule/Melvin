@@ -23,6 +23,7 @@
         {% if unavailable %}
         {{ banner("error", "Couldn't load this server's channels and roles from Discord, please try again in a moment.") }}
         {% else %}
+        <div class="dashboard-config">
         <form method="post" enctype="multipart/form-data" class="dashboard-form">
             <input type="hidden" name="csrf" value="{{ csrf_token() }}">
 
@@ -32,7 +33,7 @@
                 {% for field in group.fields %}
                 {% set setting = field.setting %}
                 {% set id = "setting-" ~ setting.key %}
-                <div class="dashboard-field">
+                <div class="dashboard-field {{ 'is-inline' if setting.inline else '' }}">
                     <label for="{{ id }}" class="dashboard-field-label">{{ setting.label }}</label>
                     <p class="dashboard-field-description" id="{{ id }}-description">{{ setting.description }}</p>
 
@@ -52,17 +53,24 @@
                     {{ dropdown(id, setting.key, options, [current], locked=field.locked) }}
 
                     {% elif setting.kind == "image" %}
-                    {% if field.value %}
-                    <img src="{{ url_for('dashboard.config_image', guild_id=guild.id, module=module.key, key=setting.key) }}"
-                         alt="The current {{ setting.label | lower }}" class="dashboard-image-preview">
-                    <label class="dashboard-checkbox">
-                        <input type="checkbox" name="{{ setting.key }}__remove" {% if field.locked %}disabled{% endif %}>
-                        Remove the current image
-                    </label>
-                    {% endif %}
-                    <input type="file" name="{{ setting.key }}" id="{{ id }}" class="dashboard-input"
-                           accept="image/png,image/jpeg,image/gif,image/webp" aria-describedby="{{ id }}-description"
-                           {% if field.locked %}disabled{% endif %}>
+                    <div class="dashboard-image">
+                        {% if field.value %}
+                        <img src="{{ url_for('dashboard.config_image', guild_id=guild.id, module=module.key, key=setting.key) }}"
+                             alt="The current {{ setting.label | lower }}" class="dashboard-image-preview">
+                        {% endif %}
+                        <div class="dashboard-image-actions">
+                            <input type="file" name="{{ setting.key }}" id="{{ id }}" class="dashboard-input"
+                                   accept="image/png,image/jpeg,image/gif,image/webp" aria-describedby="{{ id }}-description"
+                                   {% if field.locked %}disabled{% endif %}>
+                            {% if field.value %}
+                            <label class="dashboard-image-remove">
+                                <input type="checkbox" name="{{ setting.key }}__remove" {% if field.locked %}disabled{% endif %}>
+                                <span class="dashboard-image-remove-label">Remove</span>
+                                <span class="dashboard-image-undo-label">Undo</span>
+                            </label>
+                            {% endif %}
+                        </div>
+                    </div>
 
                     {% elif setting.max_length > 100 %}
                     <textarea name="{{ setting.key }}" id="{{ id }}" class="dashboard-input" rows="4"
@@ -97,6 +105,22 @@
                 <a href="{{ url_for('dashboard.modules', guild_id=guild.id) }}" class="btn btn-light">Cancel</a>
             </div>
         </form>
+
+        {% if module.panel %}
+        <aside class="dashboard-group dashboard-panel" aria-label="{{ module.panel.title }}">
+            <h2 class="dashboard-group-title">{{ module.panel.title }}</h2>
+            <p class="dashboard-field-description">{{ module.panel.description }}</p>
+            <dl class="dashboard-panel-list">
+                {% for term, meaning in module.panel.entries %}
+                <div>
+                    <dt><code>{{ term }}</code></dt>
+                    <dd class="dashboard-field-description">{{ meaning }}</dd>
+                </div>
+                {% endfor %}
+            </dl>
+        </aside>
+        {% endif %}
+        </div>
         {% endif %}
     </main>
 </div>
