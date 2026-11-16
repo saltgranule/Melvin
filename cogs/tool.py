@@ -17,6 +17,7 @@ from discord.ext import commands, tasks
 import module_settings
 from globals import BROWSER, DATA_DIR, THUMBS_DOWN_WHITE, THUMBS_UP_WHITE, WEBSITE_URL
 from helpers import durations
+from helpers.text import truncate
 from module_registry import Module
 from ui import (
     ErrorUI,
@@ -403,14 +404,6 @@ class WikiView(discord.ui.LayoutView):
                 await self.message.edit(view=self)
 
 
-def _preview(text: str) -> str:
-    return (
-        text
-        if len(text) <= REMINDER_PREVIEW_LENGTH
-        else text[: REMINDER_PREVIEW_LENGTH - 3] + "..."
-    )
-
-
 class ToolCog(
     commands.GroupCog,
     name="tool",
@@ -776,7 +769,7 @@ class ToolCog(
 
         lines = [
             f"**#{reminder_id}** {discord.utils.format_dt(datetime.fromtimestamp(due_at, UTC), style='R')} | "
-            f"{discord.utils.escape_markdown(_preview(message))}"
+            f"{discord.utils.escape_markdown(truncate(message, REMINDER_PREVIEW_LENGTH))}"
             for reminder_id, due_at, message in rows
         ]
         await interaction.response.send_message(

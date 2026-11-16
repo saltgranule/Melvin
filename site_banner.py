@@ -2,6 +2,7 @@ import functools
 import json
 
 from globals import DATA_DIR
+from helpers.files import write_json
 
 PATH = DATA_DIR / "site_banner.json"
 MAX_LENGTH = 200
@@ -9,10 +10,7 @@ KINDS = {"primary": "misc", "positive": "success", "negative": "error"}
 
 
 def save(text: str, kind: str) -> None:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    temp = PATH.with_suffix(".tmp")
-    temp.write_text(json.dumps({"text": text, "kind": kind}), encoding="utf-8")
-    temp.replace(PATH)
+    write_json(PATH, {"text": text, "kind": kind})
 
 
 def clear() -> None:

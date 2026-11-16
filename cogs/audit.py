@@ -12,6 +12,7 @@ from discord.ext import commands
 import module_config
 import module_settings
 from globals import DATA_DIR, PRIMARY, SECONDARY, TERTIARY
+from helpers.text import truncate
 from module_registry import Module, Setting
 from ui import LargeSeparator, open_config
 
@@ -133,9 +134,7 @@ def _role_colours(role: discord.Role) -> str:
 
 
 def _clean(text: str, length: int = 500) -> str:
-    return discord.utils.escape_markdown(
-        text[: length - 3] + "..." if len(text) > length else text,
-    )
+    return discord.utils.escape_markdown(truncate(text, length))
 
 
 def _attachments(attachments: list[discord.Attachment]) -> str:

@@ -1,10 +1,9 @@
 import datetime
 import functools
-import html
 import math
 from pathlib import Path
 
-import markdown
+from helpers.pages import render_markdown
 
 ARTICLES_DIR = Path(__file__).resolve().parent / "articles"
 WORDS_PER_MINUTE = 200
@@ -34,21 +33,7 @@ def _date(value: str) -> datetime.date | None:
 @functools.lru_cache(maxsize=64)
 def _parse(path: Path, _mtime: float) -> dict:
     meta, body = _front_matter(path.read_text(encoding="utf-8"))
-    md = markdown.Markdown(
-        extensions=["fenced_code", "tables", "toc"],
-        extension_configs={"toc": {"toc_depth": "2-3"}},
-    )
-    content = md.convert(body)
-
-    headings = []
-    for token in md.toc_tokens:
-        headings.append(
-            {"id": token["id"], "name": html.unescape(token["name"]), "level": 2},
-        )
-        headings.extend(
-            {"id": child["id"], "name": html.unescape(child["name"]), "level": 3}
-            for child in token["children"]
-        )
+    content, headings = render_markdown(body)
 
     date = _date(meta.get("date", ""))
     return {

@@ -8,7 +8,7 @@ from discord.ext import commands
 
 import module_settings
 from globals import ERROR_MESSAGE, MELVIN_CHECK_EMOJI, MELVIN_CROSS_EMOJI, MELVIN_EMOJI
-from ui import ErrorUI, Paginator
+from ui import Paginator, send_error
 
 if TYPE_CHECKING:
     import re
@@ -27,14 +27,6 @@ TOGGLE_TEMPLATE = (
     r"modules:toggle:(?P<guild>\d+):(?P<module>[a-z0-9_]+):(?P<state>[01]):"
     r"(?P<filter>all|on|off)"
 )
-
-
-async def _reply_error(interaction: discord.Interaction, message: str) -> None:
-    view = ErrorUI(message)
-    if interaction.response.is_done():
-        await interaction.followup.send(view=view, ephemeral=True)
-    else:
-        await interaction.response.send_message(view=view, ephemeral=True)
 
 
 def _order(filter_by: str, disabled: set[str]) -> list[str]:
@@ -65,22 +57,22 @@ async def _set_module(
     enabled: bool,
 ) -> bool:
     if interaction.guild_id != guild_id:
-        await _reply_error(interaction, "**This button belongs to another server.**")
+        await send_error(interaction, "**This button belongs to another server.**")
         return False
 
     permissions = getattr(interaction.user, "guild_permissions", None)
     if not (permissions and permissions.manage_guild):
-        await _reply_error(interaction, "**You do not have permission to do this.**")
+        await send_error(interaction, "**You do not have permission to do this.**")
         return False
     if module not in module_settings.MODULES:
-        await _reply_error(interaction, ERROR_MESSAGE)
+        await send_error(interaction, ERROR_MESSAGE)
         return False
 
     try:
         await module_settings.set_enabled(guild_id, module, enabled=not enabled)
     except Exception:
         log.exception("Failed to toggle module %s in guild %s", module, guild_id)
-        await _reply_error(interaction, ERROR_MESSAGE)
+        await send_error(interaction, ERROR_MESSAGE)
         return False
     return True
 

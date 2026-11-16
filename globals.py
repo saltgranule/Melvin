@@ -13,7 +13,7 @@ QUATERNARY = "#ffffff"  # white
 
 # channels
 LOG_CHANNEL = 1535283504105922620
-ERROR_CHANNEL = 1536683441616064532
+ARTICLE_CHANNEL = 1571639489468702780
 
 # status emojis
 MELVIN_EMOJI = "<a:melvinlogowobble:1571556670599864541>"
@@ -24,23 +24,22 @@ MELVIN_CHECK_EMOJI = "<:checkcirclefill:1547368139266723850>"
 
 # filled emojis
 THUMBS_UP = "<:thumbsupfill:1547368133763928114>"
-THUMBS_DOWN = "<:thumbsdownfill:1547368136091893860>"
 
 # white duotone emojis
 THUMBS_UP_WHITE = "<:thumbsupduotone:1557697976669970523>"
 THUMBS_DOWN_WHITE = "<:thumbsdownduotone:1557697975138910220>"
 BROWSER = "<:browsersduotone:1548410087037477066>"
-IMAGE = "<:imageduotone:1547366631284678676>"
-TEXT = "<:textboxduotone:1547366633440284813>"
-CLICK = "<:handpointingduotone:1547366634459766814>"
+PLUS = "<:pluscircleduotone:1548410107484835942>"
+QUESTION = "<:questionduotone:1548410071195844668>"
 
 # status page icons
 SHARD_ICON = "<:shard:1555862593749385276>"
 API_ICON = "<:API:1555862891691778160>"
 
 # links
+CLIENT_ID = "1468362201197973756"
 INVITE_URL = "https://discord.gg/PfyKM7dyx4"
-ADD_BOT_URL = "https://discord.com/oauth2/authorize?client_id=1468362201197973756"
+ADD_BOT_URL = f"https://discord.com/oauth2/authorize?client_id={CLIENT_ID}"
 MELVIN_GITHUB_URL = "https://github.com/saltgranule/Melvin"
 WEBSITE_URL = "https://justmelvin.site"
 MELVIN_JOINED_BANNER = f"{WEBSITE_URL}/static/media/bot/joined.png"

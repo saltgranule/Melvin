@@ -29,7 +29,7 @@ import http_client
 import module_config
 import module_settings
 import server_stats
-from globals import ADD_BOT_URL, DATA_DIR
+from globals import ADD_BOT_URL, CLIENT_ID, DATA_DIR
 
 log = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ class DiscordError(Exception):
 
 def _config() -> dict[str, str | None]:
     return {
-        "client_id": os.environ.get("DISCORD_CLIENT_ID", "1468362201197973756"),
+        "client_id": os.environ.get("DISCORD_CLIENT_ID", CLIENT_ID),
         "client_secret": os.environ.get("DISCORD_CLIENT_SECRET"),
         "redirect_uri": os.environ.get("DASHBOARD_REDIRECT_URI"),
     }

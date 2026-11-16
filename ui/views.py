@@ -77,10 +77,6 @@ def _flatten(cmd: object) -> Iterator:
         yield cmd
 
 
-def flatten_commands(cmd: object) -> list:
-    return list(_flatten(cmd))
-
-
 def docs_url(page: str, cmd: app_commands.Command | None = None) -> str:
     url = f"{WEBSITE_URL}/docs/{page}"
     if cmd is None:
@@ -422,3 +418,12 @@ class ErrorUI(_Card):
 class ExceptionUI(ErrorUI):
     def __init__(self) -> None:
         super().__init__(ERROR_MESSAGE)
+
+
+async def send_error(interaction: discord.Interaction, message: str) -> None:
+    # an ephemeral error, whether or not the interaction was answered already
+    view = ErrorUI(message)
+    if interaction.response.is_done():
+        await interaction.followup.send(view=view, ephemeral=True)
+    else:
+        await interaction.response.send_message(view=view, ephemeral=True)

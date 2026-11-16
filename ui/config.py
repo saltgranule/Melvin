@@ -11,7 +11,7 @@ from globals import (
     MELVIN_MISC_EMOJI,
 )
 
-from .views import ErrorUI, SmallSeparator
+from .views import SmallSeparator, send_error
 
 OnChange = Callable[[discord.Guild], Awaitable[None]]
 
@@ -54,11 +54,7 @@ def _display(setting: module_config.Setting, value: str | None) -> str:
 
 
 async def _reply_error(interaction: discord.Interaction, message: str) -> None:
-    view = ErrorUI(f"**{message}**")
-    if interaction.response.is_done():
-        await interaction.followup.send(view=view, ephemeral=True)
-    else:
-        await interaction.response.send_message(view=view, ephemeral=True)
+    await send_error(interaction, f"**{message}**")
 
 
 class ConfigView(discord.ui.LayoutView):

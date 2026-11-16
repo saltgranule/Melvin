@@ -1,7 +1,6 @@
 import asyncio
 import datetime
 import functools
-import html
 import json
 import logging
 import os
@@ -11,7 +10,6 @@ import sys
 import time
 from pathlib import Path
 
-import markdown
 from dotenv import load_dotenv
 from flask import Flask, Response, abort, redirect, render_template, url_for
 from werkzeug.exceptions import HTTPException
@@ -30,6 +28,7 @@ from globals import (
     SECONDARY,
     TERTIARY,
 )
+from helpers.pages import render_markdown
 from status import get_metrics_status, get_shard_status, summarize_status
 
 load_dotenv()
@@ -221,26 +220,12 @@ def get_bot_stats() -> dict[str, int]:
 @functools.lru_cache(maxsize=64)
 def _parse_doc(path: Path, _mtime: float) -> dict:
     text = path.read_text(encoding="utf-8")
-    md = markdown.Markdown(
-        extensions=["fenced_code", "tables", "toc"],
-        extension_configs={"toc": {"toc_depth": "2-3"}},
-    )
-    content = md.convert(text)
+    content, headings = render_markdown(text)
 
     title = next(
         (line[2:].strip() for line in text.splitlines() if line.startswith("# ")),
         path.stem.replace("-", " ").replace("_", " ").title(),
     )
-
-    headings = []
-    for token in md.toc_tokens:
-        headings.append(
-            {"id": token["id"], "name": html.unescape(token["name"]), "level": 2},
-        )
-        headings.extend(
-            {"id": child["id"], "name": html.unescape(child["name"]), "level": 3}
-            for child in token["children"]
-        )
 
     return {"title": title, "content": content, "headings": headings}
 

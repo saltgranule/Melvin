@@ -13,6 +13,7 @@ from .views import (
     ResponseUI,
     SmallSeparator,
     ThankUI,
+    send_error,
 )
 
 __all__ = [
@@ -31,4 +32,5 @@ __all__ = [
     "SmallSeparator",
     "ThankUI",
     "open_config",
+    "send_error",
 ]

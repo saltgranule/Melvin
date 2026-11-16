@@ -13,6 +13,7 @@ from discord.ext import commands
 from groq import AsyncGroq
 
 from globals import DATA_DIR, MELVIN_EMOJI
+from helpers.text import truncate
 from module_registry import Module
 from ui import ErrorUI, Paginator
 
@@ -91,14 +92,10 @@ def _web_context(results: list[dict[str, str]] | None) -> str:
     )
 
 
-def _truncate(text: str, length: int) -> str:
-    return text[: length - 3] + "..." if len(text) > length else text
-
-
 def _trim_old(message: Message) -> Message:
     if message["role"] != "assistant":
         return message
-    return {**message, "content": _truncate(message["content"], MAX_OLD_ANSWER)}
+    return {**message, "content": truncate(message["content"], MAX_OLD_ANSWER)}
 
 
 def _source_links(results: list[dict[str, str]]) -> str:
@@ -112,7 +109,7 @@ def _source_links(results: list[dict[str, str]]) -> str:
         ):
             continue
         title = (result.get("title") or url).replace("[", "(").replace("]", ")")
-        title = _truncate(title, MAX_SOURCE_TITLE)
+        title = truncate(title, MAX_SOURCE_TITLE)
         lines.append(f"-# {i}. [{discord.utils.escape_mentions(title)}](<{url}>)")
     return "\n".join(lines)
 
@@ -296,7 +293,7 @@ class AgentCog(
         if not query:
             last = next(m["content"] for m in reversed(history) if m["role"] == "user")
             query = f"{last} {prompt}"
-        return _truncate(query, MAX_SEARCH_QUERY)
+        return truncate(query, MAX_SEARCH_QUERY)
 
     async def query_groq(
         self,
@@ -385,7 +382,7 @@ class AgentCog(
             elapsed = time.perf_counter() - start
             await self._record_request(interaction.user.id)
 
-            shown_prompt = _truncate(
+            shown_prompt = truncate(
                 prompt.replace("`", "").replace("\n", " "),
                 MAX_TITLE_PROMPT,
             )

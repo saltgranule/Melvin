@@ -14,6 +14,7 @@ from discord.ext import commands
 import module_config
 import module_settings
 from globals import DATA_DIR, ERROR_MESSAGE, PRIMARY
+from helpers.text import truncate
 from module_registry import Module, Setting
 from ui import ErrorUI, SmallSeparator, open_config
 
@@ -142,10 +143,6 @@ def _is_nsfw(channel: SourceChannel) -> bool:
     return parent is None or parent.is_nsfw()
 
 
-def _truncate(text: str, length: int = MAX_CONTENT_LENGTH) -> str:
-    return text[: length - 3] + "..." if len(text) > length else text
-
-
 def _is_image(attachment: discord.Attachment) -> bool:
     content_type = attachment.content_type or ""
     return content_type.startswith("image/")
@@ -194,7 +191,7 @@ def _build_view(
     emoji: str,
     count: int,
 ) -> discord.ui.LayoutView:
-    body = _truncate(message.content.strip())
+    body = truncate(message.content.strip(), MAX_CONTENT_LENGTH)
     gallery, files = _split_media(message)
     jump = discord.ui.Button(
         label="Jump to Message",

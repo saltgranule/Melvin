@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 import math
 import os
@@ -15,16 +14,22 @@ import module_registry
 import module_settings
 import status
 from globals import (
+    ADD_BOT_URL,
     API_ICON,
+    BROWSER,
     DATA_DIR,
     ERROR_MESSAGE,
+    INVITE_URL,
     MELVIN_EMOJI,
+    PLUS,
+    QUESTION,
     SHARD_ICON,
     WEBSITE_URL,
     DisplayNameEffect,
     DisplayNameFont,
 )
-from ui import ErrorUI, GalleryWithItem, HelpView, InfoUI, SmallSeparator
+from helpers.files import write_json
+from ui import ErrorUI, GalleryWithItem, HelpView, InfoUI, SmallSeparator, send_error
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -37,17 +42,9 @@ STATS_FILE = DATA_DIR / "bot_stats.json"
 GUILDS_FILE = DATA_DIR / "bot_guilds.json"
 
 LINK_BUTTONS = (
-    (
-        "Add Me",
-        "https://discord.com/oauth2/authorize?client_id=1468362201197973756",
-        "<:pluscircleduotone:1548410107484835942>",
-    ),
-    (
-        "Support",
-        "https://discord.gg/PfyKM7dyx4",
-        "<:questionduotone:1548410071195844668>",
-    ),
-    ("Website", WEBSITE_URL, "<:browsersduotone:1548410087037477066>"),
+    ("Add Me", ADD_BOT_URL, PLUS),
+    ("Support", INVITE_URL, QUESTION),
+    ("Website", WEBSITE_URL, BROWSER),
 )
 
 
@@ -100,11 +97,7 @@ class MelvinTree(app_commands.CommandTree):
             log.error("Unhandled error in /%s", name, exc_info=error)
             msg = ERROR_MESSAGE
 
-        view = ErrorUI(msg)
-        if interaction.response.is_done():
-            await interaction.followup.send(view=view, ephemeral=True)
-        else:
-            await interaction.response.send_message(view=view, ephemeral=True)
+        await send_error(interaction, msg)
 
 
 class Melvin(commands.Bot):
@@ -120,17 +113,6 @@ class Melvin(commands.Bot):
                 private_channel=True,
             ),
         )
-
-    async def get_bio(self, *, guild: discord.Guild) -> None:
-        result = await self.http.request(
-            route=discord.http.Route(
-                "PATCH",
-                "/guilds/{guild_id}/members/@me",
-                guild_id=guild.id,
-            ),
-            json={},
-        )
-        return result["bio"]
 
     async def set_name_style(
         self,
@@ -153,30 +135,6 @@ class Melvin(commands.Bot):
             },
         )
 
-    async def get_name_style(self, guild: discord.Guild, /) -> dict:
-        response = await self.http.request(
-            route=discord.http.Route(
-                "GET",
-                "/guilds/{guild_id}/members/{user_id}",
-                guild_id=guild.id,
-                user_id=self.user.id,
-            ),
-        )
-        styles = response["display_name_styles"]
-        return {
-            "font_id": DisplayNameFont(styles["font_id"]),
-            "effect_id": DisplayNameEffect(styles["effect_id"]),
-            "colors": [f"{color:06x}" for color in styles["colors"]],
-        }
-
-    async def reset_name_style(self, *, guild: discord.Guild) -> None:
-        await self.set_name_style(
-            guild=guild,
-            font_id=DisplayNameFont.default,
-            effect_id=DisplayNameEffect.solid,
-            colors=["FFFFFF", "FFFFFF"],
-        )
-
     async def setup_hook(self) -> None:
         try:
             resolver = aiodns.DNSResolver(nameservers=["1.1.1.1", "8.8.8.8"])
@@ -189,9 +147,7 @@ class Melvin(commands.Bot):
         log.info("Logging started.")
 
     def write_guild_ids(self) -> None:
-        temp = GUILDS_FILE.with_suffix(".tmp")
-        temp.write_text(json.dumps([str(guild.id) for guild in self.guilds]))
-        temp.replace(GUILDS_FILE)
+        write_json(GUILDS_FILE, [str(guild.id) for guild in self.guilds])
 
     async def on_guild_join(self, _guild: discord.Guild) -> None:
         self.write_guild_ids()
@@ -225,9 +181,7 @@ def _latencies() -> list[tuple[int, float]]:
 async def update_stats() -> None:
     guild_count = len(bot.guilds)
     member_count = sum(guild.member_count or 0 for guild in bot.guilds)
-    STATS_FILE.write_text(
-        json.dumps({"guild_count": guild_count, "member_count": member_count}),
-    )
+    write_json(STATS_FILE, {"guild_count": guild_count, "member_count": member_count})
     await status.record_metrics(guild_count, member_count)
 
 
