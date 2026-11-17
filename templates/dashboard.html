@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_articles.html" import sidebar_articles %}
 {% block content %}
 <div class="docs-layout dashboard-layout">
     <aside class="docs-sidebar dashboard-sidebar">
@@ -23,6 +24,7 @@
             <p>This dashboard is still under development, feel free to point out any errors to us on the support server.</p>
             <a href="{{ links.invite }}" class="btn btn-dark">Support Server</a>
         </div>
+        {{ sidebar_articles(recent_articles()) }}
     </aside>
 
     <main class="dashboard-main">

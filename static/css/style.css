@@ -2242,6 +2242,27 @@ textarea.dashboard-input {
     align-self: flex-start;
 }
 
+.sidebar-articles {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 28px;
+    padding-top: 20px;
+}
+
+.sidebar-articles-title {
+    font-size: 18px;
+}
+
+.sidebar-articles .login-article-thumb {
+    width: 56px;
+    height: 44px;
+}
+
+.sidebar-articles .login-article-name {
+    font-size: 14px;
+}
+
 @media (max-width: 1259px) {
     .login-articles {
         display: none;

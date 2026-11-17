@@ -14,3 +14,32 @@
     <span>{{ article.minutes }} min read</span>
 </p>
 {%- endmacro %}
+
+{# the article list from the login card, also shown under the sidebar notices #}
+{% macro article_list(latest) -%}
+{% if latest %}
+<ul class="login-articles-list">
+    {% for article in latest %}
+    <li>
+        <a href="{{ url_for('article_page', slug=article.slug) }}" class="login-article">
+            {{ thumb(article, "login-article-thumb") }}
+            <span class="login-article-text">
+                <span class="login-article-name">{{ article.title }}</span>
+                <span class="login-article-date">{{ article.date_label or (article.minutes ~ " min read") }}</span>
+            </span>
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="login-articles-empty">No articles yet, check back soon.</p>
+{% endif %}
+<a href="{{ url_for('articles_index') }}" class="btn btn-small login-articles-all">All articles</a>
+{%- endmacro %}
+
+{% macro sidebar_articles(latest) -%}
+<section class="sidebar-articles" aria-labelledby="sidebar-articles-title">
+    <h2 class="sidebar-articles-title" id="sidebar-articles-title">Articles</h2>
+    {{ article_list(latest) }}
+</section>
+{%- endmacro %}
