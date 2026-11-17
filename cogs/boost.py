@@ -6,6 +6,7 @@ import module_config
 import module_settings
 from cogs import _greeting
 from module_registry import Module
+from ui import open_config
 
 MODULE = Module(
     "boost",
