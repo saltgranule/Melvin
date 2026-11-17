@@ -1,3 +1,4 @@
+{% from "_icons.html" import icon %}
 {% macro thumb(article, class="") -%}
 {% if article.thumbnail %}
 <img src="{{ article.thumbnail if article.thumbnail.startswith('http') else url_for('static', filename=article.thumbnail) }}"
@@ -27,6 +28,7 @@
                 <span class="login-article-name">{{ article.title }}</span>
                 <span class="login-article-date">{{ article.date_label or (article.minutes ~ " min read") }}</span>
             </span>
+            {{ icon("arrow-square-out", 16, "login-article-icon") }}
         </a>
     </li>
     {% endfor %}

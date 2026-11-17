@@ -2262,6 +2262,12 @@ textarea.dashboard-input {
     font-size: 14px;
 }
 
+.login-article-icon {
+    flex: 0 0 auto;
+    margin-left: auto;
+    color: var(--text-subtle);
+}
+
 @media (max-width: 1259px) {
     .login-articles {
         display: none;
