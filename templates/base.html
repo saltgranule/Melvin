@@ -71,7 +71,7 @@
                 </summary>
                 <div class="user-menu-panel nav-menu-panel nav-menu-articles">
                     <div class="user-menu-actions">
-                        {% for article in recent_articles() %}
+                        {% for article in recent_articles()[:3] %}
                         <a href="{{ url_for('article_page', slug=article.slug) }}" class="user-menu-item nav-menu-article">{{ article.title }}</a>
                         {% endfor %}
                         <a href="{{ url_for('articles_index') }}" class="user-menu-item">All articles</a>

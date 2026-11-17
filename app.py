@@ -154,7 +154,7 @@ def inject_globals() -> dict:
         # called by the login page, which several routes render
         "bot_stats": get_bot_stats,
         "repo_meta": get_repo_meta,
-        "recent_articles": lambda: articles.all_articles()[:3],
+        "recent_articles": lambda: articles.all_articles()[:4],
         "site_banner": site_banner.load(),
     }
 
