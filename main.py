@@ -259,7 +259,7 @@ async def melvin_command(interaction: discord.Interaction) -> None:
             discord.ui.TextDisplay(
                 f"{MELVIN_EMOJI} **Melvin**\n-# **an open source, community managed discord bot, stable and paywall free.**",
             ),
-            GalleryWithItem(f"{WEBSITE_URL}/static/media/OG.png?v1"),
+            GalleryWithItem(f"{WEBSITE_URL}/static/media/Fanart1.png?v1"),
             SmallSeparator(),
             row,
         ),
