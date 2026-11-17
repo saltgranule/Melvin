@@ -1,7 +1,7 @@
 ---
 title: What's Melvin?
 author: saltgranule
-date: 2026-11-16
+date: 2026-11-16 01:57
 summary: An article on us, Melvin
 thumbnail: media/thumbnail/fox-front-wide.png
 contributors: Saltgranule

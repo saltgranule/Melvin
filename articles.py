@@ -23,9 +23,10 @@ def _front_matter(text: str) -> tuple[dict, str]:
     return {}, text
 
 
-def _date(value: str) -> datetime.date | None:
+# a date, optionally with a time ("2026-11-16 15:45") to order same day articles
+def _date(value: str) -> datetime.datetime | None:
     try:
-        return datetime.date.fromisoformat(value)
+        return datetime.datetime.fromisoformat(value)
     except ValueError:
         return None
 
@@ -65,7 +66,7 @@ def all_articles() -> list[dict]:
     articles = [_parse(p, p.stat().st_mtime) for p in _paths()]
     return sorted(
         articles,
-        key=lambda a: (a["date"] or datetime.date.min, a["title"]),
+        key=lambda a: a["date"] or datetime.datetime.min,
         reverse=True,
     )
 

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_banner.html" import banner %}
-{% from "_articles.html" import thumb %}
+{% from "_articles.html" import article_list %}
 {% block body_class %} class="login-body has-articles"{% endblock %}
 {% block content %}
 {% set stats = bot_stats() %}
@@ -11,24 +11,7 @@
     <div class="login-cards">
         <section class="login-card login-articles" aria-labelledby="home-articles-title">
             <h2 class="login-articles-title" id="home-articles-title">Articles</h2>
-            {% if latest %}
-            <ul class="login-articles-list">
-                {% for article in latest %}
-                <li>
-                    <a href="{{ url_for('article_page', slug=article.slug) }}" class="login-article">
-                        {{ thumb(article, "login-article-thumb") }}
-                        <span class="login-article-text">
-                            <span class="login-article-name">{{ article.title }}</span>
-                            <span class="login-article-date">{{ article.date_label or (article.minutes ~ " min read") }}</span>
-                        </span>
-                    </a>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p class="login-articles-empty">No articles yet, check back soon.</p>
-            {% endif %}
-            <a href="{{ url_for('articles_index') }}" class="btn btn-small login-articles-all">All articles</a>
+            {{ article_list(latest) }}
         </section>
 
         <section class="login-card login-panel">

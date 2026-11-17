@@ -1,7 +1,7 @@
 ---
 title: Commit activity
 author: saltgranule
-date: 2026-11-15
+date: 2026-11-15 15:17
 summary: An article on Melvins activity, and how it'll be maintained.
 thumbnail: media/article-commits.gif
 ---
