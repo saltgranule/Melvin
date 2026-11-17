@@ -12,6 +12,7 @@ from discord.ext import commands
 import module_config
 import module_settings
 from globals import DATA_DIR, PRIMARY, SECONDARY, TERTIARY
+from helpers.roles import REACTION_ROLE_REASON
 from helpers.text import truncate
 from module_registry import Module, Setting
 from ui import LargeSeparator, open_config
@@ -518,6 +519,10 @@ class AuditCog(
                     changes.append(
                         f"**Roles removed:** {', '.join(r.mention for r in removed)}",
                     )
+                if role_entry is not None and (role_entry.reason or "").startswith(
+                    REACTION_ROLE_REASON,
+                ):
+                    changes.append(f"**Reason:** {_clean(role_entry.reason, 300)}")
 
         if changes:
             await self._log(
@@ -560,6 +565,9 @@ class AuditCog(
         if entry is None or entry.user is None or self.bot.user is None:
             return False
         if entry.user.id != self.bot.user.id or entry.reason == AUTO_ROLE_REASON:
+            return False
+        # reaction roles don't create mod cases, so their changes must still be logged here
+        if (entry.reason or "").startswith(REACTION_ROLE_REASON):
             return False
         return await module_settings.is_enabled(guild.id, "mod")
 
