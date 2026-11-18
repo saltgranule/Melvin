@@ -78,8 +78,7 @@ def _argument(value: object) -> str:
 
 
 def _guild_label(guild: discord.Guild) -> str:
-    name = discord.utils.escape_markdown(censor(guild.name)) or "an unknown server"
-    return f"{name} ({guild.id})"
+    return discord.utils.escape_markdown(censor(guild.name)) or "an unknown server"
 
 
 def _location(interaction: discord.Interaction) -> str:

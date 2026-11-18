@@ -1,3 +1,4 @@
+import codecs
 import re
 
 LOOKALIKES = {
@@ -9,23 +10,26 @@ LOOKALIKES = {
     "g": "g69",
     "t": "t7+",
 }
-OFFENSIVE = (
-    "nigger",
-    "nigga",
-    "faggot",
-    "fag",
-    "retard",
-    "tranny",
-    "kike",
-    "chink",
-    "spic",
-    "wetback",
-    "coon",
-    "dyke",
-    "beaner",
-    "gook",
-    "raghead",
-    "towelhead",
+OFFENSIVE = tuple(
+    codecs.decode(word, "rot13")
+    for word in (
+        "avttre",
+        "avttn",
+        "snttbg",
+        "snt",
+        "ergneq",
+        "genaal",
+        "xvxr",
+        "puvax",
+        "fcvp",
+        "jrgonpx",
+        "pbba",
+        "qlxr",
+        "ornare",
+        "tbbx",
+        "enturnq",
+        "gbjryurnq",
+    )
 )
 LINK = re.compile(r"(?:https?://|discord(?:app)?\.(?:gg|com/invite)/)\S+", re.IGNORECASE)
 
