@@ -13,7 +13,7 @@ Docs: Would be very nice if you can do your own documentation, even if you vibed
 
 ## Code style
 - Please match code around you
-- Code's ruffed and cleaned, try not to shit the formatting, silence if needed
+- Code's ruffed and cleaned, silence if needed
 - Discussion is preferred before adding new dependencies, if you really think you need it
 
 ## AI Usage
