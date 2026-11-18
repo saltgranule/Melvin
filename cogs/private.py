@@ -8,7 +8,15 @@ from discord.ext import commands
 
 import server_stats
 import site_banner
-from globals import LOG_CHANNEL, MELVIN_LEFT_BANNER, MELVIN_MISC_EMOJI, QUATERNARY
+from globals import (
+    LOG_CHANNEL,
+    MELVIN_JOINED_BANNER,
+    MELVIN_LEFT_BANNER,
+    MELVIN_MISC_EMOJI,
+    QUATERNARY,
+    SERVER_EVENTS,
+)
+from helpers.text import censor
 from ui import ErrorUI, GalleryWithItem, GatedUI, PositiveUI, SmallSeparator
 
 if TYPE_CHECKING:
@@ -70,7 +78,7 @@ def _argument(value: object) -> str:
 
 
 def _guild_label(guild: discord.Guild) -> str:
-    name = discord.utils.escape_markdown(guild.name) or "an unknown server"
+    name = discord.utils.escape_markdown(censor(guild.name)) or "an unknown server"
     return f"{name} ({guild.id})"
 
 
@@ -178,8 +186,8 @@ class PrivateCog(
             ephemeral=True,
         )
 
-    def _log_channel(self) -> discord.TextChannel | None:
-        channel = self.bot.get_channel(LOG_CHANNEL)
+    def _log_channel(self, channel_id: int = LOG_CHANNEL) -> discord.TextChannel | None:
+        channel = self.bot.get_channel(channel_id)
         return channel if isinstance(channel, discord.TextChannel) else None
 
     async def _log(
@@ -198,8 +206,24 @@ class PrivateCog(
             pass
 
     @commands.Cog.listener()
+    async def on_guild_join(self, guild: discord.Guild) -> None:
+        channel = self._log_channel(SERVER_EVENTS)
+        if channel is None:
+            return
+        await self._log(
+            channel,
+            discord.ui.Container(
+                discord.ui.TextDisplay(
+                    f"**Melvin was just added to {_guild_label(guild)}.**\n"
+                    f"Now in **{len(self.bot.guilds)}** guild(s).",
+                ),
+                GalleryWithItem(MELVIN_JOINED_BANNER),
+            ),
+        )
+
+    @commands.Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild) -> None:
-        channel = self._log_channel()
+        channel = self._log_channel(SERVER_EVENTS)
         if channel is None:
             return
         if guild.unavailable:

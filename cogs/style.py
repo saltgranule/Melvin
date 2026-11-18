@@ -9,8 +9,6 @@ from discord.ext import commands, tasks
 import module_config
 import module_settings
 from globals import (
-    LOG_CHANNEL,
-    MELVIN_JOINED_BANNER,
     DisplayNameEffect,
     DisplayNameFont,
 )
@@ -157,33 +155,11 @@ class StyleCog(
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild) -> None:
-        # only the style is part of the module, the join log always happens
         if await module_settings.is_enabled(guild.id, "style"):
             try:
                 await self.apply_style(guild)
             except discord.HTTPException:
                 log.exception("Failed to apply the name style in guild %s", guild.id)
-
-        log_channel = self.bot.get_channel(LOG_CHANNEL)
-        if log_channel is None or not isinstance(log_channel, discord.TextChannel):
-            return
-        view = discord.ui.LayoutView()
-        view.add_item(
-            discord.ui.Container(
-                discord.ui.TextDisplay(
-                    f"**Melvin was just added to {guild.name}.**\n"
-                    f"Now in **{len(self.bot.guilds)}** guild(s).",
-                ),
-                GalleryWithItem(MELVIN_JOINED_BANNER),
-            ),
-        )
-        try:
-            await log_channel.send(
-                view=view,
-                allowed_mentions=discord.AllowedMentions.none(),
-            )
-        except discord.Forbidden, discord.HTTPException:
-            pass
 
     @app_commands.command(
         name="config",
