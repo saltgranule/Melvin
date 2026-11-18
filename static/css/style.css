@@ -276,9 +276,34 @@ a {
 }
 
 .footer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px 24px;
     padding: 20px 0 28px;
     font-size: 12px;
     color: var(--text-subtle);
+}
+
+.footer-community {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.footer-contributors .repo-avatar {
+    width: 24px;
+    height: 24px;
+    margin-left: -6px;
+}
+
+.footer-contributors .repo-avatar:first-child {
+    margin-left: 0;
+}
+
+.footer-contributors .repo-avatar-more {
+    font-size: 10px;
 }
 
 .hero {
@@ -2117,12 +2142,6 @@ textarea.dashboard-input {
     padding-top: 12px;
     padding-bottom: 12px;
     font-size: 15px;
-}
-
-.login-meta {
-    justify-content: center;
-    gap: 16px;
-    margin-top: 20px;
 }
 
 .login-legal {
