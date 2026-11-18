@@ -6,7 +6,7 @@
 {% set stats = bot_stats() %}
 {% set repo = repo_meta() %}
 {% set legal = {"visible": false} %}
-{% set latest = recent_articles() %}
+{% set latest = recent_articles()[:3] %}
 <div class="login-page">
     <div class="login-cards">
         <section class="login-card login-articles" aria-labelledby="home-articles-title">
@@ -22,7 +22,6 @@
                     <img src="{{ url_for('static', filename='media/melvin-logo-wobble-128.webp') }}" alt="" class="login-title-logo" width="128" height="128">
                 </picture>Moderation, server statistics, utilities, and more
             </h1>
-            <p class="login-subtitle">A community driven Discord bot. Log in to manage it in your servers.</p>
 
             {% if error %}
             {{ banner("error", error) }}
