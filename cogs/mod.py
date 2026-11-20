@@ -10,6 +10,7 @@ import module_config
 import module_settings
 from globals import DATA_DIR
 from helpers import durations
+from helpers.roles import actor_role_error, bot_role_error
 from module_registry import Module, Setting
 from ui import CasesView, ErrorUI, InfoUI, PositiveUI, open_config
 
@@ -119,12 +120,10 @@ def _action_error(
 
 
 def _role_error(interaction: discord.Interaction, role: discord.Role) -> str | None:
-    guild, user = interaction.guild, interaction.user
-    if role.position >= user.top_role.position and user.id != guild.owner_id:
-        return "You tried to manage a role equal to or above your top role."
-    if role.position >= guild.me.top_role.position:
-        return "I tried to manage a role equal to or above my top role."
-    return None
+    return actor_role_error(interaction.guild, interaction.user, role) or bot_role_error(
+        interaction.guild,
+        role,
+    )
 
 
 @app_commands.allowed_installs(guilds=True, users=False)
