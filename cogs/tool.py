@@ -55,7 +55,7 @@ URBAN_DEFINE = "https://www.urbandictionary.com/define.php?term="
 URBAN_DEFINITION_LIMIT = 1200
 URBAN_EXAMPLE_LIMIT = 600
 URBAN_LINK = re.compile(r"\[([^\]]+)\]")
-URBAN_VOTES = "https://www.urbandictionary.com/ui/votes"
+URBAN_VOTES = "https://www.urbandictionary.com/ui/votes" # Not a public api, no idea if this is reliable, but the one u used before was broken
 URBAN_VOTE = re.compile(r'vote-buttons-(\d+).*?Upvote \((\d+)\).*?Downvote \((\d+)\)', re.S)
 
 WIKI_SUMMARY = "https://en.wikipedia.org/api/rest_v1/page/summary/"
