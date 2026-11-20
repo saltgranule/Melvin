@@ -575,6 +575,12 @@ class ToolCog(
             )
             return
 
+        with contextlib.suppress(aiohttp.ClientError, TimeoutError):
+            async with self.session.get(URBAN_VOTES, params={"defids": ",".join(str(e["defid"]) for e in entries)}, headers={"X-Up-Version": "3.11.0"}) as r:
+                votes = {d: (u, n) for d, u, n in URBAN_VOTE.findall(await r.text())}
+            for e in entries:
+                e["thumbs_up"], e["thumbs_down"] = votes.get(str(e["defid"]), (e["thumbs_up"], e["thumbs_down"]))
+
         word = entries[0]["word"]
         view = Paginator(
             f"### {word.replace('`', '')}",
