@@ -55,6 +55,8 @@ URBAN_DEFINE = "https://www.urbandictionary.com/define.php?term="
 URBAN_DEFINITION_LIMIT = 1200
 URBAN_EXAMPLE_LIMIT = 600
 URBAN_LINK = re.compile(r"\[([^\]]+)\]")
+URBAN_VOTES = "https://www.urbandictionary.com/ui/votes" # Not a public api, no idea if this is reliable, but the one u used before was broken
+URBAN_VOTE = re.compile(r'vote-buttons-(\d+).*?Upvote \((\d+)\).*?Downvote \((\d+)\)', re.S)
 
 WIKI_SUMMARY = "https://en.wikipedia.org/api/rest_v1/page/summary/"
 WIKI_RANDOM = "https://en.wikipedia.org/api/rest_v1/page/random/summary"
@@ -572,6 +574,12 @@ class ToolCog(
                 ephemeral=True,
             )
             return
+
+        with contextlib.suppress(aiohttp.ClientError, TimeoutError):
+            async with self.session.get(URBAN_VOTES, params={"defids": ",".join(str(e["defid"]) for e in entries)}, headers={"X-Up-Version": "3.11.0"}) as r:
+                votes = {d: (u, n) for d, u, n in URBAN_VOTE.findall(await r.text())}
+            for e in entries:
+                e["thumbs_up"], e["thumbs_down"] = votes.get(str(e["defid"]), (e["thumbs_up"], e["thumbs_down"]))
 
         word = entries[0]["word"]
         view = Paginator(
