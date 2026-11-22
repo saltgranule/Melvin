@@ -106,7 +106,7 @@ class Melvin(commands.Bot):
             command_prefix="-",
             intents=intents,
             tree_cls=MelvinTree,
-            allowed_mentions=discord.AllowedMentions(everyone=False, roles=False),
+            allowed_mentions=discord.AllowedMentions.none(),
             allowed_installs=app_commands.AppInstallationType(guild=True, user=True),
             allowed_contexts=app_commands.AppCommandContext(
                 guild=True,
